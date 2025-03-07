@@ -10,7 +10,6 @@ import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
 import SigninForm from "../components/SigninForm";
 import SignupForm from "../components/SignupForm";
 import ResetPasswordForm from "../components/ResetPasswordForm";
-import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import GlowCursor from "../components/common/GlowCursor";
 
 const actionState = {
@@ -63,8 +62,8 @@ const AuthPage = () => {
                 sx={{ color: "inherit", mr: 1}}
                 onClick={onSwithTheme}
               >
-                {themeMode === themeModes.dark && <DarkModeOutlinedIcon />}
-                {themeMode === themeModes.light && <WbSunnyOutlinedIcon />}
+                {themeMode === themeModes.light && <DarkModeOutlinedIcon />}
+                {themeMode === themeModes.dark && <WbSunnyOutlinedIcon />}
               </IconButton>
             </Box>
           </Box>
