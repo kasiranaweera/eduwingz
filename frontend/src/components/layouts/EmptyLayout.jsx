@@ -1,9 +1,30 @@
-import React from 'react'
+import React from 'react';
+import { Box } from "@mui/material";
+import { Outlet } from "react-router-dom";
+import GlobalLoading from "../GlobalLoading";
+import AuthPage from '../../pages/AuthPage';
+import GlowCursor from '../common/GlowCursor';
 
-const EmptyLayout = () => {
+
+
+const DashboardLayout = () => {
+
   return (
-    <div>EmptyLayout</div>
-  )
-}
+    <>
+      {/* pre loader */}
+      <GlobalLoading />
+      {/* pre loader */}
 
-export default EmptyLayout
+      <Box minHeight="100vh" component="main" flexGrow={1} overflow="hidden">
+        
+          {/* main */}
+          <AuthPage main_contect={<Outlet/>}/>
+          {/* main */}
+
+      </Box>
+        
+    </>
+  );
+};
+
+export default DashboardLayout;

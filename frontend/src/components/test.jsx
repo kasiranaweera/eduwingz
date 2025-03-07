@@ -1,17 +1,6 @@
 <Box>
 <Box sx={{
-  "--dot-bg": "black",
-  "--dot-color": "gray",
-  "--dot-size": "1px",
-  "--dot-space": "50px",
-  background: `
-    linear-gradient(90deg, black, calc(var(--dot-space) - var(--dot-size)), transparent 1%) center / var(--dot-space) var(--dot-space),
-    linear-gradient(gray calc(var(--dot-space) - var(--dot-size)), transparent 1%) center / var(--dot-space) var(--dot-space),
-    var(--dot-color)
-  `,
-  height: "100vh",
-  width: "100vw",
-  position: "relative",
+ 
 }}>
    <Box sx={{
   "--dot-bg": "black",

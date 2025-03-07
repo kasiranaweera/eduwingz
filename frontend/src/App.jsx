@@ -10,6 +10,7 @@ import EmptyLayout from "./components/layouts/EmptyLayout";
 import commonRoutes from "./routes/commonRoutes";
 import dashboardRoutes from "./routes/dashboardRoutes";
 import PageWrapper from "./components/PageWrapper";
+import specialRoutes from "./routes/specialRoutes";
 
 import "react-toastify/dist/ReactToastify.css";
 import "swiper/css";
@@ -81,7 +82,7 @@ const App = () => {
             ))}
           </Route>
           <Route path="/auth/" element={<EmptyLayout />}>
-            {dashboardRoutes.map((route, index) => (
+            {specialRoutes.map((route, index) => (
               route.index ? (
                 <Route
                   index
