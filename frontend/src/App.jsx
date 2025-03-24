@@ -11,6 +11,7 @@ import commonRoutes from "./routes/commonRoutes";
 import dashboardRoutes from "./routes/dashboardRoutes";
 import PageWrapper from "./components/PageWrapper";
 import specialRoutes from "./routes/specialRoutes";
+import LoadingPage from "./pages/LoadingPage";
 
 import "react-toastify/dist/ReactToastify.css";
 import "swiper/css";
@@ -39,68 +40,105 @@ const App = () => {
       {/* app routes */}
       <BrowserRouter>
         <Routes>
+          <Route path="/" element={<LoadingPage />} />
           <Route path="/" element={<CommonLayout />}>
-            {commonRoutes.map((route, index) => (
+            {commonRoutes.map((route, index) =>
               route.index ? (
                 <Route
                   index
                   key={index}
-                  element={route.state ? (
-                    <PageWrapper state={route.state}>{route.element}</PageWrapper>
-                  ) : route.element}
+                  element={
+                    route.state ? (
+                      <PageWrapper state={route.state}>
+                        {route.element}
+                      </PageWrapper>
+                    ) : (
+                      route.element
+                    )
+                  }
                 />
               ) : (
                 <Route
                   path={route.path}
                   key={index}
-                  element={route.state ? (
-                    <PageWrapper state={route.state}>{route.element}</PageWrapper>
-                  ) : route.element}
+                  element={
+                    route.state ? (
+                      <PageWrapper state={route.state}>
+                        {route.element}
+                      </PageWrapper>
+                    ) : (
+                      route.element
+                    )
+                  }
                 />
               )
-            ))}
+            )}
           </Route>
           <Route path="/dashboard/" element={<DashboardLayout />}>
-            {dashboardRoutes.map((route, index) => (
+            {dashboardRoutes.map((route, index) =>
               route.index ? (
                 <Route
                   index
                   key={index}
-                  element={route.state ? (
-                    <PageWrapper state={route.state}>{route.element}</PageWrapper>
-                  ) : route.element}
+                  element={
+                    route.state ? (
+                      <PageWrapper state={route.state}>
+                        {route.element}
+                      </PageWrapper>
+                    ) : (
+                      route.element
+                    )
+                  }
                 />
               ) : (
                 <Route
                   path={route.path}
                   key={index}
-                  element={route.state ? (
-                    <PageWrapper state={route.state}>{route.element}</PageWrapper>
-                  ) : route.element}
+                  element={
+                    route.state ? (
+                      <PageWrapper state={route.state}>
+                        {route.element}
+                      </PageWrapper>
+                    ) : (
+                      route.element
+                    )
+                  }
                 />
               )
-            ))}
+            )}
           </Route>
           <Route path="/auth/" element={<EmptyLayout />}>
-            {specialRoutes.map((route, index) => (
+            {specialRoutes.map((route, index) =>
               route.index ? (
                 <Route
                   index
                   key={index}
-                  element={route.state ? (
-                    <PageWrapper state={route.state}>{route.element}</PageWrapper>
-                  ) : route.element}
+                  element={
+                    route.state ? (
+                      <PageWrapper state={route.state}>
+                        {route.element}
+                      </PageWrapper>
+                    ) : (
+                      route.element
+                    )
+                  }
                 />
               ) : (
                 <Route
                   path={route.path}
                   key={index}
-                  element={route.state ? (
-                    <PageWrapper state={route.state}>{route.element}</PageWrapper>
-                  ) : route.element}
+                  element={
+                    route.state ? (
+                      <PageWrapper state={route.state}>
+                        {route.element}
+                      </PageWrapper>
+                    ) : (
+                      route.element
+                    )
+                  }
                 />
               )
-            ))}
+            )}
           </Route>
         </Routes>
       </BrowserRouter>

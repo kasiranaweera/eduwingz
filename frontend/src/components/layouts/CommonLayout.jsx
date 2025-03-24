@@ -12,7 +12,7 @@ const CommonLayout = () => {
       <GlobalLoading />
       {/* pre loader */}
 
-      <Box display="flex" minHeight="100vh">
+      <Box display='inline' minHeight="100vh">
         {/* header */}
         <Header />
         {/* header */}
