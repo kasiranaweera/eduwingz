@@ -119,13 +119,15 @@ const Header = () => {
                 {menuConfigs.main.map((item, index) => (
                   <Button
                     key={index}
-                    sx={{
-                      mr: 1,
-                      color:
-                        themeMode === themeModes.dark
-                          ? ""
-                          : "primary.contrastText",
-                    }}
+                    sx={appState.includes(item.state) ? {mr: 1,
+                        color:
+                          themeMode === themeModes.dark
+                            ? "secondary.contrastText"
+                            : "primary.contrastText",}:{mr: 1,
+                                color:
+                                  themeMode === themeModes.dark
+                                    ? "primary.contrastText"
+                                    : "primary.contrastText",}}
                     component={Link}
                     to={item.path}
                     variant={
@@ -141,7 +143,7 @@ const Header = () => {
                   sx={{
                     color:
                       themeMode === themeModes.dark
-                        ? "primary.main"
+                        ? "primary.contrastText"
                         : "primary.contrastText",
                   }}
                   onClick={onSwithTheme}
@@ -153,6 +155,10 @@ const Header = () => {
                   <Button
                     variant="contained"
                     onClick={buttonHandle}
+                    sx={{color:
+                      themeMode === themeModes.dark
+                        ? "secondary.contrastText"
+                        : "primary.contrastText",}}
                   >
                     sign in
                   </Button>
