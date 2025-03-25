@@ -18,14 +18,14 @@ const InnerCursor = styled(Box)(({ $isDark }) => ({
 
 const OuterCursor = styled(Box)(({ $isDark }) => ({
   position: "fixed",
-  width: 150,
-  height: 150,
+  width: 100,
+  height: 100,
   borderRadius: "50%",
   pointerEvents: "none",
   zIndex: 12000,
   border: `1px solid ${$isDark ? "white" : "black"}`,
   background: $isDark ? "white" : "black",
-  boxShadow: `0 0 100px 100px ${$isDark ? "white" : "black"}`,
+  boxShadow: `0 0 50px 50px ${$isDark ? "white" : "black"}`,
   opacity: 1,
   mixBlendMode: "overlay",
   visibility: "visible",
@@ -82,8 +82,8 @@ const GlowCursor = ({ disableInRef }) => {
 
     gsap.to(outerCursorRef.current, {
       visibility: "visible",
-      x: position.x - 75,
-      y: position.y - 75,
+      x: position.x - 50,
+      y: position.y - 50,
       duration: 1,
       ease: "back.out(1.7)",
     });

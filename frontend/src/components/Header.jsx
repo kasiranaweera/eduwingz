@@ -59,10 +59,10 @@ const Header = () => {
     dispatch(setThemeMode(theme));
   };
 
-  const buttonHandle = () => {
-    dispatch(setAuthModalOpen(true));
-    navigate("/auth");
-  }
+  // const buttonHandle = () => {
+  //   dispatch(setAuthModalOpen(true));
+  //   // navigate("/auth");
+  // }
 
   return (
     <ScrollAppBar>
@@ -119,15 +119,23 @@ const Header = () => {
                 {menuConfigs.main.map((item, index) => (
                   <Button
                     key={index}
-                    sx={appState.includes(item.state) ? {mr: 1,
-                        color:
-                          themeMode === themeModes.dark
-                            ? "secondary.contrastText"
-                            : "primary.contrastText",}:{mr: 1,
-                                color:
-                                  themeMode === themeModes.dark
-                                    ? "primary.contrastText"
-                                    : "primary.contrastText",}}
+                    sx={
+                      appState.includes(item.state)
+                        ? {
+                            mr: 1,
+                            color:
+                              themeMode === themeModes.dark
+                                ? "secondary.contrastText"
+                                : "primary.contrastText",
+                          }
+                        : {
+                            mr: 1,
+                            color:
+                              themeMode === themeModes.dark
+                                ? "primary.contrastText"
+                                : "primary.contrastText",
+                          }
+                    }
                     component={Link}
                     to={item.path}
                     variant={
@@ -154,17 +162,22 @@ const Header = () => {
                 {!user && (
                   <Button
                     variant="contained"
-                    onClick={buttonHandle}
-                    sx={{color:
-                      themeMode === themeModes.dark
-                        ? "secondary.contrastText"
-                        : "primary.contrastText",}}
+                    onClick={() => {
+                      // navigate("/auth");
+                      dispatch(setAuthModalOpen(true));
+                    }}
+                    sx={{
+                      color:
+                        themeMode === themeModes.dark
+                          ? "secondary.contrastText"
+                          : "primary.contrastText",
+                    }}
                   >
                     sign in
                   </Button>
                 )}
+                {user && <UserMenu />}
               </Stack>
-              {user && <UserMenu />}
             </Box>
           </Box>
         </Toolbar>

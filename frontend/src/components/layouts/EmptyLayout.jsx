@@ -4,7 +4,7 @@ import { Outlet } from "react-router-dom";
 import GlobalLoading from "../GlobalLoading";
 import AuthPage from '../../pages/AuthPage';
 
-const DashboardLayout = () => {
+const EmptyLayout = () => {
 
   return (
     <>
@@ -24,4 +24,4 @@ const DashboardLayout = () => {
   );
 };
 
-export default DashboardLayout;
+export default EmptyLayout;

@@ -4,14 +4,16 @@ export const userSlice = createSlice({
   name: 'User',
   initialState: {
     user: null,
-    listFavorites: []
+    // listFavorites: []
   },
   reducers: {
     setUser: (state, action) => {
       if (action.payload === null) {
         localStorage.removeItem('actkn');
       } else {
-        if (action.payload.token) localStorage.setItem('actkn', action.payload.token);
+        console.log('Setting user modal open:', action.payload);
+        if (action.payload) localStorage.setItem('actkn', action.payload);
+        
       }
 
       state.user = action.payload;

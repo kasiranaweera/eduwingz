@@ -24,7 +24,7 @@ const UserMenu = () => {
             sx={{ cursor: "pointer", userSelect: "none" }}
             onClick={toggleMenu}
           >
-            {user.displayName}
+            {user.username}
           </Typography>
           <Menu
             open={Boolean(anchorEl)}

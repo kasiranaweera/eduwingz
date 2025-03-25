@@ -93,6 +93,27 @@ const socialMedia = [
   },
 ];
 
-const menuConfigs = { main, footMenu, socialMedia };
+const user = [
+  {
+    display: "profile",
+    path: "/dashboard/profile",
+    icon: <PortraitIcon />,
+    state: "profile"
+  },
+  {
+    display: "reviews",
+    path: "/reviews",
+    icon: <RateReviewOutlinedIcon />,
+    state: "reviews"
+  },
+  {
+    display: "password update",
+    path: "/password-update",
+    icon: <LockResetOutlinedIcon />,
+    state: "password.update"
+  }
+];
+
+const menuConfigs = { main, footMenu, socialMedia, user};
 
 export default menuConfigs;

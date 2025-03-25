@@ -8,16 +8,21 @@ import { setUser } from "../redux/features/userSlice";
 import { setAuthModalOpen } from "../redux/features/authModalSlice";
 import GoogleIcon from '@mui/icons-material/Google';
 import { useState } from "react";
-// import { jwtDecode } from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 // import { useNavigate } from 'react-router-dom';
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 // import { color } from "@mui/system";
 // import Cookies from 'js-cookie';
+import themeConfigs, { themeModes } from "../configs/theme.config";
+import { useNavigate } from "react-router-dom";
+
 
 // const swal = require('sweetalert2')
 
 const SigninForm = ({ switchAuthState }) => {
   const dispatch = useDispatch();
+  const { themeMode } = useSelector((state) => state.themeMode);
+  const navigate = useNavigate()
 
   // const navigate = useNavigate();
 
@@ -64,9 +69,11 @@ const SigninForm = ({ switchAuthState }) => {
 
       if (response) {
         signinForm.resetForm();
-        dispatch(setUser(response));
+        dispatch(setUser(jwtDecode(response.access)));
         dispatch(setAuthModalOpen(false));
+        console.log(response)
         toast.success("Sign in success");
+        // navigate("/home");
 
       } else {
     //     console.log(response.status);
@@ -133,7 +140,13 @@ const SigninForm = ({ switchAuthState }) => {
         fullWidth
         size="large"
         variant="contained"
-        sx={{ marginTop: 4 }}
+        sx={{
+          color:
+            themeMode === themeModes.dark
+              ? "secondary.contrastText"
+              : "primary.contrastText",
+          mt: 4,
+        }}
         loading={isLoginRequest}
       >
         sign in
