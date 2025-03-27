@@ -35,7 +35,7 @@ const Footer = () => {
           {menuConfigs.footMenu.map((item, index) => (
             <Button
               key={index}
-              sx={{ color: "inherit" }}
+              sx={{ color: "inherit", mr:1 }}
               component={Link}
               to={item.path}
             >
@@ -45,7 +45,7 @@ const Footer = () => {
         </Box>
         <Box>
           {menuConfigs.socialMedia.map((item) => (
-            <IconButton aria-label={item.state} size="large">
+            <IconButton aria-label={item.state} size="large" sx={{}}>
               {item.icon}
             </IconButton>
           ))}

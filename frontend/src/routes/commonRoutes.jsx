@@ -3,6 +3,10 @@ import FeaturesPage from "../pages/FeaturesPage"
 import DownloadPage from "../pages/DownloadPage"
 import ResourcesPage from "../pages/ResourcesPage"
 import ResearchPage from "../pages/ResearchPage"
+import AboutPage from "../pages/AboutPage"
+import TechnologyPage from "../pages/TechnologyPage"
+import TeamPage from "../pages/TeamPage"
+import PrivacyPage from "../pages/PrivacyPage"
 
 export const routesGen = {
   home: "/",
@@ -38,6 +42,26 @@ const commonRoutes = [
     path: "/research",
     element: <ResearchPage />,
     state: "research",
+  },
+  {
+    path: "/about",
+    element: <AboutPage />,
+    state: "about",
+  },
+  {
+    path: "/team",
+    element: <TeamPage />,
+    state: "team",
+  },
+  {
+    path: "/technology",
+    element: <TechnologyPage />,
+    state: "technology",
+  },
+  {
+    path: "/privacy",
+    element: <PrivacyPage />,
+    state: "privacy",
   },
 ];
 
