@@ -9,30 +9,32 @@ const themeConfigs = {
   custom: ({ mode }) => {
     const customPalette = mode === themeModes.dark ? {
       primary: {
-        main: "#4CF59A", // 4CF59A, 13FD00
-        contrastText: "#023C01",
+        main: "#ffc107", // 4CF59A, 13FD00
+        contrastText: "#fff8e1",
       },
       secondary: {
-        main: "#f44336",
-        contrastText: "#ffffff"
+        main: "#ff9800",
+        contrastText: "#131313"
       },
       background: {
-        default: "#161616",
-        paper: "#202020"
+        default: "#121212",
+        paper: "#212121"
       },
       footericon: {
         main: '#858585'
       },
     } : {
       primary: {
-        main: "#000000DE", //078660
+        main: "#ffc107", //078660
+        contrastText: "#131313",
       },
       secondary: {
-        main: "#f44336"
+        main: "#ff9800",
+        contrastText: "#fff8e1"
       },
       background: {
-        default: "#e0e0e0",
-        paper: "#4CF59A" // #4CF59A
+        default: "#fafafa",
+        paper: "#fafafa" // #4CF59A
       },
       footericon: {
         main: '#858585'

@@ -3,11 +3,8 @@ import { Box } from "@mui/material";
 import { Outlet } from "react-router-dom";
 import GlobalLoading from "../GlobalLoading";
 import AuthPage from '../../pages/AuthPage';
-import GlowCursor from '../common/GlowCursor';
 
-
-
-const DashboardLayout = () => {
+const EmptyLayout = () => {
 
   return (
     <>
@@ -27,4 +24,4 @@ const DashboardLayout = () => {
   );
 };
 
-export default DashboardLayout;
+export default EmptyLayout;

@@ -1,23 +1,30 @@
 import { LoadingButton } from "@mui/lab";
-import { Alert, Box, Button, Stack, TextField, Typography, Divider, FormControlLabel, Checkbox } from "@mui/material";
+import { Alert, Box, Button, Stack, TextField, Typography, Divider, FormControlLabel, Checkbox, Link} from "@mui/material";
 import { useFormik } from "formik";
 import { toast } from "react-toastify";
 import * as Yup from "yup";
-// import userApi from "../../api/modules/user.api";
+import userApi from "../api/modules/user.api";
 import { setUser } from "../redux/features/userSlice";
+import { setAuthModalOpen } from "../redux/features/authModalSlice";
 import GoogleIcon from '@mui/icons-material/Google';
-import { Link } from 'react-router-dom'
 import { useState } from "react";
-// import { jwtDecode } from "jwt-decode";
-import { useNavigate } from 'react-router-dom';
+import { jwtDecode } from "jwt-decode";
+// import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from "react-redux";
+// import { color } from "@mui/system";
 // import Cookies from 'js-cookie';
+import themeConfigs, { themeModes } from "../configs/theme.config";
+import { useNavigate } from "react-router-dom";
+
 
 // const swal = require('sweetalert2')
 
 const SigninForm = ({ switchAuthState }) => {
-  // const dispatch = useDispatch();
+  const dispatch = useDispatch();
+  const { themeMode } = useSelector((state) => state.themeMode);
+  const navigate = useNavigate()
 
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   // const [authTokens, setAuthTokens] = useState(() =>
   //   localStorage.getItem("authTokens")
@@ -39,19 +46,19 @@ const SigninForm = ({ switchAuthState }) => {
       password: "",
       email: ""
     },
-    // validationSchema: Yup.object({
-    //   email: Yup.string()
-    //     .min(8, "username minimum 8 characters")
-    //     .required("username is required"),
-    //   password: Yup.string()
-    //     .min(8, "password minimum 8 characters")
-    //     .required("password is required")
-    // }),
-    // onSubmit: async values => {
-    //   setErrorMessage(undefined);
-    //   setIsLoginRequest(true);
-    //   const { response, err } = await userApi.signin(values);
-    //   setIsLoginRequest(false);
+    validationSchema: Yup.object({
+      email: Yup.string()
+        .min(8, "username minimum 8 characters")
+        .required("username is required"),
+      password: Yup.string()
+        .min(8, "password minimum 8 characters")
+        .required("password is required")
+    }),
+    onSubmit: async values => {
+      setErrorMessage(undefined);
+      setIsLoginRequest(true);
+      const { response, err } = await userApi.signin(values);
+      setIsLoginRequest(false);
 
     //   console.log("Response:", response);
     //       console.log("Error:", err);
@@ -60,21 +67,19 @@ const SigninForm = ({ switchAuthState }) => {
     //   console.log("Refresh:", jwtDecode(response.refresh));
 
 
-    //   if (response) {
-    //     console.log("Logged In");
-    //     setAuthTokens(response)
-    //     setUser(jwtDecode(response.access))
-    //     Cookies.set('access_token', response.access);
-    //     Cookies.set('refresh_token', response.refresh);
-    //     navigate("/")
-    //     toast.success("Sign in success");
+      if (response) {
+        signinForm.resetForm();
+        dispatch(setUser(jwtDecode(response.access)));
+        dispatch(setAuthModalOpen(false));
+        console.log(response)
+        toast.success("Sign in success");
+        // navigate("/home");
 
-    //   } else {
+      } else {
     //     console.log(response.status);
     //     console.log("there was a server issue");
-    //     toast.error("Username or password does not exist");
-
-    //   }
+        toast.error("Username or password does not exist");
+      }
 
 
     //   // if (response.status===200) {
@@ -84,12 +89,13 @@ const SigninForm = ({ switchAuthState }) => {
     //   //   toast.success("Sign in success");
     //   // }
 
-    //   if (err) setErrorMessage(err.message);
-    // }
+      if (err) setErrorMessage(err.message);
+    }
+
   });
 
   return (
-    <Box component="form" onSubmit={signinForm.handleSubmit}>
+    <Box component="form" onSubmit={signinForm.handleSubmit} sx={{width:'100%'}}>
       <Box sx={{ textAlign: "center", marginBottom: "3rem", mt: 3 }}>
         <Typography sx={{ textAlign: 'center', fontWeight: 500 }} variant="h4">Sign In</Typography>
         <Typography sx={{ textAlign: 'center', color: 'inherit' }} variant="body2">Unlock Your Knowledge, Ignite Your Fun!</Typography>
@@ -134,12 +140,18 @@ const SigninForm = ({ switchAuthState }) => {
         fullWidth
         size="large"
         variant="contained"
-        sx={{ marginTop: 4 }}
+        sx={{
+          color:
+            themeMode === themeModes.dark
+              ? "secondary.contrastText"
+              : "primary.contrastText",
+          mt: 4,
+        }}
         loading={isLoginRequest}
       >
         sign in
       </LoadingButton>
-      <Typography sx={{ marginTop: 1 }} variant="body2">Not registered yet? <Link onClick={() => switchAuthState()} underline="none" sx={{ cursor: 'pointer' }}>Create an Account</Link></Typography>
+      <Typography sx={{ marginTop: 1,  }} variant="body2">Not registered yet? <Link onClick={() => switchAuthState()} sx={{ cursor: 'pointer', color: 'primary.main' }} underline="none">Create New Account</Link></Typography>
 
       {errorMessage && (
         <Box sx={{ marginTop: 2 }}>

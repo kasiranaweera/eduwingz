@@ -1,4 +1,5 @@
 import DashboardPage from "../pages/DashboardPage";
+import ProtectedPage from "../components/ProtectedPage"
 
 export const routesGen = {
     dashboard: "/",
@@ -7,7 +8,11 @@ export const routesGen = {
 const dashboardRoutes = [
     {
         index: true,
-        element: <DashboardPage/>,
+        element: (
+            <ProtectedPage>
+                <DashboardPage/>,
+            </ProtectedPage>
+        ),
         state: "dashboard"
     },
 ];
