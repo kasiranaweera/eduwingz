@@ -7,10 +7,10 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 const HomePage = () => {  
   return (
     <Box>
-      <GoogleOAuthProvider clientId="499873335308-30ummun4ga29qitl3kmvecv8ifgtue76.apps.googleusercontent.com">
+      {/* <GoogleOAuthProvider clientId="499873335308-30ummun4ga29qitl3kmvecv8ifgtue76.apps.googleusercontent.com">
       {/* Your app components */}
-      <GoogleLoginButton />
-    </GoogleOAuthProvider>
+      {/* <GoogleLoginButton />
+    </GoogleOAuthProvider> */} 
     </Box>
   );
 };
