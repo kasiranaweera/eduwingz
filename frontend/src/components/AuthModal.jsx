@@ -98,8 +98,7 @@ const AuthModal = () => {
                 width: "100px",
               }}
               variant="outlined"
-              component={Link}
-              to="/home"
+              onClick={handleClose}
             >
               Home
             </Button>

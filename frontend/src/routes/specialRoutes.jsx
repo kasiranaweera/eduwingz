@@ -1,14 +1,19 @@
-import AuthPage from "../pages/AuthPage";
+import ProtectedPage from "../components/ProtectedPage";
+import MainBoardPage from "../pages/MainBoardPage";
 
 export const routesGen = {
-    auth: "/",
+    mainboard: "/",
 }
 
 const specialRoutes = [
     {
         index: true,
-        element: <AuthPage/>,
-        state: "authpage"
+        element: (
+            <ProtectedPage>
+                <MainBoardPage/>
+            </ProtectedPage>
+        ),
+        state: "mainboard"
     },
 ];
 

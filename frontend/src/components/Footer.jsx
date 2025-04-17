@@ -27,15 +27,15 @@ const Footer = () => {
     >
       <Stack
         alignItems="center"
-        justifyContent="space-between"
+        justifyContent={{xs: 'center', md:"space-between"}}
         direction={{ xs: "column", md: "row " }}
         sx={{ height: "max-content" }}
       >
-        <Box>
+        <Box justifyContent={{xs: 'center', md:"space-between"}}>
           {menuConfigs.footMenu.map((item, index) => (
             <Button
               key={index}
-              sx={{ color: "inherit", mr:1 }}
+              sx={{ color: "primary.contrastText", mr:1, '&:hover':{color: 'primary.main'}, borderRadius:100 }}
               component={Link}
               to={item.path}
             >
@@ -45,7 +45,7 @@ const Footer = () => {
         </Box>
         <Box>
           {menuConfigs.socialMedia.map((item) => (
-            <IconButton aria-label={item.state} size="large" sx={{}}>
+            <IconButton aria-label={item.state} size="large" sx={{'&:hover':{color: 'primary.main'}}}>
               {item.icon}
             </IconButton>
           ))}
@@ -60,7 +60,7 @@ const Footer = () => {
             fontWeight: 500,
           }}
         >
-          © 2025 EduWingz | All Rights Reserved
+          © 2025 | EduWingz | All Rights Reserved
         </Typography>
       </Box>
     </Paper>

@@ -9,11 +9,11 @@ const themeConfigs = {
   custom: ({ mode }) => {
     const customPalette = mode === themeModes.dark ? {
       primary: {
-        main: "#ffc107", // 4CF59A, 13FD00
-        contrastText: "#fff8e1",
+        main: "#ff9800", // 4CF59A, 13FD00 
+        contrastText: "#fafafa",
       },
       secondary: {
-        main: "#ff9800",
+        main: "#ffc107",
         contrastText: "#131313"
       },
       background: {
@@ -23,13 +23,17 @@ const themeConfigs = {
       footericon: {
         main: '#858585'
       },
+      graycolor: {
+        one: "#313131",
+        two: "#414141"
+      }
     } : {
       primary: {
-        main: "#ffc107", //078660
+        main: "#ff9800", //078660
         contrastText: "#131313",
       },
       secondary: {
-        main: "#ff9800",
+        main: "#ffc107",
         contrastText: "#fff8e1"
       },
       background: {
@@ -38,6 +42,10 @@ const themeConfigs = {
       },
       footericon: {
         main: '#858585'
+      },
+      graycolor: {
+        one: "#eeeeee",
+        two: "#e0e0e0"
       }
     };
 

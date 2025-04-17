@@ -32,6 +32,7 @@ const CommonLayout = () => {
           flexGrow={1}
           overflow="hidden"
           minHeight="100vh"
+          maxWidth="100vw"
         >
           <Outlet />
         </Box>

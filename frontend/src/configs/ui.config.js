@@ -14,7 +14,9 @@ const uiConfigs = {
         },
         light: {
           backgroundImage: "linear-gradient(to right, rgba(245,245,245,1), rgba(0,0,0,0))"
-        }
+        }},
+      mainGradient: {
+        color: "linear-gradient(90deg, #ff9800, #ffc107)"
       },
       typoLines: (lines, textAlign) => ({
         textAlign: textAlign || "justify",

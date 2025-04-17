@@ -107,7 +107,7 @@ const App = () => {
               )
             )}
           </Route>
-          <Route path="/auth/" element={<EmptyLayout />}>
+          <Route path="/main/" element={<EmptyLayout />}>
             {specialRoutes.map((route, index) =>
               route.index ? (
                 <Route
