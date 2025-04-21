@@ -15,6 +15,7 @@ import { useDispatch, useSelector } from "react-redux";
 // import Cookies from 'js-cookie';
 import themeConfigs, { themeModes } from "../configs/theme.config";
 import { useNavigate } from "react-router-dom";
+import uiConfig from "../configs/ui.config";
 
 
 // const swal = require('sweetalert2')
@@ -101,8 +102,8 @@ const SigninForm = ({ switchAuthState }) => {
         <Typography sx={{ textAlign: 'center', color: 'inherit' }} variant="body2">Unlock Your Knowledge, Ignite Your Fun!</Typography>
       </Box>
       <Stack spacing={2} sx={{ mb: 3 }}>
-        <Button variant="outlined" size="large" startIcon={<GoogleIcon />} sx={{ color: 'inherit', borderColor: 'inherit', '&:hover': { borderColor: 'inherit' } }}>Sign in with Google</Button>
-        <Divider sx={{ fontSize: 'body2' }}><Typography variant="caption">or Sign in with Email</Typography></Divider>
+        {/* <Button variant="outlined" size="large" startIcon={<GoogleIcon />} sx={{ color: 'inherit', borderColor: 'inherit', '&:hover': { borderColor: 'inherit' } }}>Sign in with Google</Button> */}
+        {/* <Divider sx={{ fontSize: 'body2' }}><Typography variant="caption">or Sign in with Email</Typography></Divider> */}
         <TextField
           type="text"
           placeholder="mail@example.com"
@@ -111,9 +112,9 @@ const SigninForm = ({ switchAuthState }) => {
           fullWidth
           value={signinForm.values.email}
           onChange={signinForm.handleChange}
-          color="success"
           error={signinForm.touched.email && signinForm.errors.email !== undefined}
           helperText={signinForm.touched.email && signinForm.errors.email}
+          sx={{}}
           required
         />
         <TextField
@@ -121,10 +122,10 @@ const SigninForm = ({ switchAuthState }) => {
           placeholder="Min. 8 Characters"
           name="password"
           label="Password"
+          sx={{color:'primary.main'}}
           fullWidth
           value={signinForm.values.password}
           onChange={signinForm.handleChange}
-          color="success"
           error={signinForm.touched.password && signinForm.errors.password !== undefined}
           helperText={signinForm.touched.password && signinForm.errors.password}
           required
@@ -141,11 +142,10 @@ const SigninForm = ({ switchAuthState }) => {
         size="large"
         variant="contained"
         sx={{
-          color:
-            themeMode === themeModes.dark
-              ? "secondary.contrastText"
-              : "primary.contrastText",
+          background:uiConfig.style.mainGradient.color,
           mt: 4,
+          borderRadius:100,
+          color:'secondary.contrastText'
         }}
         loading={isLoginRequest}
       >

@@ -80,16 +80,16 @@ const Header = () => {
         <AppBar
           position="sticky"
           sx={{
-            backgroundColor: "transparent",
+            backgroundColor: "none",
             boxShadow: "none",
           }}
         >
           <Toolbar
             disableGutters
             sx={{
-              backgroundColor: "transparent",
+              backgroundColor: "none",
               boxShadow: "none",
-              backdropFilter: `blur(5px)`,
+              // backdropFilter: `blur(5px)`,
             }}
           >
             <Box
@@ -99,6 +99,7 @@ const Header = () => {
                 justifyContent: "center",
                 display: "flex",
                 alignItems: "center",
+                backgroundColor: themeMode === themeModes.dark ? "#121212" : "#ffffff",
               }}
             >
               <Box
@@ -116,6 +117,7 @@ const Header = () => {
                   alignItems: "center",
                   position: "relative",
                   padding: "12px",
+                  backgroundColor: "background.default",
                 }}
               >
                 <IconButton

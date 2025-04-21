@@ -5,21 +5,22 @@ import DashboardProfilePage from "../pages/DashboardProfilePage";
 import DashboardDocumentPage from "../pages/DashboardDocumentPage";
 import ChatHistoryPage from "../pages/ChatHistoryPage";
 import ChatBookmarkPage from "../pages/ChatBookmarkPage";
+import DashboardMainPage from "../pages/DashboardMainPage";
 
 export const routesGen = {
   dashboard: "/",
 };
 
 const dashboardRoutes = [
-  // {
-  //     index: true,
-  //     element: (
-  //         <ProtectedPage>
-  //             <DashboardChat/>
-  //         </ProtectedPage>
-  //     ),
-  //     state: "dashboard"
-  // },
+  {
+      index: true,
+      element: (
+          <ProtectedPage>
+              <DashboardMainPage/>
+          </ProtectedPage>
+      ),
+      state: "dashboard"
+  },
   {
     path: "/dashboard/chat",
     element: (
