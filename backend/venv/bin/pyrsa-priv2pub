@@ -1,8 +1,0 @@
-#!/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/venv/bin/python
-# -*- coding: utf-8 -*-
-import re
-import sys
-from rsa.util import private_to_public
-if __name__ == '__main__':
-    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
-    sys.exit(private_to_public())
