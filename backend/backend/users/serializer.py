@@ -3,26 +3,33 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email')
+        fields = ('id', 'user_id', 'username', 'email', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'user_id', 'created_at', 'updated_at')
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
         
-        # These are claims, you can add custom claims
-        # token['full_name'] = user.profile.full_name
+        # Add custom claims
+        token['user_id'] = user.user_id
         token['username'] = user.username
         token['email'] = user.email
-        # token['bio'] = user.profile.bio
-        # token['image'] = str(user.profile.image)
-        # token['verified'] = user.profile.verified
-        # ...
+        
+        # Add profile information if it exists
+        try:
+            profile = user.app_profile
+            token['profile_id'] = profile.profile_id
+            token['first_name'] = profile.first_name
+            token['last_name'] = profile.last_name
+        except Exception:
+            # No profile exists
+            pass
+            
         return token
 
 
@@ -30,6 +37,10 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
+    email = serializers.EmailField(
+        required=True,
+        validators=[UniqueValidator(queryset=User.objects.all())]
+    )
 
     class Meta:
         model = User
@@ -46,7 +57,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         user = User.objects.create(
             username=validated_data['username'],
             email=validated_data['email']
-
         )
 
         user.set_password(validated_data['password'])

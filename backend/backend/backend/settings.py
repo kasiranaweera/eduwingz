@@ -42,6 +42,7 @@ INSTALLED_APPS = [
 
     # Custom
     'users',
+    'app',
 
     # Third Party
     'rest_framework',
@@ -188,3 +189,6 @@ CORS_ALLOW_ALL_ORIGINS = True
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = '/media/'

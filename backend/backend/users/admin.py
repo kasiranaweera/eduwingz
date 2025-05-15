@@ -1,13 +1,10 @@
 from django.contrib import admin
-from users.models import User,Profile
+from users.models import User
 
 class UserAdmin(admin.ModelAdmin):
-    list_display = ['username', 'email']
-
-
-class ProfileAdmin(admin.ModelAdmin):
-    list_editable = ['verified']
-    list_display = ['user', 'full_name' ,'verified']
+    list_display = ['user_id', 'username', 'email', 'date_joined', 'last_login', 'is_active']
+    search_fields = ['user_id', 'username', 'email']
+    list_filter = ['is_active', 'is_staff', 'date_joined']
+    readonly_fields = ['user_id', 'last_login', 'date_joined']
 
 admin.site.register(User, UserAdmin)
-admin.site.register( Profile,ProfileAdmin)
