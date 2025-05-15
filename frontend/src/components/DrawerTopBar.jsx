@@ -121,7 +121,11 @@ const CustomDrawer = styled(Drawer, {
 }));
 
 const DrawerTopBar = ({ special, content }) => {
-  const { user } = useSelector((state) => state.user);
+  // const { user } = useSelector((state) => state.user);
+  const user = {username: "Kasi"}
+
+  const dashboardType = "chats"
+
   const { themeMode } = useSelector((state) => state.themeMode);
   const { appState } = useSelector((state) => state.appState);
   const dispatch = useDispatch();
@@ -258,6 +262,7 @@ const DrawerTopBar = ({ special, content }) => {
                   p: 2,
                 }}
               >
+                {dashboardType === "chat" (<Box>
                 <ListItemButton
                     sx={{
                       width:'12vw', px:3,
@@ -273,10 +278,10 @@ const DrawerTopBar = ({ special, content }) => {
                       },
                       background: appState.includes('newchat')
                         ? uiConfigs.style.mainGradient.color
-                        : "unset",
+                        : "none",
                     }}
                     component={Link}
-                    to="/dashboard/chat"
+                    to="/dashboard/new-chat"
                   >
                     <AddCommentOutlinedIcon />
                     <ListItemText
@@ -297,7 +302,7 @@ const DrawerTopBar = ({ special, content }) => {
                       color: appState.includes(item.state)
                         ? "secondary.contrastText"
                         : "primary.contrastText",
-                      borderRadius: 100,
+                      borderRadius: 100,  
                       marginY: 1,
                       "&:hover": {
                         color: appState.includes(item.state)
@@ -306,7 +311,42 @@ const DrawerTopBar = ({ special, content }) => {
                       },
                       background: appState.includes(item.state)
                         ? uiConfigs.style.mainGradient.color
-                        : "unset",
+                        : "none",
+                    }}
+                    component={Link}
+                    to={item.path}
+                  >
+                    {item.icon}
+                    <ListItemText
+                      sx={{ ml: 2, textAlign: "left", fontWeight:800}}
+                      disableTypography
+                      primary={
+                        <Typography textTransform="uppercase">
+                          {item.display}
+                        </Typography>
+                      }
+                    />
+                  </ListItemButton>
+                ))}
+                </Box>)}
+                <Divider orientation="horizontal" flexItem />
+                {menuConfigs.dashboardCommon.map((item, index) => (
+                  <ListItemButton
+                    sx={{
+                      width:'12vw', px:3,
+                      color: appState.includes(item.state)
+                        ? "secondary.contrastText"
+                        : "primary.contrastText",
+                      borderRadius: 100,  
+                      marginY: 1,
+                      "&:hover": {
+                        color: appState.includes(item.state)
+                          ? "secondary.contrastText"
+                          : "primary.main",
+                      },
+                      background: appState.includes(item.state)
+                        ? uiConfigs.style.mainGradient.color
+                        : "none",
                     }}
                     component={Link}
                     to={item.path}
@@ -327,22 +367,22 @@ const DrawerTopBar = ({ special, content }) => {
                 <ListItemButton
                     sx={{
                       width:'12vw', px:3,
-                      color: appState.includes('newchat')
+                      color: appState.includes('eduplatform')
                         ? "secondary.contrastText"
                         : "primary.contrastText",
                       borderRadius: 100,
                       marginY: 1,
                       "&:hover": {
-                        color: appState.includes('newchat')
+                        color: appState.includes('eduplatform')
                           ? "secondary.contrastText"
                           : "primary.main",
                       },
-                      background: appState.includes('newchat')
+                      background: appState.includes('eduplatform')
                         ? uiConfigs.style.mainGradient.color
-                        : "unset",
+                        : "none",
                     }}
                     component={Link}
-                    to="/dashboard/chat"
+                    to="/dashboard/platform"
                   >
                     <DashboardIcon />
                     <ListItemText
@@ -375,8 +415,9 @@ const DrawerTopBar = ({ special, content }) => {
               anchorEl={anchorEl2}
               onClose={() => setAnchorEl2(null)}
               PaperProps={{
-                sx: { padding: 0 },
+                sx: { padding: 1 },
                 "&:hover": { color: "primary.main" },
+          
               }}
             >
               <ListItemButton
@@ -450,10 +491,20 @@ const DrawerTopBar = ({ special, content }) => {
             >
               <IconButton
                 sx={{
-                  "&:hover": { color: "primary.main" },
-                  color: "primary.contrastText",
+                  color: appState.includes('newchat')
+                        ? "secondary.contrastText"
+                        : "primary.contrastText",
+                      "&:hover": {
+                        color: appState.includes('newchat')
+                          ? "secondary.contrastText"
+                          : "primary.main",
+                      },
+                      background: appState.includes('newchat')
+                        ? uiConfigs.style.mainGradient.color
+                        : "none",
+
                 }}
-                href="dashboard/chat"
+                href="/dashboard/new-chat"
               >
                 <AddCommentOutlinedIcon />
               </IconButton>
@@ -471,7 +522,31 @@ const DrawerTopBar = ({ special, content }) => {
                           : "primary.contrastText",
                           background: appState.includes(item.state)
                         ? uiConfigs.style.mainGradient.color
-                        : "unset",
+                        : "none",
+                      }}
+                      href={item.path}
+                    >
+                      
+                      {item.icon}
+                    </IconButton>
+                  </ListItem>
+                </List>
+              ))}
+              <Divider orientation="horizontal" flexItem />
+              {menuConfigs.dashboardCommon.map((item, index) => (
+                <List disablePadding>
+                  <ListItem disablePadding>
+                    <IconButton
+                      sx={{
+                        "&:hover": { color: appState.includes(item.state)
+                          ? "secondary.contrastText"
+                          : "primary.main", },
+                          color: appState.includes(item.state)
+                          ? "secondary.contrastText"
+                          : "primary.contrastText",
+                          background: appState.includes(item.state)
+                        ? uiConfigs.style.mainGradient.color
+                        : "none",
                       }}
                       href={item.path}
                     >
@@ -484,8 +559,17 @@ const DrawerTopBar = ({ special, content }) => {
               <Divider orientation="horizontal" flexItem />
               <IconButton
                 sx={{
-                  "&:hover": { color: "primary.main" },
-                  color: "primary.contrastText",
+                  color: appState.includes('eduplatform')
+                        ? "secondary.contrastText"
+                        : "primary.contrastText",
+                      "&:hover": {
+                        color: appState.includes('eduplatform')
+                          ? "secondary.contrastText"
+                          : "primary.main",
+                      },
+                      background: appState.includes('eduplatform')
+                        ? uiConfigs.style.mainGradient.color
+                        : "none",
                 }}
                 href="/dashboard/platform"
               >

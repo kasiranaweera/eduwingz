@@ -1,5 +1,5 @@
 import { ThemeProvider } from "@mui/material/styles";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import themeConfigs from "./configs/theme.config";
 import { ToastContainer } from "react-toastify";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -18,8 +18,20 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
+import { useEffect } from "react";
+import { setUser } from "./redux/features/userSlice";
+
 const App = () => {
   const { themeMode } = useSelector((state) => state.themeMode);
+
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      dispatch(setUser(JSON.parse(savedUser)));
+    }
+  }, [dispatch]);
 
   return (
     <ThemeProvider theme={themeConfigs.custom({ mode: themeMode })}>
