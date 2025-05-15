@@ -32,7 +32,7 @@ const MainBoardPage = () => {
         >{`How's it going, ${user.username} ?`}</Typography>
         <Box sx={{width:'100%'}}>
           <Box sx={{ justifyContent: "center", display: "flex" }}>
-            <ChatSection sx={{ width: "50vw" }} />
+            <ChatSection sx={{ width: "50vw" }} main='true'/>
           </Box>
 
           <Divider sx={{ my: 3, width:'75vw' }} />
@@ -45,7 +45,7 @@ const MainBoardPage = () => {
             }}
           >
             <Link
-              href="/dashboard/chat"
+              href="/dashboard/new-chat"
               underline="none"
               color="primary.contrastText"
             >

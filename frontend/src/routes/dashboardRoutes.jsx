@@ -1,10 +1,11 @@
-import DashboardChatPage from "../pages/DashboardChatPage";
+import DashboardChatPage from "../pages/ChatPage";
 import ProtectedPage from "../components/ProtectedPage";
 import DashboardPlatformPage from "../pages/DashboardPlatformPage";
 import DashboardProfilePage from "../pages/DashboardProfilePage";
 import DashboardDocumentPage from "../pages/DashboardDocumentPage";
 import ChatHistoryPage from "../pages/ChatHistoryPage";
 import ChatBookmarkPage from "../pages/ChatBookmarkPage";
+import DashboardChatNewPage from "../pages/ChatNewPage";
 import DashboardMainPage from "../pages/DashboardMainPage";
 
 export const routesGen = {
@@ -13,22 +14,31 @@ export const routesGen = {
 
 const dashboardRoutes = [
   {
-      index: true,
+    index: true,
+    element: (
+        <ProtectedPage>
+            <DashboardMainPage/>
+        </ProtectedPage>
+    ),
+    state: "main"
+},
+  {
+      path:'/dashboard/new-chat',
       element: (
-          <ProtectedPage>
-              <DashboardMainPage/>
-          </ProtectedPage>
+          // <ProtectedPage>
+              <DashboardChatNewPage/>
+          // </ProtectedPage>
       ),
-      state: "dashboard"
+      state: "newchat"
   },
   {
     path: "/dashboard/chat",
     element: (
-      <ProtectedPage>
+      // <ProtectedPage>
         <DashboardChatPage />
-      </ProtectedPage>
+      // </ProtectedPage>
     ),
-    state: "chat",
+    state: "educhat",
   },
   {
     path: "/dashboard/platform",
@@ -37,7 +47,7 @@ const dashboardRoutes = [
         <DashboardPlatformPage />
       </ProtectedPage>
     ),
-    state: "platform",
+    state: "eduplatform",
   },
   {
     path: "/dashboard/profile",
@@ -69,20 +79,20 @@ const dashboardRoutes = [
   {
     path: "/dashboard/chat-hitory",
     element: (
-      <ProtectedPage>
+      //<ProtectedPage>
         <ChatHistoryPage />
-      </ProtectedPage>
+      //</ProtectedPage>
     ),
     state: "chathitory",
   },
   {
     path: "/dashboard/chat-bookmarks",
     element: (
-      <ProtectedPage>
+      // <ProtectedPage>
         <ChatBookmarkPage />
-      </ProtectedPage>
+      // </ProtectedPage>
     ),
-    state: "chat-bookmarks",
+    state: "chatbookmarks",
   },
 ];
 

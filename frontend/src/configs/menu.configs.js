@@ -7,15 +7,14 @@ import FileCopyOutlinedIcon from "@mui/icons-material/FileCopyOutlined";
 import YouTubeIcon from "@mui/icons-material/YouTube";
 import FacebookIcon from "@mui/icons-material/Facebook";
 import InstagramIcon from "@mui/icons-material/Instagram";
-import HomeIcon from "@mui/icons-material/Home";
-import QuizIcon from "@mui/icons-material/Quiz";
-import InsightsIcon from "@mui/icons-material/Insights";
-import Diversity2Icon from "@mui/icons-material/Diversity2";
-import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
 import PortraitIcon from "@mui/icons-material/Portrait";
-import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
-import HistoryIcon from '@mui/icons-material/History';
-import BookmarksOutlinedIcon from '@mui/icons-material/BookmarksOutlined';
+import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
+import HistoryIcon from "@mui/icons-material/History";
+import BookmarksOutlinedIcon from "@mui/icons-material/BookmarksOutlined";
+import QuizIcon from '@mui/icons-material/Quiz';
+import SourceIcon from '@mui/icons-material/Source';
+import InsightsIcon from '@mui/icons-material/Insights';
+import GraphicEqOutlinedIcon from '@mui/icons-material/GraphicEqOutlined';
 
 const main = [
   {
@@ -116,22 +115,49 @@ const dashboardChat = [
     display: "Edu - Chat",
     path: "/dashboard/chat",
     icon: <ChatOutlinedIcon />,
-    state: "chat",
+    state: "educhat",
   },
   {
     display: "History",
     path: "/dashboard/chat-hitory",
     icon: <HistoryIcon />,
-    state: "history",
+    state: "chathitory",
   },
   {
     display: "Bookmarks",
     path: "/dashboard/chat-bookmarks",
     icon: <BookmarksOutlinedIcon />,
-    state: "bookmarks",
+    state: "chatbookmarks",
   },
 ];
 
-const menuConfigs = { main, footMenu, socialMedia, user, dashboardChat };
+const dashboardCommon = [
+  {
+    display: "Quizzes",
+    path: "/dashboard/quizzes",
+    icon: <QuizIcon />,
+    state: "quizzes",
+  },
+  {
+    display: "Documents",
+    path: "/dashboard/documents",
+    icon: <SourceIcon />,
+    state: "documents",
+  },
+  {
+    display: "Analytics",
+    path: "/dashboard/analytics",
+    icon: <InsightsIcon />,
+    state: "analytics",
+  },
+  {
+    display: "Mine Horizon",
+    path: "/dashboard/mine-horizon",
+    icon: <GraphicEqOutlinedIcon />,
+    state: "minehorizon",
+  },
+];
+
+const menuConfigs = { main, footMenu, socialMedia, user, dashboardChat, dashboardCommon };
 
 export default menuConfigs;
