@@ -2,8 +2,8 @@ import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import DownloadIcon from "@mui/icons-material/Download";
 import AccessibilityIcon from "@mui/icons-material/Accessibility";
-import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
-import LockResetOutlinedIcon from "@mui/icons-material/LockResetOutlined";
+import InsertChartOutlinedOutlinedIcon from "@mui/icons-material/InsertChartOutlinedOutlined";
+import FileCopyOutlinedIcon from "@mui/icons-material/FileCopyOutlined";
 import YouTubeIcon from "@mui/icons-material/YouTube";
 import FacebookIcon from "@mui/icons-material/Facebook";
 import InstagramIcon from "@mui/icons-material/Instagram";
@@ -13,6 +13,9 @@ import InsightsIcon from "@mui/icons-material/Insights";
 import Diversity2Icon from "@mui/icons-material/Diversity2";
 import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
 import PortraitIcon from "@mui/icons-material/Portrait";
+import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
+import HistoryIcon from '@mui/icons-material/History';
+import BookmarksOutlinedIcon from '@mui/icons-material/BookmarksOutlined';
 
 const main = [
   {
@@ -64,26 +67,26 @@ const footMenu = [
     state: "team",
   },
   {
-    display: "privacy & Regulations",
+    display: "privacy",
     path: "/privacy",
     state: "privacy",
   },
 ];
 const socialMedia = [
   {
-    path: '#',
-    icon: <YouTubeIcon fontSize="large"/>,
-    state: 'youtube',
+    path: "#",
+    icon: <YouTubeIcon fontSize="large" />,
+    state: "youtube",
   },
   {
-    path: '#',
-    icon: <FacebookIcon fontSize="large"/>,
-    state: 'facebook',
+    path: "#",
+    icon: <FacebookIcon fontSize="large" />,
+    state: "facebook",
   },
   {
-    path: '#',
-    icon: <InstagramIcon fontSize="large"/>,
-    state: 'instagram',
+    path: "#",
+    icon: <InstagramIcon fontSize="large" />,
+    state: "instagram",
   },
 ];
 
@@ -92,22 +95,43 @@ const user = [
     display: "profile",
     path: "/dashboard/profile",
     icon: <PortraitIcon />,
-    state: "profile"
+    state: "profile",
   },
   {
-    display: "reviews",
-    path: "/reviews",
-    icon: <RateReviewOutlinedIcon />,
-    state: "reviews"
+    display: "progress",
+    path: "/dashboard/progress",
+    icon: <InsertChartOutlinedOutlinedIcon />,
+    state: "progress",
   },
   {
-    display: "password update",
-    path: "/password-update",
-    icon: <LockResetOutlinedIcon />,
-    state: "password.update"
-  }
+    display: "documents",
+    path: "/dashboard/documents",
+    icon: <FileCopyOutlinedIcon />,
+    state: "documents",
+  },
 ];
 
-const menuConfigs = { main, footMenu, socialMedia, user};
+const dashboardChat = [
+  {
+    display: "Edu - Chat",
+    path: "/dashboard/chat",
+    icon: <ChatOutlinedIcon />,
+    state: "chat",
+  },
+  {
+    display: "History",
+    path: "/dashboard/chat-hitory",
+    icon: <HistoryIcon />,
+    state: "history",
+  },
+  {
+    display: "Bookmarks",
+    path: "/dashboard/chat-bookmarks",
+    icon: <BookmarksOutlinedIcon />,
+    state: "bookmarks",
+  },
+];
+
+const menuConfigs = { main, footMenu, socialMedia, user, dashboardChat };
 
 export default menuConfigs;

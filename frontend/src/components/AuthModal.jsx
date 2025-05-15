@@ -6,7 +6,7 @@ import Logo from "./common/Logo";
 import SigninForm from "./SigninForm";
 import SignupForm from "./SignupForm";
 import { themeModes } from "../configs/theme.config";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
 import { setThemeMode } from "../redux/features/themeModeSlice";
@@ -22,6 +22,8 @@ const actionState = {
 const AuthModal = () => {
   const { authModalOpen } = useSelector((state) => state.authModal);
   const { themeMode } = useSelector((state) => state.themeMode);
+    const { appState } = useSelector((state) => state.appState);
+
 
   const dispatch = useDispatch();
 
@@ -44,6 +46,8 @@ const AuthModal = () => {
   const specialDivRef = useRef(null);
 
   const height = window.innerHeight;
+
+  const navigate = useNavigate()
 
   return (
     <Modal
@@ -68,14 +72,13 @@ const AuthModal = () => {
             ref={specialDivRef}
             sx={{
               display: "flex",
-              direction: "row",
               justifyContent: "space-between",
               alignItems: "center",
               position: { md: "absolute", xs: "relative" },
               p: 3,
               left: "0%",
               width: { md: "100%", xs: "100%" },
-              height: height / 10,
+              height: '72px',
               background: `linear-gradient(180deg, ${
                 themeMode === themeModes.dark
                   ? "rgba(0,0,0,1)"
@@ -98,8 +101,7 @@ const AuthModal = () => {
                 width: "100px",
               }}
               variant="outlined"
-              component={Link}
-              to="/home"
+              onClick={() => appState.includes('home')? handleClose() : handleClose() && navigate('/home') }
             >
               Home
             </Button>
@@ -139,9 +141,10 @@ const AuthModal = () => {
             sx={{
               padding: 3,
               border: 1,
-              width: "30vw",
+              width: "25vw",
+              height: "auto",
               justifyItems: "center",
-              borderRadius: 3,
+              borderRadius: 5,
               borderColor:
                 themeMode === themeModes.dark
                   ? "rgba(255, 255, 255, 0.2)"

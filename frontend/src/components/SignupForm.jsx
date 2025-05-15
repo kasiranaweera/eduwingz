@@ -20,6 +20,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import GoogleIcon from "@mui/icons-material/Google";
 import themeConfigs, { themeModes } from "../configs/theme.config";
+import uiConfigs from "../configs/ui.config";
 
 
 // const swal = require('sweetalert2')
@@ -117,7 +118,7 @@ const SignupForm = ({ switchAuthState }) => {
         </Typography>
       </Box>
       <Stack spacing={2} sx={{ mb: 3 }}>
-        <Button
+        {/* <Button
           variant="outlined"
           size="large"
           startIcon={<GoogleIcon />}
@@ -131,7 +132,7 @@ const SignupForm = ({ switchAuthState }) => {
         </Button>
         <Divider sx={{ fontSize: "body2" }}>
           <Typography variant="caption">or Sign in with Email</Typography>
-        </Divider>
+        </Divider> */}
         <Box
           sx={{
             display: "grid",
@@ -147,7 +148,7 @@ const SignupForm = ({ switchAuthState }) => {
             fullWidth
             value={signinForm.values.firstname}
             onChange={signinForm.handleChange}
-            color="success"
+            // color="success"
             error={
               signinForm.touched.firstname &&
               signinForm.errors.firstname !== undefined
@@ -165,7 +166,6 @@ const SignupForm = ({ switchAuthState }) => {
             fullWidth
             value={signinForm.values.lastname}
             onChange={signinForm.handleChange}
-            color="success"
             error={
               signinForm.touched.lastname &&
               signinForm.errors.lastname !== undefined
@@ -185,7 +185,6 @@ const SignupForm = ({ switchAuthState }) => {
           required
           value={signinForm.values.username}
           onChange={signinForm.handleChange}
-          color="success"
           error={
             signinForm.touched.username &&
             signinForm.errors.username !== undefined
@@ -201,7 +200,6 @@ const SignupForm = ({ switchAuthState }) => {
           required
           value={signinForm.values.email}
           onChange={signinForm.handleChange}
-          color="success"
           error={
             signinForm.touched.email && signinForm.errors.email !== undefined
           }
@@ -216,7 +214,6 @@ const SignupForm = ({ switchAuthState }) => {
           fullWidth
           value={signinForm.values.password}
           onChange={signinForm.handleChange}
-          color="success"
           error={
             signinForm.touched.password &&
             signinForm.errors.password !== undefined
@@ -232,7 +229,6 @@ const SignupForm = ({ switchAuthState }) => {
           fullWidth
           value={signinForm.values.confirmPassword}
           onChange={signinForm.handleChange}
-          color="success"
           error={
             signinForm.touched.confirmPassword &&
             signinForm.errors.confirmPassword !== undefined
@@ -251,11 +247,10 @@ const SignupForm = ({ switchAuthState }) => {
         variant="contained"
         loading={isLoginRequest}
         sx={{
-          color:
-            themeMode === themeModes.dark
-              ? "secondary.contrastText"
-              : "primary.contrastText",
+          background:uiConfigs.style.mainGradient.color,
           mt: 1,
+          borderRadius:100,
+          color:'secondary.contrastText'
         }}
       >
         create an account
@@ -267,7 +262,7 @@ const SignupForm = ({ switchAuthState }) => {
           onClick={() => switchAuthState()}
           underline="none"
         >
-          Login
+          Login Now
         </Link>
       </Typography>
 

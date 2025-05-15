@@ -19,6 +19,9 @@ import { setThemeMode } from "../redux/features/themeModeSlice";
 import UserMenu from "./UserMenu";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import { setAuthModalOpen } from "../redux/features/authModalSlice";
+import uiConfigs from "../configs/ui.config";
+import MenuIcon from "@mui/icons-material/Menu";
+import Sidebar from "./Sidebar";
 
 const ScrollAppBar = ({ children, window }) => {
   const { themeMode } = useSelector((state) => state.themeMode);
@@ -53,6 +56,10 @@ const Header = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  console.log('userdata 123', user);
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const onSwithTheme = () => {
     const theme =
       themeMode === themeModes.dark ? themeModes.light : themeModes.dark;
@@ -64,125 +71,153 @@ const Header = () => {
   //   // navigate("/auth");
   // }
 
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+
   return (
-    <ScrollAppBar>
-      <AppBar
-        position="sticky"
-        sx={{
-          backgroundColor: "transparent",
-          boxShadow: "none",
-        }}
-      >
-        <Toolbar
-          disableGutters
+    <>
+      <Sidebar open={sidebarOpen} toggleSidebar={toggleSidebar} />
+      <ScrollAppBar>
+        <AppBar
+          position="sticky"
           sx={{
-            backgroundColor: "transparent",
+            backgroundColor: "none",
             boxShadow: "none",
-            backdropFilter: `blur(5px)`,
           }}
         >
-          <Box
+          <Toolbar
+            disableGutters
             sx={{
-              width: "100%",
-              height: "80px",
-              justifyContent: "center",
-              display: "flex",
-              alignItems: "center",
+              backgroundColor: "none",
+              boxShadow: "none",
+              // backdropFilter: `blur(5px)`,
             }}
           >
             <Box
               sx={{
-                width: "95%",
-                height: "64px",
-                border: 2,
-                borderColor:
-                  themeMode === themeModes.dark
-                    ? "primary.main"
-                    : "primary.main",
-                borderRadius: 5,
+                width: "100vw",
+                height: "80px",
+                justifyContent: "center",
                 display: "flex",
-                justifyContent: "space-between",
                 alignItems: "center",
-                position: "relative",
-                padding: "12px",
+                backgroundColor: themeMode === themeModes.dark ? "#121212" : "#ffffff",
               }}
             >
-              <Logo />
               <Box
                 sx={{
-                  display: "block",
-                  justifyContent: "center",
+                  width: "95%",
+                  height: "72px",
+                  border: 2,
+                  borderColor:
+                    themeMode === themeModes.dark
+                      ? "primary.main"
+                      : "primary.main",
+                  borderRadius: 100,
+                  display: "flex",
+                  justifyContent: "space-between",
                   alignItems: "center",
                   position: "relative",
+                  padding: "12px",
+                  backgroundColor: "background.default",
                 }}
               >
-                {menuConfigs.main.map((item, index) => (
-                  <Button
-                    key={index}
-                    sx={
-                      appState.includes(item.state)
-                        ? {
-                            mr: 1,
-                            color:
-                              themeMode === themeModes.dark
-                                ? "secondary.contrastText"
-                                : "primary.contrastText",
-                          }
-                        : {
-                            mr: 1,
-                            color:
-                              themeMode === themeModes.dark
-                                ? "primary.contrastText"
-                                : "primary.contrastText",
-                          }
-                    }
-                    component={Link}
-                    to={item.path}
-                    variant={
-                      appState.includes(item.state) ? "contained" : "text"
-                    }
-                  >
-                    {item.display}
-                  </Button>
-                ))}
-              </Box>
-              <Stack spacing={1} direction="row" alignItems="center">
                 <IconButton
                   sx={{
+                    display: { xs: "flex", md: "none" },
+                    "&:hover": { color: "primary.main" },
                     color:
                       themeMode === themeModes.dark
                         ? "primary.contrastText"
                         : "primary.contrastText",
                   }}
-                  onClick={onSwithTheme}
+                  onClick={toggleSidebar}
                 >
-                  {themeMode === themeModes.light && <DarkModeOutlinedIcon />}
-                  {themeMode === themeModes.dark && <WbSunnyOutlinedIcon />}
+                  <MenuIcon />
                 </IconButton>
-                {!user && (
-                  <Button
-                    variant="contained"
-                    onClick={() => {
-                      // navigate("/auth");
-                      dispatch(setAuthModalOpen(true));
-                    }}
+                <Logo />
+                <Box
+                  sx={{
+                    display: { xs: "none", md: "block" },
+                    justifyContent: "center",
+                    alignItems: "center",
+                    position: "relative",
+                  }}
+                >
+                  {menuConfigs.main.map((item, index) => (
+                    <Button
+                      key={index}
+                      sx={
+                        appState.includes(item.state)
+                          ? {
+                              mr: 1,
+                              borderRadius: 100,
+                              background: uiConfigs.style.mainGradient.color,
+                              color:
+                                themeMode === themeModes.dark
+                                  ? "secondary.contrastText"
+                                  : "primary.contrastText",
+                            }
+                          : {
+                              mr: 1,
+                              "&:hover": { color: "primary.main" },
+                              borderRadius: 100,
+                              color:
+                                themeMode === themeModes.dark
+                                  ? "primary.contrastText"
+                                  : "primary.contrastText",
+                            }
+                      }
+                      component={Link}
+                      to={item.path}
+                      variant={
+                        appState.includes(item.state) ? "contained" : "text"
+                      }
+                    >
+                      {item.display}
+                    </Button>
+                  ))}
+                </Box>
+                <Stack spacing={1} direction="row" alignItems="center">
+                  <IconButton
                     sx={{
+                      display: { xs: "none", md: "flex" },
+                      "&:hover": { color: "primary.main" },
                       color:
                         themeMode === themeModes.dark
-                          ? "secondary.contrastText"
+                          ? "primary.contrastText"
                           : "primary.contrastText",
                     }}
+                    onClick={onSwithTheme}
                   >
-                    sign in
-                  </Button>
-                )}
-                {user && <UserMenu />}
-              </Stack>
+                    {themeMode === themeModes.light && <DarkModeOutlinedIcon />}
+                    {themeMode === themeModes.dark && <WbSunnyOutlinedIcon />}
+                  </IconButton>
+                  {!user && (
+                    <Button
+                      variant="contained"
+                      onClick={() => {
+                        // navigate("/auth");
+                        dispatch(setAuthModalOpen(true));
+                      }}
+                      sx={{
+                        background: uiConfigs.style.mainGradient.color,
+                        borderRadius: 100,
+                        color:
+                          themeMode === themeModes.dark
+                            ? "secondary.contrastText"
+                            : "primary.contrastText",
+                      }}
+                    >
+                      sign in
+                    </Button>
+                  )}
+                  {user && <UserMenu />}
+                </Stack>
+              </Box>
             </Box>
-          </Box>
-        </Toolbar>
-      </AppBar>
-    </ScrollAppBar>
+          </Toolbar>
+        </AppBar>
+      </ScrollAppBar>
+    </>
   );
 };
 

@@ -1,16 +1,15 @@
-import React, { useEffect } from 'react'
-import Header from '../Header'
-import Footer from '../Footer'
-import { Box } from '@mui/material'
+import React, { useEffect } from "react";
+import Header from "../Header";
+import Footer from "../Footer";
+import { Box } from "@mui/material";
 import { Outlet } from "react-router-dom";
-import GlobalLoading from '../GlobalLoading'
-import { useDispatch, useSelector } from 'react-redux';
-import userApi from '../../api/modules/user.api';
-import { setUser } from '../../redux/features/userSlice';
-import AuthModal from '../AuthModal';
+import GlobalLoading from "../GlobalLoading";
+import { useDispatch, useSelector } from "react-redux";
+import userApi from "../../api/modules/user.api";
+import { setUser } from "../../redux/features/userSlice";
+import AuthModal from "../AuthModal";
 
 const CommonLayout = () => {
-
   return (
     <>
       {/* pre loader */}
@@ -21,7 +20,7 @@ const CommonLayout = () => {
       <AuthModal />
       {/* login modal */}
 
-      <Box display='inline' minHeight="100vh">
+      <Box display="inline" minHeight="100vh">
         {/* header */}
         <Header />
         {/* header */}
@@ -32,17 +31,18 @@ const CommonLayout = () => {
           flexGrow={1}
           overflow="hidden"
           minHeight="100vh"
+          maxWidth="100vw"
         >
           <Outlet />
         </Box>
         {/* main */}
+        
+        {/* footer */}
+        <Footer />
+        {/* footer */}
       </Box>
-
-      {/* footer */}
-      <Footer />
-      {/* footer */}
     </>
-  )
-}
+  );
+};
 
-export default CommonLayout
+export default CommonLayout;

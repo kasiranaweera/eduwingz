@@ -93,8 +93,8 @@ const AuthPage = () => {
                 width: "100px",
               }}
               variant="outlined"
-              component={Link}
-              to="/home"
+              componet={Link}
+              to='/home'
             >
               Home
             </Button>

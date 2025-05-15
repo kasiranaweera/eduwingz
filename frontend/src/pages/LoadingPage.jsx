@@ -31,7 +31,7 @@ const LoadingPage = () => {
       setProgress((prevProgress) => {
         if (prevProgress >= 100) {
           clearInterval(interval); // Stop the interval when progress reaches 100%
-          navigate('/home'); // Redirect to the home page
+          navigate("/home"); // Redirect to the home page
           return 100;
         }
         return prevProgress + 10; // Increment progress by 10%
@@ -64,9 +64,10 @@ const LoadingPage = () => {
       >
         <IconButton
           sx={{
+            "&:hover": { color: "primary.main" },
             color:
               themeMode === themeModes.dark
-                ? "primary.main"
+                ? "primary.contrastText"
                 : "primary.contrastText",
           }}
           onClick={onSwithTheme}
@@ -104,7 +105,9 @@ const LoadingPage = () => {
         {/* <Typography variant="h4" gutterBottom sx={{fontFamily:'Russo One', mt: 2}}> 
           A personalized virtual learning experience
         </Typography> */}
-        <ShinyText variant="h4" sx={{fontFamily:'Russo One', mt: 2}}>A personalized virtual learning experience</ShinyText>
+        <ShinyText variant="h4" sx={{ fontFamily: "Russo One", mt: 2 }}>
+          A personalized virtual learning experience
+        </ShinyText>
         <Box sx={{ width: "20%", margin: "0 auto", mt: 2 }}>
           <LinearProgress variant="buffer" value={progress} />
         </Box>

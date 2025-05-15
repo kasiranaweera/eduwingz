@@ -7,6 +7,7 @@ import AboutPage from "../pages/AboutPage"
 import TechnologyPage from "../pages/TechnologyPage"
 import TeamPage from "../pages/TeamPage"
 import PrivacyPage from "../pages/PrivacyPage"
+import MainBoardPage from "../pages/MainBoardPage"
 
 export const routesGen = {
   home: "/",
@@ -62,6 +63,11 @@ const commonRoutes = [
     path: "/privacy",
     element: <PrivacyPage />,
     state: "privacy",
+  },
+  {
+    path: "/main",
+    element: <MainBoardPage />,
+    state: "main",
   },
 ];
 
