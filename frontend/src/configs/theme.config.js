@@ -9,7 +9,7 @@ const themeConfigs = {
   custom: ({ mode }) => {
     const customPalette = mode === themeModes.dark ? {
       primary: {
-        main: "#ff9800", // 4CF59A, 13FD00 
+        main: "#ff9800",
         contrastText: "#fafafa",
       },
       secondary: {
@@ -29,7 +29,7 @@ const themeConfigs = {
       }
     } : {
       primary: {
-        main: "#ff9800", //078660
+        main: "#ff9800",
         contrastText: "#131313",
       },
       secondary: {
@@ -38,7 +38,7 @@ const themeConfigs = {
       },
       background: {
         default: "#fafafa",
-        paper: "#fafafa" // #4CF59A
+        paper: "#fafafa"
       },
       footericon: {
         main: '#858585'
