@@ -8,6 +8,8 @@ import {
   TableContainer,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import FeedbackCard from "../components/FeedbackCard";
 import ObjectCard from "../components/ObjectCard";
@@ -27,7 +29,8 @@ import contentData from "../assets/contentData.js";
 import Image3D from "../assets/img/3d-image_2.jpg";
 import { useState } from "react";
 import { LoadingButton } from "@mui/lab";
-import uiConfigs from "../configs/ui.config";
+import FloatingElement from "../components/common/FloatingElement";
+import DarkVeil from "../components/common/DarkVeil";
 
 const feedbackData = [
   {
@@ -40,7 +43,10 @@ const feedbackData = [
 
 const HomePage = () => {
   const { themeMode } = useSelector((state) => state.themeMode);
+  const theme = useTheme();
   const [value, setValue] = useState(0);
+  const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
+
 
   const settings = {
     dots: true,
@@ -64,82 +70,113 @@ const HomePage = () => {
   return (
     <Box className="section" sx={{ p: 0, m: 0 }}>
       <Box
-        sx={{
-          backgroundImage:
-            themeMode === themeModes.dark
-              ? `url(${bgImageDark})`
-              : `url(${bgImageLight})`,
-          backgroundSize: "cover",
-          height: "100vh",
-          position: "relative", // Add this to make absolute positioning work
-        }}
+        sx={
+          {
+            // backgroundImage:
+            //   themeMode === themeModes.dark
+            //     ? `url(${bgImageDark})`
+            //     : `url(${bgImageLight})`,
+            // backgroundSize: "cover",
+            // height: "100vh",
+            // position: "relative", // Add this to make absolute positioning work
+          }
+        }
       >
-        {/* Position the Particles absolutely to cover the entire container */}
-        <Box
-          sx={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 1,
-          }}
-        >
-          <Particles />
+        <Box sx={{ width: "100%", height: {md:"800px", xs:'700px' }, position: "absolute" }}>
+          {themeMode === themeModes.dark ? <DarkVeil /> : <></>}
+          <Box
+            sx={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 1,
+            }}
+          >
+            <Particles />
+          </Box>
         </Box>
 
         {/* Your content section with a higher z-index to appear above particles */}
         <Box sx={{ position: "relative", zIndex: 2 }}>
           {/* Hero Section */}
-          <Box
+          <Container
             sx={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
-              px: 15,
-              py: 10,
+              justifyContent: "center",
+              py: {md:10, xs: 5},
             }}
           >
             <Stack
-              spacing={5}
+              spacing={{md:5, xs: 2}}
               sx={{
-                width: "40%",
-                backdropFilter: `blur(5px)`,
-                p: 3,
+                backdropFilter: `blur(1px)`,
+                py: 3,
+                px: 5,
                 borderRadius: 3,
+                justifyContent: "center",
+                textAlign: "center",
               }}
             >
+              <Box sx={{ display: "flex", justifyContent: "center" }}>
+                <FloatingElement label="🎓 Transform YourLearning Experience Today!" />
+              </Box>
               <Box>
-                <Typography variant="h3" sx={{ fontWeight: 600 }}>
-                  Transform Learning with
+                <Typography
+                  variant={isMdUp ? "h3" : "h4"}
+                  sx={{ fontWeight: 500, textAlign: "center" }}
+                >
+                  AI-Powered Learning Can Revolutionize <br /> Your Education
                 </Typography>
-                <Box sx={{ width: "75%" }}>
+                <Box sx={{ justifyContent: "center", display: "flex", mt: 2 }}>
                   <Typography
-                    variant="h1"
+                    variant={isMdUp ? "h1" : "h2"}
                     sx={{
                       fontWeight: 600,
                       fontFamily: "Russo One",
                       background: uiConfig.style.mainGradient.color,
                       WebkitBackgroundClip: "text",
                       WebkitTextFillColor: "transparent",
+                      textAlign: "center",
                     }}
                   >
                     EduWingz
                   </Typography>
                 </Box>
-                <Typography variant="h3" sx={{ fontWeight: 600 }}>
-                  Your AI-Powered <br /> Teaching Assistant
+                <Typography
+                  variant={isMdUp ? "h4" : "h5"}
+                  sx={{ fontWeight: 600, textAlign: "center" }}
+                >
+                  AI-Powered Teaching Assistant
                 </Typography>
               </Box>
-              <Typography variant="h6">
-                Personalized education that adapts to each student's unique
-                learning style. So Welcome and Start your journey with
-                EduWingz...
+              <Typography sx={{ textAlign: "center" }} variant={isMdUp ? "h6" : "body2"}>
+                Experience personalized education with our AI teaching assistant
+                that adapts to Your learning style, tracks your progress,
+                and provides customized lessons for
+            optimal learning outcomes.
               </Typography>
-              <Box>
+              <Box sx={{ display:"flex", justifyContent: "center", gap:{md: 2, xs: 1}, alignItems: "center",flexDirection: {md:"row", xs:"column"}}}>
                 <Button
                   sx={{
-                    backgroundColor: "graycolor.two",
+                    background: uiConfig.style.mainGradient.color,
+                    py: 1,
+                    px: 3,
+                    borderRadius: 100,
+                    color: "secondary.contrastText",
+                    "&:hover": {  },
+                  }}
+                  component={Link}
+                  to="/main"
+                  size='small'
+                >
+                  Start Your Journey
+                </Button>
+                <Button
+                variant="outlined"
+                  sx={{
                     py: 1,
                     px: 3,
                     borderRadius: 100,
@@ -147,21 +184,22 @@ const HomePage = () => {
                     "&:hover": { color: "primary.main" },
                   }}
                   component={Link}
-                  to="/main"
+                  to="/"
+                  size='small'
                 >
-                  Experience Personalized Learning
+                  Demo Video
                 </Button>
               </Box>
             </Stack>
-            <Box sx={{ width: "40%" }}>
+            {/* <Box sx={{ width: "40%" }}>
               <img
                 style={{ transform: "scaleX(-1)" }}
                 src={hero_img}
                 alt="hero_img"
                 width="100%"
               />
-            </Box>
-          </Box>
+            </Box> */}
+          </Container>
         </Box>
       </Box>
 
@@ -653,7 +691,7 @@ const HomePage = () => {
                   variant="contained"
                   // loading={isLoginRequest}
                   sx={{
-                    background: uiConfigs.style.mainGradient.color,
+                    background: uiConfig.style.mainGradient.color,
                     mt: 4,
                     borderRadius: 100,
                     color: "secondary.contrastText",
