@@ -18,6 +18,8 @@ import uiConfigs from "../configs/ui.config";
 import SchoolIcon from "@mui/icons-material/School";
 import PersonIcon from "@mui/icons-material/Person";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import { Stack } from "@mui/system";
+import ObjectCard from "../components/ObjectCard";
 
 const FeaturesPage = () => {
   const studentBenefits = [
@@ -110,6 +112,16 @@ const FeaturesPage = () => {
           ))}
         </Grid>
 
+        <Box>
+                    <Stack
+                      direction="row"
+                      spacing={2.5}
+                      sx={{ justifyContent: "center" }}
+                    >
+                      <ObjectCard />
+                    </Stack>
+                  </Box>
+
         {/* Key Features */}
         <Typography
           variant="h4"
@@ -117,6 +129,7 @@ const FeaturesPage = () => {
           gutterBottom
           textAlign="center"
           mb={4}
+          sx={{mt:10}}
         >
           Key Features
         </Typography>

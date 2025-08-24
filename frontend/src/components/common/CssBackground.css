@@ -1,0 +1,74 @@
+@keyframes hero-gradient-animation {
+  0% {
+    --s-start-0: 9%;
+    --s-end-0: 55%;
+    --x-0: 85%;
+    --y-0: 80%;
+    --c-0: hsla(46, 100%, 94%, 1);
+    --c-1: hsla(45, 100%, 85%, 1);
+    --x-1: 60%;
+    --s-start-1: 5%;
+    --s-end-1: 72%;
+    --y-1: 24%;
+  }
+
+  100% {
+    --s-start-0: 9%;
+    --s-end-0: 55%;
+    --x-0: 31%;
+    --y-0: 94%;
+    --c-0: hsla(36.77, 100%, 93%, 1);
+    --c-1: hsla(220, 0%, 98%, 1);
+    --x-1: 2%;
+    --s-start-1: 5%;
+    --s-end-1: 72%;
+    --y-1: 25%;
+  }
+}
+
+/* --- CSS Custom Properties --- */
+@property --s-start-0 { syntax: '<percentage>'; inherits: false; initial-value: 9% }
+@property --s-end-0 { syntax: '<percentage>'; inherits: false; initial-value: 55% }
+@property --x-0 { syntax: '<percentage>'; inherits: false; initial-value: 85% }
+@property --y-0 { syntax: '<percentage>'; inherits: false; initial-value: 80% }
+@property --c-0 { syntax: '<color>'; inherits: false; initial-value: hsla(46, 100%, 94%, 1) }
+@property --c-1 { syntax: '<color>'; inherits: false; initial-value: hsla(45, 100%, 85%, 1) }
+@property --x-1 { syntax: '<percentage>'; inherits: false; initial-value: 60% }
+@property --s-start-1 { syntax: '<percentage>'; inherits: false; initial-value: 5% }
+@property --s-end-1 { syntax: '<percentage>'; inherits: false; initial-value: 72% }
+@property --y-1 { syntax: '<percentage>'; inherits: false; initial-value: 24% }
+@property --x-2 { syntax: '<percentage>'; inherits: false; initial-value: 13% }
+@property --s-start-2 { syntax: '<percentage>'; inherits: false; initial-value: 5% }
+@property --s-end-2 { syntax: '<percentage>'; inherits: false; initial-value: 52% }
+@property --y-2 { syntax: '<percentage>'; inherits: false; initial-value: 82% }
+@property --c-2 { syntax: '<color>'; inherits: false; initial-value: hsla(38, 100%, 75%, 1) }
+@property --x-3 { syntax: '<percentage>'; inherits: false; initial-value: 95% }
+@property --y-3 { syntax: '<percentage>'; inherits: false; initial-value: 92% }
+@property --s-start-3 { syntax: '<percentage>'; inherits: false; initial-value: 13% }
+@property --s-end-3 { syntax: '<percentage>'; inherits: false; initial-value: 68% }
+@property --c-3 { syntax: '<color>'; inherits: false; initial-value: hsla(48, 100%, 74%, 1) }
+
+.hero-bg {
+  --x-0: 85%;
+  --y-0: 80%;
+  --c-0: hsla(46, 100%, 94%, 1);
+  --c-1: hsla(45, 100%, 85%, 1);
+  --x-1: 60%;
+  --y-1: 24%;
+  --x-2: 13%;
+  --y-2: 82%;
+  --c-2: hsla(38, 100%, 75%, 1);
+  --x-3: 95%;
+  --y-3: 92%;
+  --c-3: hsla(48, 100%, 74%, 1);
+
+  background-color: hsla(0, 0%, 100%, 1);
+  background-image:
+    radial-gradient(circle at var(--x-0) var(--y-0), var(--c-0) var(--s-start-0), transparent var(--s-end-0)),
+    radial-gradient(circle at var(--x-1) var(--y-1), var(--c-1) var(--s-start-1), transparent var(--s-end-1)),
+    radial-gradient(circle at var(--x-2) var(--y-2), var(--c-2) var(--s-start-2), transparent var(--s-end-2)),
+    radial-gradient(circle at var(--x-3) var(--y-3), var(--c-3) var(--s-start-3), transparent var(--s-end-3));
+
+  animation: hero-gradient-animation 20s linear infinite alternate-reverse;
+  background-blend-mode: normal, normal, normal, normal;
+}
