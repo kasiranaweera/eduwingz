@@ -1,8 +1,11 @@
-import { Avatar, Box, Rating, Typography } from "@mui/material";
+import { Avatar, Box, Rating, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { Stack } from "@mui/system";
 import React from "react";
 
 const FeedbackCard = ({ name, comment, stars }) => {
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
+  
   function stringToColor(string) {
     let hash = 0;
     let i;
@@ -54,8 +57,8 @@ const FeedbackCard = ({ name, comment, stars }) => {
   return (
     <Box
       sx={{
+        gridColumn: { md: "span 3", xs: "span 12", sm: "span 6" },
         backgroundColor: "graycolor.one",
-        width: "25%",
         p: 3,
         height: "350px",
         display: "flex",
@@ -64,7 +67,15 @@ const FeedbackCard = ({ name, comment, stars }) => {
         borderBottom: 1,
         borderLeft: 1,
         borderColor: "primary.main",
-        mx: 1.5,
+        transition: "all 0.3s",
+        transform: "translateY(0px)",
+        "&:hover": {
+          boxShadow: 3,
+          borderTop: 1,
+          borderRight: 1,
+          transform: "translateY(-5px)",
+          borderColor: "primary.main",
+        },
       }}
     >
       <Stack
@@ -74,13 +85,13 @@ const FeedbackCard = ({ name, comment, stars }) => {
       >
         <Avatar {...stringAvatar(name)} />
         <Typography
-          variant="h6"
+          variant={isMdUp ? "h6" : "body1"}
           sx={{ textAlign: "center", fontWeight: "500" }}
         >
           {" "}
           {name}
         </Typography>
-        <Typography sx={{ textAlign: "center", color: "#BEBCBC" }}>
+        <Typography variant={isMdUp ? "body1" : "body2"} sx={{ textAlign: "center", color: 'primary.ContrastText', fontWeight:300}}>
           {comment.length > 100 ? `${comment.substring(0, 100)}...` : comment}
         </Typography>
         <Rating readOnly name="size-large" value={stars} size="large" />
