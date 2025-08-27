@@ -1,9 +1,6 @@
-from django.shortcuts import render
 from django.http import JsonResponse
 from users.models import User
-
 from users.serializer import MyTokenObtainPairSerializer, RegisterSerializer, UserSerializer
-
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -34,8 +31,6 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
 
-
-# Get All Routes
 @api_view(['GET'])
 def getRoutes(request):
     routes = [
@@ -46,7 +41,6 @@ def getRoutes(request):
         'info/'
     ]
     return Response(routes)
-
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])

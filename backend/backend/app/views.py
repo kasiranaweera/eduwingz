@@ -1,7 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics, permissions
-from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.exceptions import NotFound
 from .models import Profile, Notification
 from .serializers import ProfileSerializer, ProfileUpdateSerializer, NotificationSerializer
@@ -9,7 +8,7 @@ from users.models import User
 from backend.errors import APIErrorResponse
 
 class UserProfileDetail(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [permissions.AllowAny]
     
     def get(self, request, user_id=None, format=None):
         """Get profile by user_id"""
@@ -18,7 +17,6 @@ class UserProfileDetail(APIView):
                 profile = Profile.objects.get(user__id=int(user_id))
             else:
                 profile = Profile.objects.get(user__user_id=user_id)
-
             serializer = ProfileSerializer(profile)
             return Response(serializer.data)
         except Profile.DoesNotExist:
@@ -33,41 +31,30 @@ class UserProfileDetail(APIView):
                 profile = Profile.objects.get(user__id=int(user_id))
             else:
                 profile = Profile.objects.get(user__user_id=user_id)
-
             serializer = ProfileUpdateSerializer(profile, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
         except Profile.DoesNotExist:
             return APIErrorResponse.not_found("Profile not found")
         except Exception as e:
             return APIErrorResponse.server_error(str(e))
 
-# class NotificationListCreateAPIView(APIView):
-#     permission_classes = [AllowAny]
-
-#     def get(self, request):
-#         notifications = Notification.objects.filter(user=request.user)
-#         serializer = NotificationSerializer(notifications, many=True)
-#         return Response(serializer.data)
-
 class NotificationListCreateAPIView(generics.ListAPIView):
-    permission_classes = [AllowAny]
-    
+    permission_classes = [permissions.AllowAny]
     serializer_class = NotificationSerializer
     queryset = Notification.objects.all()
 
 class NotificationDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [permissions.AllowAny]
     serializer_class = NotificationSerializer
 
     def get_queryset(self):
-        return Notification.objects.all() 
-    
+        return Notification.objects.all()
+
 class UserNotificationAPIView(APIView):
-    permission_classes = [permissions.AllowAny] 
+    permission_classes = [permissions.AllowAny]
 
     def get_user(self, user_id):
         try:
@@ -86,8 +73,7 @@ class UserNotificationAPIView(APIView):
     def post(self, request, user_id):
         user = self.get_user(user_id)
         data = request.data.copy()
-        data['user'] = user.id  # Set foreign key as ID
-
+        data['user'] = user.id
         serializer = NotificationSerializer(data=data)
         if serializer.is_valid():
             serializer.save(user=user)

@@ -15,7 +15,6 @@ class User(AbstractUser, TimeStampedModel):
         return self.user_id if self.user_id != 'user_id' else self.username
     
     def save(self, *args, **kwargs):
-        # Generate a unique user_id if it's the default value
         if self.user_id == 'user_id' and self.id:
             self.user_id = create_user_id(self.id)
         super().save(*args, **kwargs)

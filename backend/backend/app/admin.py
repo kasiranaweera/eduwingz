@@ -13,7 +13,6 @@ class OtherDetailAdmin(admin.ModelAdmin):
     list_display = ('id', 'subject', 'avg_hours', 'time_period', 'strength', 'style')
     search_fields = ('subject', 'strength', 'style')
 
-
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'title', 'notification_type', 'created_at')

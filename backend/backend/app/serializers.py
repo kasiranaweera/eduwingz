@@ -9,7 +9,6 @@ class OtherDetailSerializer(serializers.ModelSerializer):
         fields = ['id', 'subject', 'avg_hours', 'time_period', 'strength', 'style']
 
 class ProfileSerializer(serializers.ModelSerializer):
-    # user = UserSerializer(read_only=True)
     other = OtherDetailSerializer(read_only=True)
 
     class Meta:
@@ -45,32 +44,22 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         other_data = validated_data.pop('other', None)
-
-        # Update Profile fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-
         instance.save()
-
-        # Create or update OtherDetail
         if other_data:
             if instance.other:
-                # Update existing OtherDetail
                 for attr, value in other_data.items():
                     setattr(instance.other, attr, value)
                 instance.other.save()
             else:
-                # Create new OtherDetail
                 other = OtherDetail.objects.create(**other_data)
                 instance.other = other
                 instance.save()
-
         return instance
-    
 
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = ['id', 'user', 'title', 'content', 'notification_type', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
-

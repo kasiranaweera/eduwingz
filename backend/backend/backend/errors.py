@@ -8,7 +8,6 @@ def custom_exception_handler(exc, context):
     """
     response = exception_handler(exc, context)
     
-    # If response is None, there was an unexpected error
     if response is None:
         return Response(
             {"detail": "An unexpected error occurred."},
