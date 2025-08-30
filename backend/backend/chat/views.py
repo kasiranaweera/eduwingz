@@ -66,7 +66,9 @@ class ChatSessionDetailView(APIView):
                         "message_type": msg.message_type,
                         "content": msg.content,
                         "context": json.loads(msg.context) if msg.context else None,
-                        "timestamp": msg.timestamp
+                        "timestamp": msg.timestamp,
+                        "parent_message_id": str(msg.parent_message_id) if msg.parent_message else None,
+                        "child_message_id": str(msg.child_messages.first().id) if msg.child_messages.exists() else None
                     }
                     for msg in messages
                 ]
@@ -96,8 +98,63 @@ class ChatMessageView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
+    def get(self, request, session_id, message_id=None):
+        """Retrieve all messages in a session or a specific message pair"""
+        try:
+            session = ChatSession.objects.get(id=session_id, user=request.user)
+            if message_id:
+                # Retrieve specific message pair
+                try:
+                    user_message = Message.objects.get(id=message_id, session=session, message_type="user")
+                    assistant_message = user_message.child_messages.first()
+                    response_data = {
+                        "user_message": {
+                            "id": str(user_message.id),
+                            "message_type": user_message.message_type,
+                            "content": user_message.content,
+                            "context": None,
+                            "timestamp": user_message.timestamp
+                        },
+                        "assistant_message": {
+                            "id": str(assistant_message.id),
+                            "message_type": assistant_message.message_type,
+                            "content": assistant_message.content,
+                            "context": json.loads(assistant_message.context) if assistant_message.context else None,
+                            "timestamp": assistant_message.timestamp
+                        } if assistant_message else None
+                    }
+                    return Response(response_data)
+                except Message.DoesNotExist:
+                    return APIErrorResponse.not_found("Message not found")
+            else:
+                # Retrieve all messages, grouped as pairs
+                messages = session.message_set.filter(message_type="user")
+                response_data = []
+                for user_message in messages:
+                    assistant_message = user_message.child_messages.first()
+                    pair = {
+                        "user_message": {
+                            "id": str(user_message.id),
+                            "message_type": user_message.message_type,
+                            "content": user_message.content,
+                            "context": None,
+                            "timestamp": user_message.timestamp
+                        },
+                        "assistant_message": {
+                            "id": str(assistant_message.id),
+                            "message_type": assistant_message.message_type,
+                            "content": assistant_message.content,
+                            "context": json.loads(assistant_message.context) if assistant_message.context else None,
+                            "timestamp": assistant_message.timestamp
+                        } if assistant_message else None
+                    }
+                    response_data.append(pair)
+                return Response(response_data)
+        except ChatSession.DoesNotExist:
+            return APIErrorResponse.not_found("Session not found")
+
     def post(self, request, session_id):
-        """Send a message and get a response from FastAPI"""
+        """Create a new user-assistant message pair"""
         try:
             session = ChatSession.objects.get(id=session_id, user=request.user)
             content = request.data.get("content")
@@ -123,12 +180,13 @@ class ChatMessageView(APIView):
                 response.raise_for_status()
                 fastapi_data = response.json()
 
-                # Store assistant message
+                # Store assistant message, linking to user message
                 assistant_message = Message.objects.create(
                     session=session,
                     message_type="assistant",
                     content=fastapi_data["answer"],
-                    context=json.dumps(fastapi_data.get("context", []))
+                    context=json.dumps(fastapi_data.get("context", [])),
+                    parent_message=user_message
                 )
 
                 # Update session title if empty
@@ -155,6 +213,81 @@ class ChatMessageView(APIView):
             except requests.RequestException as e:
                 logger.error(f"Error proxying to FastAPI: {str(e)}")
                 return APIErrorResponse.server_error(str(e))
+        except ChatSession.DoesNotExist:
+            return APIErrorResponse.not_found("Session not found")
+
+    def put(self, request, session_id, message_id):
+        """Update a user-assistant message pair"""
+        try:
+            session = ChatSession.objects.get(id=session_id, user=request.user)
+            try:
+                user_message = Message.objects.get(id=message_id, session=session, message_type="user")
+                assistant_message = user_message.child_messages.first()
+                if not assistant_message:
+                    return APIErrorResponse.bad_request("No assistant message linked to this user message")
+                
+                new_content = request.data.get("content")
+                if not new_content:
+                    return APIErrorResponse.bad_request("Content is required")
+
+                # Update user message
+                user_message.content = new_content
+                user_message.save()
+
+                # Reprocess through FastAPI for updated assistant response
+                fastapi_url = f"{settings.FASTAPI_URL}/api/chat/process"
+                headers = {"Authorization": f"Bearer {request.auth}"}
+                try:
+                    response = requests.post(
+                        fastapi_url,
+                        headers=headers,
+                        json={"content": new_content, "session_id": str(session_id)}
+                    )
+                    response.raise_for_status()
+                    fastapi_data = response.json()
+
+                    # Update assistant message
+                    assistant_message.content = fastapi_data["answer"]
+                    assistant_message.context = json.dumps(fastapi_data.get("context", []))
+                    assistant_message.save()
+
+                    return Response({
+                        "user_message": {
+                            "id": str(user_message.id),
+                            "message_type": user_message.message_type,
+                            "content": user_message.content,
+                            "context": None,
+                            "timestamp": user_message.timestamp
+                        },
+                        "assistant_message": {
+                            "id": str(assistant_message.id),
+                            "message_type": assistant_message.message_type,
+                            "content": assistant_message.content,
+                            "context": fastapi_data.get("context"),
+                            "timestamp": assistant_message.timestamp
+                        }
+                    })
+                except requests.RequestException as e:
+                    logger.error(f"Error proxying to FastAPI: {str(e)}")
+                    return APIErrorResponse.server_error(str(e))
+            except Message.DoesNotExist:
+                return APIErrorResponse.not_found("Message not found")
+        except ChatSession.DoesNotExist:
+            return APIErrorResponse.not_found("Session not found")
+
+    def delete(self, request, session_id, message_id):
+        """Delete a user-assistant message pair"""
+        try:
+            session = ChatSession.objects.get(id=session_id, user=request.user)
+            try:
+                user_message = Message.objects.get(id=message_id, session=session, message_type="user")
+                assistant_message = user_message.child_messages.first()
+                user_message.delete()
+                if assistant_message:
+                    assistant_message.delete()
+                return Response({"message": "Message pair deleted successfully"})
+            except Message.DoesNotExist:
+                return APIErrorResponse.not_found("Message not found")
         except ChatSession.DoesNotExist:
             return APIErrorResponse.not_found("Session not found")
 

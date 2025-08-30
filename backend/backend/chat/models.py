@@ -18,10 +18,11 @@ class ChatSession(models.Model):
 class Message(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     session = models.ForeignKey(ChatSession, on_delete=models.CASCADE)
-    message_type = models.CharField(max_length=50)
+    message_type = models.CharField(max_length=50)  # 'user' or 'assistant'
     content = models.TextField()
     context = models.TextField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
+    parent_message = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='child_messages')
 
     class Meta:
         db_table = 'messages'
