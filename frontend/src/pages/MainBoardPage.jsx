@@ -81,7 +81,7 @@ const MainBoardPage = () => {
                     EduWingz - Chat
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: "300" }}>
-                    Find answers tailored to your learning patterns with our
+                    Find answers tailored to your learning patterns with
                     intelligent chat system.
                   </Typography>
                 </Box>
