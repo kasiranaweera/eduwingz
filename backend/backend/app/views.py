@@ -2,13 +2,14 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics, permissions
 from rest_framework.exceptions import NotFound
-from .models import Profile, Notification
-from .serializers import ProfileSerializer, ProfileUpdateSerializer, NotificationSerializer
+from rest_framework.permissions import IsAuthenticated
+from .models import Note, Profile, Notification
+from .serializers import NoteSerializer, ProfileSerializer, ProfileUpdateSerializer, NotificationSerializer
 from users.models import User
 from backend.errors import APIErrorResponse
 
 class UserProfileDetail(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated]
     
     def get(self, request, user_id=None, format=None):
         """Get profile by user_id"""
@@ -42,19 +43,19 @@ class UserProfileDetail(APIView):
             return APIErrorResponse.server_error(str(e))
 
 class NotificationListCreateAPIView(generics.ListAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated]
     serializer_class = NotificationSerializer
     queryset = Notification.objects.all()
 
 class NotificationDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated]
     serializer_class = NotificationSerializer
 
     def get_queryset(self):
         return Notification.objects.all()
 
 class UserNotificationAPIView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get_user(self, user_id):
         try:
@@ -77,5 +78,43 @@ class UserNotificationAPIView(APIView):
         serializer = NotificationSerializer(data=data)
         if serializer.is_valid():
             serializer.save(user=user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class NoteListCreateAPIView(generics.ListCreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = NoteSerializer
+    queryset = Note.objects.all()
+
+class NoteDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = NoteSerializer
+
+    def get_queryset(self):
+        return Note.objects.all()
+
+class UserNoteAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_user(self, user_id):
+        try:
+            if user_id.isdigit():
+                return User.objects.get(id=int(user_id))
+            return User.objects.get(user_id=user_id)
+        except User.DoesNotExist:
+            raise NotFound("User not found")
+
+    def get(self, request, user_id):
+        user = self.get_user(user_id)
+        notes = Note.objects.filter(lesson__user=user).order_by('-id')
+        serializer = NoteSerializer(notes, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, user_id):
+        user = self.get_user(user_id)
+        data = request.data.copy()
+        serializer = NoteSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

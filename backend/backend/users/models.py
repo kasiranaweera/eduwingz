@@ -12,7 +12,8 @@ class User(AbstractUser, TimeStampedModel):
     REQUIRED_FIELDS = ['username']
 
     def __str__(self):
-        return self.user_id if self.user_id != 'user_id' else self.username
+        return self.user_id 
+    # if self.user_id != 'user_id' else self.username
     
     def save(self, *args, **kwargs):
         if self.user_id == 'user_id' and self.id:

@@ -1,9 +1,12 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+const storedToken = localStorage.getItem("actkn");
+
 export const userSlice = createSlice({
   name: 'User',
   initialState: {
-    user: null,
+    user: storedToken ? storedToken : null,
+    // user: null,
     // listFavorites: []
   },
   reducers: {
