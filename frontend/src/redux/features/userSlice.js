@@ -1,24 +1,21 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-const storedToken = localStorage.getItem("actkn");
+const storedUser = localStorage.getItem("user");
+const initialUser = storedUser ? JSON.parse(storedUser) : null;
 
 export const userSlice = createSlice({
   name: 'User',
   initialState: {
-    user: storedToken ? storedToken : null,
-    // user: null,
-    // listFavorites: []
+    user: initialUser,
+    listFavorites: []
   },
   reducers: {
     setUser: (state, action) => {
       if (action.payload === null) {
-        localStorage.removeItem('actkn');
+        localStorage.removeItem('user');
       } else {
-        console.log('Setting user modal open:', action.payload);
-        if (action.payload) localStorage.setItem('actkn', action.payload);
-        
+        localStorage.setItem('user', JSON.stringify(action.payload));
       }
-
       state.user = action.payload;
     },
     setListFavorites: (state, action) => {

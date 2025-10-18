@@ -14,8 +14,8 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import { useNavigate } from "react-router-dom";
 
 const ChatNewPage = () => {
-  // const { user } = useSelector((state) => state.user);
-  const user = {username: "Kasi"}
+  const { user } = useSelector((state) => state.user);
+  // const user = {username: "Kasi"}
 
   const navigate = useNavigate();
 

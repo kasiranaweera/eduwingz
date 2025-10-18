@@ -1,5 +1,5 @@
 import { Box, Stack } from "@mui/system";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Logo from "./common/Logo";
 import UserMenu from "./UserMenu";
 import {
@@ -22,7 +22,7 @@ import {
   Typography,
 } from "@mui/material";
 import menuConfigs from "../configs/menu.configs";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { setUser } from "../redux/features/userSlice";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
@@ -121,14 +121,21 @@ const CustomDrawer = styled(Drawer, {
 }));
 
 const DrawerTopBar = ({ special, content }) => {
-  // const { user } = useSelector((state) => state.user);
-  const user = {username: "Kasi"}
-
-  const dashboardType = "chats"
-
+  const dispatch = useDispatch();
+  const location = useLocation();
+  const { user } = useSelector((state) => state.user);
   const { themeMode } = useSelector((state) => state.themeMode);
   const { appState } = useSelector((state) => state.appState);
-  const dispatch = useDispatch();
+
+  // Ensure user is loaded
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser && !user) {
+      dispatch(setUser(JSON.parse(savedUser)));
+    }
+  }, [dispatch, user]);
+
+  const dashboardType = "chats";
   const [anchorEl, setAnchorEl] = useState(null);
   const [anchorEl2, setAnchorEl2] = useState(null);
   const toggleMenu = (e) => setAnchorEl(e.currentTarget);
@@ -151,7 +158,7 @@ const DrawerTopBar = ({ special, content }) => {
   };
 
   return special === "true" ? (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: "flex" }}>
       <CustomAppBar sx={{ p: 0, m: 0 }} position="fixed">
         <Box
           sx={{
@@ -262,82 +269,158 @@ const DrawerTopBar = ({ special, content }) => {
                   p: 2,
                 }}
               >
-                {dashboardType === "chat" (<Box>
-                <ListItemButton
-                    sx={{
-                      width:'12vw', px:3,
-                      color: appState.includes('newchat')
-                        ? "secondary.contrastText"
-                        : "primary.contrastText",
-                      borderRadius: 100,
-                      marginY: 1,
-                      "&:hover": {
-                        color: appState.includes('newchat')
+                {dashboardType === "chat" && (
+                  <Box>
+                    <ListItemButton
+                      sx={{
+                        width: "12vw",
+                        px: 3,
+                        color: appState.includes("newchat")
                           ? "secondary.contrastText"
-                          : "primary.main",
-                      },
-                      background: appState.includes('newchat')
-                        ? uiConfigs.style.mainGradient.color
-                        : "none",
-                    }}
-                    component={Link}
-                    to="/dashboard/new-chat"
-                  >
-                    <AddCommentOutlinedIcon />
-                    <ListItemText
-                      sx={{ ml: 2, textAlign: "left", fontWeight:800}}
-                      disableTypography
-                      primary={
-                        <Typography textTransform="uppercase">
-                          New chat
-                        </Typography>
-                      }
-                    />
-                  </ListItemButton>
-                <Divider orientation="horizontal" flexItem />
-                {menuConfigs.dashboardChat.map((item, index) => (
-                  <ListItemButton
-                    sx={{
-                      width:'12vw', px:3,
-                      color: appState.includes(item.state)
-                        ? "secondary.contrastText"
-                        : "primary.contrastText",
-                      borderRadius: 100,  
-                      marginY: 1,
-                      "&:hover": {
-                        color: appState.includes(item.state)
+                          : "primary.contrastText",
+                        borderRadius: 100,
+                        marginY: 1,
+                        "&:hover": {
+                          color: appState.includes("newchat")
+                            ? "secondary.contrastText"
+                            : "primary.main",
+                        },
+                        background: appState.includes("newchat")
+                          ? uiConfigs.style.mainGradient.color
+                          : "none",
+                      }}
+                      component={Link}
+                      to="/dashboard/new-chat"
+                    >
+                      <AddCommentOutlinedIcon />
+                      <ListItemText
+                        sx={{ ml: 2, textAlign: "left", fontWeight: 800 }}
+                        disableTypography
+                        primary={
+                          <Typography textTransform="uppercase">
+                            New chat
+                          </Typography>
+                        }
+                      />
+                    </ListItemButton>
+                    <Divider orientation="horizontal" flexItem />
+                    {menuConfigs.dashboardChat.map((item, index) => (
+                      <ListItemButton
+                        sx={{
+                          width: "12vw",
+                          px: 3,
+                          color: appState.includes(item.state)
+                            ? "secondary.contrastText"
+                            : "primary.contrastText",
+                          borderRadius: 100,
+                          marginY: 1,
+                          "&:hover": {
+                            color: appState.includes(item.state)
+                              ? "secondary.contrastText"
+                              : "primary.main",
+                          },
+                          background: appState.includes(item.state)
+                            ? uiConfigs.style.mainGradient.color
+                            : "none",
+                        }}
+                        component={Link}
+                        to={item.path}
+                      >
+                        {item.icon}
+                        <ListItemText
+                          sx={{ ml: 2, textAlign: "left", fontWeight: 800 }}
+                          disableTypography
+                          primary={
+                            <Typography textTransform="uppercase">
+                              {item.display}
+                            </Typography>
+                          }
+                        />
+                      </ListItemButton>
+                    ))}
+                  </Box>
+                )}
+                {dashboardType === "platform" && (
+                  <Box>
+                    <ListItemButton
+                      sx={{
+                        width: "12vw",
+                        px: 3,
+                        color: appState.includes("newchat")
                           ? "secondary.contrastText"
-                          : "primary.main",
-                      },
-                      background: appState.includes(item.state)
-                        ? uiConfigs.style.mainGradient.color
-                        : "none",
-                    }}
-                    component={Link}
-                    to={item.path}
-                  >
-                    {item.icon}
-                    <ListItemText
-                      sx={{ ml: 2, textAlign: "left", fontWeight:800}}
-                      disableTypography
-                      primary={
-                        <Typography textTransform="uppercase">
-                          {item.display}
-                        </Typography>
-                      }
-                    />
-                  </ListItemButton>
-                ))}
-                </Box>)}
+                          : "primary.contrastText",
+                        borderRadius: 100,
+                        marginY: 1,
+                        "&:hover": {
+                          color: appState.includes("newchat")
+                            ? "secondary.contrastText"
+                            : "primary.main",
+                        },
+                        background: appState.includes("newchat")
+                          ? uiConfigs.style.mainGradient.color
+                          : "none",
+                      }}
+                      component={Link}
+                      to="/dashboard/new-chat"
+                    >
+                      <AddCommentOutlinedIcon />
+                      <ListItemText
+                        sx={{ ml: 2, textAlign: "left", fontWeight: 800 }}
+                        disableTypography
+                        primary={
+                          <Typography textTransform="uppercase">
+                            New chat
+                          </Typography>
+                        }
+                      />
+                    </ListItemButton>
+                    <Divider orientation="horizontal" flexItem />
+                    {menuConfigs.dashboardChat.map((item, index) => (
+                      <ListItemButton
+                        sx={{
+                          width: "12vw",
+                          px: 3,
+                          color: appState.includes(item.state)
+                            ? "secondary.contrastText"
+                            : "primary.contrastText",
+                          borderRadius: 100,
+                          marginY: 1,
+                          "&:hover": {
+                            color: appState.includes(item.state)
+                              ? "secondary.contrastText"
+                              : "primary.main",
+                          },
+                          background: appState.includes(item.state)
+                            ? uiConfigs.style.mainGradient.color
+                            : "none",
+                        }}
+                        component={Link}
+                        to={item.path}
+                      >
+                        {item.icon}
+                        <ListItemText
+                          sx={{ ml: 2, textAlign: "left", fontWeight: 800 }}
+                          disableTypography
+                          primary={
+                            <Typography textTransform="uppercase">
+                              {item.display}
+                            </Typography>
+                          }
+                        />
+                      </ListItemButton>
+                    ))}
+                  </Box>
+                )}
                 <Divider orientation="horizontal" flexItem />
                 {menuConfigs.dashboardCommon.map((item, index) => (
                   <ListItemButton
                     sx={{
-                      width:'12vw', px:3,
+                      width: "12vw",
+                      px: 3,
                       color: appState.includes(item.state)
                         ? "secondary.contrastText"
                         : "primary.contrastText",
-                      borderRadius: 100,  
+                      borderRadius: 100,
                       marginY: 1,
                       "&:hover": {
                         color: appState.includes(item.state)
@@ -353,7 +436,7 @@ const DrawerTopBar = ({ special, content }) => {
                   >
                     {item.icon}
                     <ListItemText
-                      sx={{ ml: 2, textAlign: "left", fontWeight:800}}
+                      sx={{ ml: 2, textAlign: "left", fontWeight: 800 }}
                       disableTypography
                       primary={
                         <Typography textTransform="uppercase">
@@ -365,50 +448,63 @@ const DrawerTopBar = ({ special, content }) => {
                 ))}
                 <Divider orientation="horizontal" flexItem />
                 <ListItemButton
-                    sx={{
-                      width:'12vw', px:3,
-                      color: appState.includes('eduplatform')
+                  sx={{
+                    width: "12vw",
+                    px: 3,
+                    color: appState.includes("eduplatform")
+                      ? "secondary.contrastText"
+                      : "primary.contrastText",
+                    borderRadius: 100,
+                    marginY: 1,
+                    "&:hover": {
+                      color: appState.includes("eduplatform")
                         ? "secondary.contrastText"
-                        : "primary.contrastText",
-                      borderRadius: 100,
-                      marginY: 1,
-                      "&:hover": {
-                        color: appState.includes('eduplatform')
-                          ? "secondary.contrastText"
-                          : "primary.main",
-                      },
-                      background: appState.includes('eduplatform')
-                        ? uiConfigs.style.mainGradient.color
-                        : "none",
-                    }}
-                    component={Link}
-                    to="/dashboard/platform"
-                  >
-                    <DashboardIcon />
-                    <ListItemText
-                      sx={{ ml: 2, textAlign: "left", fontWeight:800}}
-                      disableTypography
-                      primary={
-                        <Typography textTransform="uppercase">
-                          Edu - Platform
-                        </Typography>
-                      }
-                    />
-                  </ListItemButton>
+                        : "primary.main",
+                    },
+                    background: appState.includes("eduplatform")
+                      ? uiConfigs.style.mainGradient.color
+                      : "none",
+                  }}
+                  component={Link}
+                  to="/dashboard/platform"
+                >
+                  <DashboardIcon />
+                  <ListItemText
+                    sx={{ ml: 2, textAlign: "left", fontWeight: 800 }}
+                    disableTypography
+                    primary={
+                      <Typography textTransform="uppercase">
+                        Edu - Platform
+                      </Typography>
+                    }
+                  />
+                </ListItemButton>
               </Stack>
             </Box>
-            <Box onClick={toggleMenu2} sx={{display:'flex', alignItems:'center', gap:1}}>
-            {user && <Avatar
-              sx={{ cursor: "pointer", userSelect: "none", textTransform:'uppercase' }}
-              
-            >{user.username[0]}</Avatar>}{!user && <Avatar
-              sx={{ cursor: "pointer", userSelect: "none", }}
-              
-            />}<Box>
-              <Typography>@{user.username}</Typography>
-              <Typography variant="body2" sx={{ fontWeight: "300" }}>{user.email}</Typography>
-
-            </Box>
+            <Box
+              onClick={toggleMenu2}
+              sx={{ display: "flex", alignItems: "center", gap: 1 }}
+            >
+              {user && (
+                <Avatar
+                  sx={{
+                    cursor: "pointer",
+                    userSelect: "none",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {user.username[0]}
+                </Avatar>
+              )}
+              {!user && (
+                <Avatar sx={{ cursor: "pointer", userSelect: "none" }} />
+              )}
+              <Box>
+                <Typography>@{user.username}</Typography>
+                <Typography variant="body2" sx={{ fontWeight: "300" }}>
+                  {user.email}
+                </Typography>
+              </Box>
             </Box>
             <Menu
               open={Boolean(anchorEl2)}
@@ -417,7 +513,6 @@ const DrawerTopBar = ({ special, content }) => {
               PaperProps={{
                 sx: { padding: 1 },
                 "&:hover": { color: "primary.main" },
-          
               }}
             >
               <ListItemButton
@@ -491,18 +586,17 @@ const DrawerTopBar = ({ special, content }) => {
             >
               <IconButton
                 sx={{
-                  color: appState.includes('newchat')
-                        ? "secondary.contrastText"
-                        : "primary.contrastText",
-                      "&:hover": {
-                        color: appState.includes('newchat')
-                          ? "secondary.contrastText"
-                          : "primary.main",
-                      },
-                      background: appState.includes('newchat')
-                        ? uiConfigs.style.mainGradient.color
-                        : "none",
-
+                  color: appState.includes("newchat")
+                    ? "secondary.contrastText"
+                    : "primary.contrastText",
+                  "&:hover": {
+                    color: appState.includes("newchat")
+                      ? "secondary.contrastText"
+                      : "primary.main",
+                  },
+                  background: appState.includes("newchat")
+                    ? uiConfigs.style.mainGradient.color
+                    : "none",
                 }}
                 href="/dashboard/new-chat"
               >
@@ -514,19 +608,20 @@ const DrawerTopBar = ({ special, content }) => {
                   <ListItem disablePadding>
                     <IconButton
                       sx={{
-                        "&:hover": { color: appState.includes(item.state)
-                          ? "secondary.contrastText"
-                          : "primary.main", },
+                        "&:hover": {
                           color: appState.includes(item.state)
+                            ? "secondary.contrastText"
+                            : "primary.main",
+                        },
+                        color: appState.includes(item.state)
                           ? "secondary.contrastText"
                           : "primary.contrastText",
-                          background: appState.includes(item.state)
-                        ? uiConfigs.style.mainGradient.color
-                        : "none",
+                        background: appState.includes(item.state)
+                          ? uiConfigs.style.mainGradient.color
+                          : "none",
                       }}
                       href={item.path}
                     >
-                      
                       {item.icon}
                     </IconButton>
                   </ListItem>
@@ -538,19 +633,20 @@ const DrawerTopBar = ({ special, content }) => {
                   <ListItem disablePadding>
                     <IconButton
                       sx={{
-                        "&:hover": { color: appState.includes(item.state)
-                          ? "secondary.contrastText"
-                          : "primary.main", },
+                        "&:hover": {
                           color: appState.includes(item.state)
+                            ? "secondary.contrastText"
+                            : "primary.main",
+                        },
+                        color: appState.includes(item.state)
                           ? "secondary.contrastText"
                           : "primary.contrastText",
-                          background: appState.includes(item.state)
-                        ? uiConfigs.style.mainGradient.color
-                        : "none",
+                        background: appState.includes(item.state)
+                          ? uiConfigs.style.mainGradient.color
+                          : "none",
                       }}
                       href={item.path}
                     >
-                      
                       {item.icon}
                     </IconButton>
                   </ListItem>
@@ -559,17 +655,17 @@ const DrawerTopBar = ({ special, content }) => {
               <Divider orientation="horizontal" flexItem />
               <IconButton
                 sx={{
-                  color: appState.includes('eduplatform')
-                        ? "secondary.contrastText"
-                        : "primary.contrastText",
-                      "&:hover": {
-                        color: appState.includes('eduplatform')
-                          ? "secondary.contrastText"
-                          : "primary.main",
-                      },
-                      background: appState.includes('eduplatform')
-                        ? uiConfigs.style.mainGradient.color
-                        : "none",
+                  color: appState.includes("eduplatform")
+                    ? "secondary.contrastText"
+                    : "primary.contrastText",
+                  "&:hover": {
+                    color: appState.includes("eduplatform")
+                      ? "secondary.contrastText"
+                      : "primary.main",
+                  },
+                  background: appState.includes("eduplatform")
+                    ? uiConfigs.style.mainGradient.color
+                    : "none",
                 }}
                 href="/dashboard/platform"
               >
@@ -577,13 +673,25 @@ const DrawerTopBar = ({ special, content }) => {
               </IconButton>
             </Stack>
             <Box sx={{}}>
-            {user && <Avatar
-              sx={{ cursor: "pointer", userSelect: "none", textTransform:'uppercase' }}
-              onClick={toggleMenu2}
-            >{user.username[0]}</Avatar>}{!user && <Avatar
-              sx={{ cursor: "pointer", userSelect: "none" }}
-              onClick={toggleMenu2}
-            />}</Box>
+              {user && (
+                <Avatar
+                  sx={{
+                    cursor: "pointer",
+                    userSelect: "none",
+                    textTransform: "uppercase",
+                  }}
+                  onClick={toggleMenu2}
+                >
+                  {user.username[0]}
+                </Avatar>
+              )}
+              {!user && (
+                <Avatar
+                  sx={{ cursor: "pointer", userSelect: "none" }}
+                  onClick={toggleMenu2}
+                />
+              )}
+            </Box>
             <Menu
               open={Boolean(anchorEl2)}
               anchorEl={anchorEl2}
@@ -646,8 +754,8 @@ const DrawerTopBar = ({ special, content }) => {
         )}
       </CustomDrawer>
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-      <DrawerHeader />
-      {content}
+        <DrawerHeader />
+        {content}
       </Box>
     </Box>
   ) : (
