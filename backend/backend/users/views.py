@@ -1,4 +1,3 @@
-from django.http import JsonResponse
 from users.models import User
 from users.serializer import MyTokenObtainPairSerializer, RegisterSerializer, UserSerializer
 from rest_framework.decorators import api_view
@@ -10,6 +9,12 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.views import APIView
 from backend.errors import APIErrorResponse
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.conf import settings
+from django.urls import reverse
 
 class MyGetInfoData(APIView):
     permission_classes = [IsAuthenticated]
@@ -30,6 +35,54 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
+
+    def create(self, request, *args, **kwargs):
+        # Use serializer to validate and create user
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        try:
+            # build verification link
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            # path: /users/verify-email/<uidb64>/<token>/
+            verify_path = f"/users/verify-email/{uid}/{token}/"
+            verify_url = request.build_absolute_uri(verify_path)
+
+            subject = 'Verify your email'
+            message = f'Hi {user.username},\n\nPlease verify your email by clicking the link below:\n{verify_url}\n\nIf you did not register, please ignore this email.'
+            from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@example.com')
+
+            send_mail(subject, message, from_email, [user.email], fail_silently=False)
+        except Exception as e:
+            # Log/send error response if desired; don't fail registration because of email issues
+            pass
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
+class VerifyEmailView(APIView):
+    permission_classes = (AllowAny,)
+
+    def get(self, request, uidb64, token):
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+        except Exception:
+            return APIErrorResponse.bad_request("Invalid verification link")
+
+        try:
+            user = User.objects.get(pk=uid)
+        except User.DoesNotExist:
+            return APIErrorResponse.bad_request("Invalid user")
+
+        if default_token_generator.check_token(user, token):
+            user.is_email_verified = True
+            user.save()
+            return Response({"detail": "Email verified successfully"}, status=status.HTTP_200_OK)
+        else:
+            return APIErrorResponse.bad_request("Invalid or expired token")
 
 @api_view(['GET'])
 def getRoutes(request):

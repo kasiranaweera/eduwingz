@@ -77,6 +77,7 @@ const SigninForm = ({ switchAuthState }) => {
           id: decodedToken.user_id,
           token: response.access
         };
+        console.log(userObject)
         dispatch(setUser(userObject));
         dispatch(setAuthModalOpen(false));
         toast.success("Sign in success");

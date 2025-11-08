@@ -157,6 +157,8 @@ const DrawerTopBar = ({ special, content }) => {
     }
   };
 
+  console.log("location.pathname:", location);
+
   return special === "true" ? (
     <Box sx={{ display: "flex" }}>
       <CustomAppBar sx={{ p: 0, m: 0 }} position="fixed">
@@ -182,9 +184,11 @@ const DrawerTopBar = ({ special, content }) => {
             </IconButton>
             <Divider orientation="vertical" flexItem />
             <Logo />
-            <Typography variant="h5" sx={{ fontWeight: "500" }}>
+            {location.pathname === "/dashboard/profile" ? <Typography variant="h5" sx={{ fontWeight: "500" }}>
+              | Profile
+            </Typography> : <Typography variant="h5" sx={{ fontWeight: "500" }}>
               | Chat
-            </Typography>
+            </Typography>}
           </Stack>
           <Box
             sx={{

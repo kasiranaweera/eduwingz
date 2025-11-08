@@ -3,7 +3,7 @@ import publicClient from "../client/public.client";
 
 const userEndpoints = {
   signin: "users/token/",
-  signup: "user/signup",
+  signup: "users/register/",
   getInfo: "user/info",
   passwordUpdate: "user/update-password"
 };
@@ -20,11 +20,12 @@ const userApi = {
       return { response };
     } catch (err) { console.log("err"); return { err }; }
   },
-  signup: async ({ email, username, password, password2, firstname, lastname }) => {
+  signup: async ({ email, username, password, confirmPassword}) => {
     try {
+      // backend RegisterSerializer expects `password2` as the confirmation field name
       const response = await publicClient.post(
         userEndpoints.signup,
-        { email, username, password, password2, firstname, lastname }
+        { email, username, password, password2: confirmPassword }
       );
 
       return { response };

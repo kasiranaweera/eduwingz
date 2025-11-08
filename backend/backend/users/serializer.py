@@ -7,7 +7,7 @@ from rest_framework.validators import UniqueValidator
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'user_id', 'username', 'email', 'created_at', 'updated_at')
+        fields = ('id', 'user_id', 'username', 'email', 'is_email_verified', 'created_at', 'updated_at')
         read_only_fields = ('id', 'user_id', 'created_at', 'updated_at')
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
