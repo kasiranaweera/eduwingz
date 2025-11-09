@@ -7,6 +7,8 @@ class User(AbstractUser, TimeStampedModel):
     user_id = models.CharField(default='user_id', max_length=100)
     username = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
+    # Indicates whether the user has verified their email address
+    is_email_verified = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']

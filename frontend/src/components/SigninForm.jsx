@@ -70,15 +70,18 @@ const SigninForm = ({ switchAuthState }) => {
 
       if (response) {
         signinForm.resetForm();
-        dispatch(setUser(jwtDecode(response.access)));
+        const decodedToken = jwtDecode(response.access);
+        const userObject = {
+          username: decodedToken.username,
+          email: decodedToken.email,
+          id: decodedToken.user_id,
+          token: response.access
+        };
+        console.log(userObject)
+        dispatch(setUser(userObject));
         dispatch(setAuthModalOpen(false));
-        console.log(response)
         toast.success("Sign in success");
-        // navigate("/home");
-
       } else {
-    //     console.log(response.status);
-    //     console.log("there was a server issue");
         toast.error("Username or password does not exist");
       }
 

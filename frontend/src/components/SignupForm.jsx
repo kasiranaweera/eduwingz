@@ -38,14 +38,14 @@ const SignupForm = ({ switchAuthState }) => {
     initialValues: {
       email: "",
       password: "",
-      firstname: "",
-      lastname: "",
+      // firstname: "",
+      // lastname: "",
       username: "",
       confirmPassword: "",
     },
     validationSchema: Yup.object({
-      firstame: Yup.string().required("username is required"),
-      lastname: Yup.string().required("username is required"),
+      // firstame: Yup.string().required("username is required"),
+      // lastname: Yup.string().required("username is required"),
       email: Yup.string().required("username is required"),
       password: Yup.string()
         .min(8, "password minimum 8 characters")
@@ -59,7 +59,7 @@ const SignupForm = ({ switchAuthState }) => {
     onSubmit: async (values) => {
       setErrorMessage(undefined);
       setIsLoginRequest(true);
-      console.log("asdasdasdasd");
+      console.log("asdasdasdasd", values);
       const { response, err } = await userApi.signup(values);
       setIsLoginRequest(false);
 
@@ -117,7 +117,7 @@ const SignupForm = ({ switchAuthState }) => {
           Unlock Your Knowledge, Ignite Your Fun!
         </Typography>
       </Box>
-      <Stack spacing={2} sx={{ mb: 3 }}>
+      <Stack spacing={2} sx={{ mb: 3, width:350 }}>
         {/* <Button
           variant="outlined"
           size="large"
@@ -133,7 +133,7 @@ const SignupForm = ({ switchAuthState }) => {
         <Divider sx={{ fontSize: "body2" }}>
           <Typography variant="caption">or Sign in with Email</Typography>
         </Divider> */}
-        <Box
+        {/* <Box
           sx={{
             display: "grid",
             gap: 1,
@@ -175,7 +175,7 @@ const SignupForm = ({ switchAuthState }) => {
             }
             required
           />
-        </Box>
+        </Box> */}
         <TextField
           type="text"
           placeholder="john_smith"

@@ -6,6 +6,7 @@ urlpatterns = [
     path('token/', views.MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('register/', views.RegisterView.as_view(), name='auth_register'),
+    path('verify-email/<uidb64>/<token>/', views.VerifyEmailView.as_view(), name='auth_verify_email'),
     path('test/', views.testEndPoint, name='test'),
     path('info/', views.MyGetInfoData.as_view(), name='getdata'),
     path('', views.getRoutes, name='routes'),

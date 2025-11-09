@@ -17,7 +17,8 @@ import {
 import { Container } from "@mui/system";
 import ChatSection from "../components/ChatSection";
 import logoicon from "../assets/logo/eduwingz_logo.png";
-import { useLocation } from "react-router-dom";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
+import chatApi from "../api/modules/chat.api";
 import { useSelector } from "react-redux";
 
 const ChatPage = () => {
@@ -26,6 +27,9 @@ const ChatPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const location = useLocation();
+  // If opened from a session route, `sessionId` will be present in params
+  const { sessionId } = useParams();
+  const navigate = useNavigate();
   const user_message = location.state?.message || "";
   const [messages, setMessages] = useState([
     // {
@@ -58,16 +62,49 @@ const ChatPage = () => {
 
     // Simulate bot response
     setIsLoading(true);
-    setTimeout(() => {
-      const botMessage = {
-        id: messages.length + 2,
-        text: `Response to: "${messageText}"`,
-        sender: "bot",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botMessage]);
-      setIsLoading(false);
-    }, 1500);
+    (async () => {
+      try {
+        // If we have a sessionId, post to backend; otherwise just simulate
+        if (sessionId) {
+          const { response, err } = await chatApi.postMessage(sessionId, { content: messageText });
+          if (err) {
+            console.error('post message error', err);
+            // on auth error, redirect to login
+            if (err?.detail && err.detail.toString().toLowerCase().includes('authentication')) {
+              navigate('/auth');
+              return;
+            }
+          } else if (response) {
+            // response contains user_message and assistant_message
+            const um = response.user_message;
+            const am = response.assistant_message;
+            setMessages((prev) => {
+              const out = [...prev];
+              if (um) out.push({ id: um.id, text: um.content, sender: 'user', timestamp: um.timestamp ? new Date(um.timestamp) : new Date() });
+              if (am) out.push({ id: am.id, text: am.content, sender: 'bot', timestamp: am.timestamp ? new Date(am.timestamp) : new Date() });
+              return out;
+            });
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        // fallback: local simulated response
+        setTimeout(() => {
+          const botMessage = {
+            id: messages.length + 2,
+            text: `Response to: "${messageText}"`,
+            sender: "bot",
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, botMessage]);
+          setIsLoading(false);
+        }, 1500);
+      } catch (e) {
+        console.error(e);
+        setIsLoading(false);
+      }
+    })();
   };
 
   const handleKeyPress = (e) => {
@@ -83,28 +120,73 @@ const ChatPage = () => {
   // }, [messages]);
 
   useEffect(() => {
-    if (user_message) {
-      const userMessage = {
-        id: 1,
-        text: user_message,
-        sender: "user",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, userMessage]);
-  
-      setIsLoading(true);
-      setTimeout(() => {
-        const botMessage = {
-          id: 2,
-          text: `Response to: "${user_message}"`,
-          sender: "bot",
+    // If sessionId present, load messages from backend
+    let mounted = true;
+    (async () => {
+      if (sessionId) {
+        try {
+          setIsLoading(true);
+          const { response, err } = await chatApi.getMessages(sessionId);
+          setIsLoading(false);
+          if (err) {
+            console.error('get messages error', err);
+            return;
+          }
+            if (response && mounted) {
+              // backend returns an array of pairs: { user_message: {...}, assistant_message: {...} }
+              const pairs = Array.isArray(response) ? response : (response.results || response.data || []);
+              const flat = [];
+              pairs.forEach((pair, idx) => {
+                const u = pair.user_message;
+                if (u) {
+                  flat.push({
+                    id: u.id ?? `u-${idx}`,
+                    text: u.content ?? '',
+                    sender: 'user',
+                    timestamp: u.timestamp ? new Date(u.timestamp) : new Date()
+                  });
+                }
+                const a = pair.assistant_message;
+                if (a) {
+                  flat.push({
+                    id: a.id ?? `a-${idx}`,
+                    text: a.content ?? '',
+                    sender: 'bot',
+                    timestamp: a.timestamp ? new Date(a.timestamp) : new Date()
+                  });
+                }
+              });
+              setMessages(flat);
+            }
+        } catch (e) {
+          console.error(e);
+        }
+        return;
+      }
+
+      if (user_message) {
+        const userMessage = {
+          id: 1,
+          text: user_message,
+          sender: "user",
           timestamp: new Date(),
         };
-        setMessages((prev) => [...prev, botMessage]);
-        setIsLoading(false);
-      }, 1500);
-    }
-  }, [user_message]);
+        setMessages((prev) => [...prev, userMessage]);
+
+        setIsLoading(true);
+        setTimeout(() => {
+          const botMessage = {
+            id: 2,
+            text: `Response to: "${user_message}"`,
+            sender: "bot",
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, botMessage]);
+          setIsLoading(false);
+        }, 1500);
+      }
+    })();
+  }, [user_message, sessionId]);
 
   return (
     <Container sx={{ position: "relative", height: window.innerHeight - 100 }}>
