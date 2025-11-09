@@ -113,21 +113,21 @@ const user = [
 const dashboardChat = [
   {
     display: "Edu - Chat",
-    path: "/dashboard/chat",
+    path: "/dashboard/chat/",
     icon: <ChatOutlinedIcon />,
     state: "educhat",
   },
   {
     display: "History",
-    path: "/dashboard/chat-hitory",
+    path: "/dashboard/chat/history",
     icon: <HistoryIcon />,
-    state: "chathitory",
+    state: "chat-history",
   },
   {
     display: "Bookmarks",
-    path: "/dashboard/chat-bookmarks",
+    path: "/dashboard/chat/bookmarks",
     icon: <BookmarksOutlinedIcon />,
-    state: "chatbookmarks",
+    state: "chat-bookmarks",
   },
 ];
 

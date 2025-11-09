@@ -135,7 +135,6 @@ const DrawerTopBar = ({ special, content }) => {
     }
   }, [dispatch, user]);
 
-  const dashboardType = "chats";
   const [anchorEl, setAnchorEl] = useState(null);
   const [anchorEl2, setAnchorEl2] = useState(null);
   const toggleMenu = (e) => setAnchorEl(e.currentTarget);
@@ -157,7 +156,13 @@ const DrawerTopBar = ({ special, content }) => {
     }
   };
 
-  console.log("location.pathname:", location);
+  const dashboardType = location.pathname.includes("/dashboard/chat")
+    ? "Chat"
+    : location.pathname.includes("/dashboard/platform")
+    ? "Platform"
+    : location.pathname.includes("/dashboard/profile")
+    ? "Profile"
+    : null;
 
   return special === "true" ? (
     <Box sx={{ display: "flex" }}>
@@ -184,11 +189,21 @@ const DrawerTopBar = ({ special, content }) => {
             </IconButton>
             <Divider orientation="vertical" flexItem />
             <Logo />
-            {location.pathname === "/dashboard/profile" ? <Typography variant="h5" sx={{ fontWeight: "500" }}>
-              | Profile
-            </Typography> : <Typography variant="h5" sx={{ fontWeight: "500" }}>
-              | Chat
-            </Typography>}
+            {dashboardType === "Profile" ? (
+              <Typography variant="h5" sx={{ fontWeight: "500" }}>
+                | Profile
+              </Typography>
+            ) : dashboardType === "Chat" ? (
+              <Typography variant="h5" sx={{ fontWeight: "500" }}>
+                | Chat
+              </Typography>
+            ) : dashboardType === "Platform" ? (
+              <Typography variant="h5" sx={{ fontWeight: "500" }}>
+                | Platform
+              </Typography>
+            ) : (
+              <></>
+            )}
           </Stack>
           <Box
             sx={{
@@ -273,147 +288,78 @@ const DrawerTopBar = ({ special, content }) => {
                   p: 2,
                 }}
               >
-                {dashboardType === "chat" && (
-                  <Box>
+                {dashboardType === "Chat" && (<Stack spacing={1}>
+                  <ListItemButton
+                    sx={{
+                      width: "12vw",
+                      px: 3,
+                      color: appState.includes("newchat")
+                        ? "secondary.contrastText"
+                        : "primary.contrastText",
+                      borderRadius: 100,
+                      marginY: 1,
+                      "&:hover": {
+                        color: appState.includes("newchat")
+                          ? "secondary.contrastText"
+                          : "primary.main",
+                      },
+                      background: appState.includes("newchat")
+                        ? uiConfigs.style.mainGradient.color
+                        : "none",
+                    }}
+                    component={Link}
+                    to="/dashboard/chat/new"
+                  >
+                    <AddCommentOutlinedIcon />
+                    <ListItemText
+                      sx={{ ml: 2, textAlign: "left", fontWeight: 800 }}
+                      disableTypography
+                      primary={
+                        <Typography textTransform="uppercase">
+                          New chat
+                        </Typography>
+                      }
+                    />
+                  </ListItemButton>
+                  <Divider orientation="horizontal" flexItem />
+                  {menuConfigs.dashboardChat.map((item, index) => (
                     <ListItemButton
                       sx={{
                         width: "12vw",
                         px: 3,
-                        color: appState.includes("newchat")
+                        color: appState.includes(item.state)
                           ? "secondary.contrastText"
                           : "primary.contrastText",
                         borderRadius: 100,
                         marginY: 1,
                         "&:hover": {
-                          color: appState.includes("newchat")
+                          color: appState.includes(item.state)
                             ? "secondary.contrastText"
                             : "primary.main",
                         },
-                        background: appState.includes("newchat")
+                        background: appState.includes(item.state)
                           ? uiConfigs.style.mainGradient.color
                           : "none",
                       }}
                       component={Link}
-                      to="/dashboard/new-chat"
+                      to={item.path}
                     >
-                      <AddCommentOutlinedIcon />
+                      {item.icon}
                       <ListItemText
                         sx={{ ml: 2, textAlign: "left", fontWeight: 800 }}
                         disableTypography
                         primary={
                           <Typography textTransform="uppercase">
-                            New chat
+                            {item.display}
                           </Typography>
                         }
                       />
                     </ListItemButton>
-                    <Divider orientation="horizontal" flexItem />
-                    {menuConfigs.dashboardChat.map((item, index) => (
-                      <ListItemButton
-                        sx={{
-                          width: "12vw",
-                          px: 3,
-                          color: appState.includes(item.state)
-                            ? "secondary.contrastText"
-                            : "primary.contrastText",
-                          borderRadius: 100,
-                          marginY: 1,
-                          "&:hover": {
-                            color: appState.includes(item.state)
-                              ? "secondary.contrastText"
-                              : "primary.main",
-                          },
-                          background: appState.includes(item.state)
-                            ? uiConfigs.style.mainGradient.color
-                            : "none",
-                        }}
-                        component={Link}
-                        to={item.path}
-                      >
-                        {item.icon}
-                        <ListItemText
-                          sx={{ ml: 2, textAlign: "left", fontWeight: 800 }}
-                          disableTypography
-                          primary={
-                            <Typography textTransform="uppercase">
-                              {item.display}
-                            </Typography>
-                          }
-                        />
-                      </ListItemButton>
-                    ))}
-                  </Box>
-                )}
+                  ))}
+                </Stack>)}
+
                 {dashboardType === "platform" && (
-                  <Box>
-                    <ListItemButton
-                      sx={{
-                        width: "12vw",
-                        px: 3,
-                        color: appState.includes("newchat")
-                          ? "secondary.contrastText"
-                          : "primary.contrastText",
-                        borderRadius: 100,
-                        marginY: 1,
-                        "&:hover": {
-                          color: appState.includes("newchat")
-                            ? "secondary.contrastText"
-                            : "primary.main",
-                        },
-                        background: appState.includes("newchat")
-                          ? uiConfigs.style.mainGradient.color
-                          : "none",
-                      }}
-                      component={Link}
-                      to="/dashboard/new-chat"
-                    >
-                      <AddCommentOutlinedIcon />
-                      <ListItemText
-                        sx={{ ml: 2, textAlign: "left", fontWeight: 800 }}
-                        disableTypography
-                        primary={
-                          <Typography textTransform="uppercase">
-                            New chat
-                          </Typography>
-                        }
-                      />
-                    </ListItemButton>
-                    <Divider orientation="horizontal" flexItem />
-                    {menuConfigs.dashboardChat.map((item, index) => (
-                      <ListItemButton
-                        sx={{
-                          width: "12vw",
-                          px: 3,
-                          color: appState.includes(item.state)
-                            ? "secondary.contrastText"
-                            : "primary.contrastText",
-                          borderRadius: 100,
-                          marginY: 1,
-                          "&:hover": {
-                            color: appState.includes(item.state)
-                              ? "secondary.contrastText"
-                              : "primary.main",
-                          },
-                          background: appState.includes(item.state)
-                            ? uiConfigs.style.mainGradient.color
-                            : "none",
-                        }}
-                        component={Link}
-                        to={item.path}
-                      >
-                        {item.icon}
-                        <ListItemText
-                          sx={{ ml: 2, textAlign: "left", fontWeight: 800 }}
-                          disableTypography
-                          primary={
-                            <Typography textTransform="uppercase">
-                              {item.display}
-                            </Typography>
-                          }
-                        />
-                      </ListItemButton>
-                    ))}
-                  </Box>
+                  <></>
                 )}
                 <Divider orientation="horizontal" flexItem />
                 {menuConfigs.dashboardCommon.map((item, index) => (
@@ -588,49 +534,53 @@ const DrawerTopBar = ({ special, content }) => {
                 height: window.innerHeight - 72 - 56,
               }}
             >
-              <IconButton
-                sx={{
-                  color: appState.includes("newchat")
-                    ? "secondary.contrastText"
-                    : "primary.contrastText",
-                  "&:hover": {
-                    color: appState.includes("newchat")
-                      ? "secondary.contrastText"
-                      : "primary.main",
-                  },
-                  background: appState.includes("newchat")
-                    ? uiConfigs.style.mainGradient.color
-                    : "none",
-                }}
-                href="/dashboard/new-chat"
-              >
-                <AddCommentOutlinedIcon />
-              </IconButton>
-              <Divider orientation="horizontal" flexItem />
-              {menuConfigs.dashboardChat.map((item, index) => (
-                <List disablePadding>
-                  <ListItem disablePadding>
-                    <IconButton
-                      sx={{
-                        "&:hover": {
-                          color: appState.includes(item.state)
-                            ? "secondary.contrastText"
-                            : "primary.main",
-                        },
-                        color: appState.includes(item.state)
+              {dashboardType === "Chat" && (
+                <Stack spacing={1}>
+                  <IconButton
+                    sx={{
+                      color: appState.includes("newchat")
+                        ? "secondary.contrastText"
+                        : "primary.contrastText",
+                      "&:hover": {
+                        color: appState.includes("newchat")
                           ? "secondary.contrastText"
-                          : "primary.contrastText",
-                        background: appState.includes(item.state)
-                          ? uiConfigs.style.mainGradient.color
-                          : "none",
-                      }}
-                      href={item.path}
-                    >
-                      {item.icon}
-                    </IconButton>
-                  </ListItem>
-                </List>
-              ))}
+                          : "primary.main",
+                      },
+                      background: appState.includes("newchat")
+                        ? uiConfigs.style.mainGradient.color
+                        : "none",
+                    }}
+                    href="/dashboard/chat/new"
+                  >
+                    <AddCommentOutlinedIcon />
+                  </IconButton>
+                  <Divider orientation="horizontal" flexItem />
+                  {menuConfigs.dashboardChat.map((item, index) => (
+                    <List disablePadding>
+                      <ListItem disablePadding>
+                        <IconButton
+                          sx={{
+                            "&:hover": {
+                              color: appState.includes(item.state)
+                                ? "secondary.contrastText"
+                                : "primary.main",
+                            },
+                            color: appState.includes(item.state)
+                              ? "secondary.contrastText"
+                              : "primary.contrastText",
+                            background: appState.includes(item.state)
+                              ? uiConfigs.style.mainGradient.color
+                              : "none",
+                          }}
+                          href={item.path}
+                        >
+                          {item.icon}
+                        </IconButton>
+                      </ListItem>
+                    </List>
+                  ))}
+                </Stack>
+              )}
               <Divider orientation="horizontal" flexItem />
               {menuConfigs.dashboardCommon.map((item, index) => (
                 <List disablePadding>

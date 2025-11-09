@@ -23,7 +23,7 @@ const dashboardRoutes = [
     state: "main"
 },
   {
-      path:'/dashboard/new-chat',
+      path:'/dashboard/chat/new',
       element: (
           // <ProtectedPage>
               <DashboardChatNewPage/>
@@ -39,6 +39,15 @@ const dashboardRoutes = [
       // </ProtectedPage>
     ),
     state: "educhat",
+  },
+  {
+    path: "/dashboard/chat/:sessionId",
+    element: (
+      // <ProtectedPage>
+        <DashboardChatPage />
+      // </ProtectedPage>
+    ),
+    state: "educhat-session",
   },
   {
     path: "/dashboard/platform",
@@ -77,22 +86,22 @@ const dashboardRoutes = [
     state: "progress",
   },
   {
-    path: "/dashboard/chat-hitory",
+    path: "/dashboard/chat/history",
     element: (
       //<ProtectedPage>
         <ChatHistoryPage />
       //</ProtectedPage>
     ),
-    state: "chathitory",
+    state: "chat-history",
   },
   {
-    path: "/dashboard/chat-bookmarks",
+    path: "/dashboard/chat/bookmarks",
     element: (
       // <ProtectedPage>
         <ChatBookmarkPage />
       // </ProtectedPage>
     ),
-    state: "chatbookmarks",
+    state: "chat-bookmarks",
   },
 ];
 

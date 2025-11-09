@@ -59,7 +59,7 @@ const DashboardMainPage = () => {
                         }}
                     >
                         <Link
-                            href="/dashboard/new-chat"
+                            href="/dashboard/chat/new"
                             underline="none"
                             color="primary.contrastText"
                         >
