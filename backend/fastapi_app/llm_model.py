@@ -1,4 +1,4 @@
-from langchain_community.llms import Ollama
+from langchain_ollama import OllamaLLM
 from config import settings
 
 class LLM_Model:
@@ -7,7 +7,7 @@ class LLM_Model:
 
     def get_client(self):
         if self.client is None:
-            self.client = Ollama(
+            self.client = OllamaLLM(
                 base_url=settings.OLLAMA_BASE_URL,
                 model=settings.OLLAMA_MODEL
             )

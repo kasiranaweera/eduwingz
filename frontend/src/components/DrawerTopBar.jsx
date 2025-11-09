@@ -741,7 +741,7 @@ const DrawerTopBar = ({ special, content }) => {
                 href="/dashboard/platform"
               >
                 <DashboardIcon />
-              </IconButton>) : (<IconButton
+              </IconButton>) : dashboardType === "Platform" ? (<IconButton
                 sx={{
                   color: appState.includes("eduplatform")
                     ? "secondary.contrastText"
@@ -758,7 +758,24 @@ const DrawerTopBar = ({ special, content }) => {
                 href="/dashboard/chat/new"
               >
                 <DashboardIcon />
-              </IconButton>)}
+              </IconButton>) : (<IconButton
+                sx={{
+                  color: appState.includes("eduplatform")
+                    ? "secondary.contrastText"
+                    : "primary.contrastText",
+                  "&:hover": {
+                    color: appState.includes("eduplatform")
+                      ? "secondary.contrastText"
+                      : "primary.main",
+                  },
+                  background: appState.includes("eduplatform")
+                    ? uiConfigs.style.mainGradient.color
+                    : "none",
+                }}
+                href="/main"
+              >
+                <DashboardIcon />
+              </IconButton>)} 
             </Stack>
             <Box sx={{}}>
               {user && (
@@ -921,7 +938,7 @@ const DrawerTopBar = ({ special, content }) => {
           onClick={toggleMenu}
           // {...stringAvatar(user.username)}
         >
-          {/* {user.username[0]} */}U
+          {/* {user.username[0]} */}{user.username[0]}
         </Avatar>
       </Box>
       <Menu
