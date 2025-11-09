@@ -1,7 +1,7 @@
 import privateClient from "../client/private.client";
 
 const chatEndpoints = {
-  sessions: (sessionId = "") => `chat/sessions/${sessionId}`,
+  sessions: (sessionId = "") => `chat/sessions/${sessionId ? `${sessionId}/` : ""}`,
   messages: (sessionId) => `chat/sessions/${sessionId}/messages/`,
   documentsUpload: () => `chat/documents/upload/`,
 };
@@ -19,6 +19,16 @@ const chatApi = {
   getSession: async (sessionId) => {
     try {
       const response = await privateClient.get(chatEndpoints.sessions(sessionId));
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+
+  // list all sessions
+  listSessions: async () => {
+    try {
+      const response = await privateClient.get(chatEndpoints.sessions());
       return { response };
     } catch (err) {
       return { err };
@@ -43,7 +53,17 @@ const chatApi = {
     } catch (err) {
       return { err };
     }
-  }
+  },
+
+  deleteSession: async (sessionId) => {
+    console.log("delete one button", sessionId)
+    try {
+      const response = await privateClient.delete(chatEndpoints.sessions(sessionId));
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
 };
 
 export default chatApi;

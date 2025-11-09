@@ -11,10 +11,15 @@ import PortraitIcon from "@mui/icons-material/Portrait";
 import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
 import HistoryIcon from "@mui/icons-material/History";
 import BookmarksOutlinedIcon from "@mui/icons-material/BookmarksOutlined";
-import QuizIcon from '@mui/icons-material/Quiz';
-import SourceIcon from '@mui/icons-material/Source';
-import InsightsIcon from '@mui/icons-material/Insights';
-import GraphicEqOutlinedIcon from '@mui/icons-material/GraphicEqOutlined';
+import QuizIcon from "@mui/icons-material/Quiz";
+import SourceIcon from "@mui/icons-material/Source";
+import InsightsIcon from "@mui/icons-material/Insights";
+import GraphicEqOutlinedIcon from "@mui/icons-material/GraphicEqOutlined";
+import LocalLibraryOutlinedIcon from "@mui/icons-material/LocalLibraryOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
+import AddModeratorOutlinedIcon from '@mui/icons-material/AddModeratorOutlined';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 
 const main = [
   {
@@ -97,16 +102,37 @@ const user = [
     state: "profile",
   },
   {
-    display: "progress",
-    path: "/dashboard/progress",
-    icon: <InsertChartOutlinedOutlinedIcon />,
-    state: "progress",
+    display: "updates",
+    path: "/dashboard/updates",
+    icon: <AddModeratorOutlinedIcon />,
+    state: "updates",
   },
   {
-    display: "documents",
-    path: "/dashboard/documents",
-    icon: <FileCopyOutlinedIcon />,
-    state: "documents",
+    display: "settings",
+    path: "/dashboard/settings",
+    icon: <SettingsOutlinedIcon />,
+    state: "settings",
+  },
+];
+
+const dashboardPlatform = [
+  {
+    display: "My Learning",
+    path: "/dashboard/platform/",
+    icon: <LocalLibraryOutlinedIcon />,
+    state: "eduplatform",
+  },
+  {
+    display: "Notes",
+    path: "/dashboard/platform/notes",
+    icon: <DescriptionOutlinedIcon />,
+    state: "platform-notes",
+  },
+  {
+    display: "Community",
+    path: "/dashboard/platform/community",
+    icon: <PeopleOutlinedIcon />,
+    state: "platform-community",
   },
 ];
 
@@ -158,6 +184,14 @@ const dashboardCommon = [
   },
 ];
 
-const menuConfigs = { main, footMenu, socialMedia, user, dashboardChat, dashboardCommon };
+const menuConfigs = {
+  main,
+  footMenu,
+  socialMedia,
+  user,
+  dashboardChat,
+  dashboardCommon,
+  dashboardPlatform,
+};
 
 export default menuConfigs;
