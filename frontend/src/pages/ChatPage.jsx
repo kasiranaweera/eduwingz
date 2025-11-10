@@ -326,6 +326,7 @@ import ReplyAllIcon from "@mui/icons-material/ReplyAll";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import StarOutlineIcon from "@mui/icons-material/StarOutline";
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 
 const ChatPage = () => {
   const { themeMode } = useSelector((state) => state.themeMode);
@@ -664,9 +665,6 @@ const ChatPage = () => {
                         <ContentCopyIcon sx={{ fontSize: 18 }} />
                       </IconButton>
                       <IconButton>
-                        <ShareIcon sx={{ fontSize: 18 }} />
-                      </IconButton>
-                      <IconButton>
                         <ReplyAllIcon sx={{ fontSize: 18 }} />
                       </IconButton>
                       <IconButton>
@@ -674,6 +672,9 @@ const ChatPage = () => {
                       </IconButton>
                       <IconButton>
                         <StarOutlineIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                      <IconButton>
+                        <VolumeUpIcon sx={{ fontSize: 18 }} />
                       </IconButton>
                       <IconButton>
                         <MoreHorizIcon sx={{ fontSize: 18 }} />

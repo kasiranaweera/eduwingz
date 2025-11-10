@@ -20,6 +20,7 @@ import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import AddModeratorOutlinedIcon from '@mui/icons-material/AddModeratorOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import FormatShapesIcon from '@mui/icons-material/FormatShapes';
 
 const main = [
   {
@@ -121,6 +122,12 @@ const dashboardPlatform = [
     path: "/dashboard/platform/",
     icon: <LocalLibraryOutlinedIcon />,
     state: "eduplatform",
+  },
+  {
+    display: "Lessons",
+    path: "/dashboard/platform/lessons",
+    icon: <FormatShapesIcon />,
+    state: "platform-lessons",
   },
   {
     display: "Notes",
