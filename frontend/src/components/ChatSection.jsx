@@ -17,6 +17,7 @@ import TemplateModal from './TemplateModal';
 import AttachmentMenu from './AttachmentMenu';
 import AddIcon from "@mui/icons-material/Add";
 import { Link } from "react-router-dom";
+import FloatingPageUpButton from "./FloatingPageUpButton";
 
 
 const ChatSection = ({ sx, handleSendMessage, main }) => {
@@ -55,6 +56,7 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
   return (
     <Box sx={{ ...sx }}>
       {/* Main Chat Input */}
+      <Box sx={{display:'flex', justifyContent:'center', position:'sticky'}}><FloatingPageUpButton /></Box>
       <Paper 
         component="form" 
         onSubmit={chatFormik.handleSubmit}

@@ -139,7 +139,7 @@ const dashboardPlatform = [
 const dashboardChat = [
   {
     display: "Edu - Chat",
-    path: "/dashboard/chat/",
+    path: "/dashboard/chat/new",
     icon: <ChatOutlinedIcon />,
     state: "educhat",
   },

@@ -18,10 +18,10 @@ import { useSelector } from "react-redux";
 import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
 import DeleteForeverOutlinedIcon from "@mui/icons-material/DeleteForeverOutlined";
 import CopyAllOutlinedIcon from "@mui/icons-material/CopyAllOutlined";
-import OpenInNewOutlinedIcon from "@mui/icons-material/OpenInNewOutlined";
+import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
 
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 // Small helper to format date/time
 const formatDateTime = (iso) => {
@@ -109,9 +109,9 @@ const ChatHistoryPage = () => {
               <Typography color="text.secondary">No chats yet.</Typography>
             </Box>
           ) : (
-            sessions.map((s, idx) => (
+            sessions.reverse().map((s, idx) => (
               <React.Fragment key={s.id || idx}>
-                <ListItemButton alignItems="flex-start">
+                <ListItemButton alignItems="flex-start" onClick={() => openChat(s.id)}>
                   <ListItemAvatar>
                     <Avatar sx={{ bgcolor: "primary.main" }}>
                       <ChatBubbleOutlineIcon />
@@ -133,8 +133,8 @@ const ChatHistoryPage = () => {
                     }
                   />
                   <Box>
-                    <IconButton onClick={() => openChat(s.id)}>
-                      <OpenInNewOutlinedIcon />
+                    <IconButton>
+                      <ShareOutlinedIcon />
                     </IconButton>
                     <IconButton>
                       <EditNoteOutlinedIcon />
