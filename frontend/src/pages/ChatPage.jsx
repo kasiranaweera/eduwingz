@@ -540,18 +540,18 @@ const ChatPage = () => {
                 </ListItemAvatar>
 
                 {/* ---- MARKDOWN BUBBLE ---- */}
-                <Box sx={{}}>
+                <Box sx={{ maxWidth: '80%', }}>
                   <Paper
                     elevation={2}
                     sx={{
                       p: 2,
                       ml: message.sender === "user" ? 0 : 1,
-                      mr: message.sender === "user" ? 1 : 0,
-                      maxWidth: "75%",
+                      mr: message.sender === "user" ? 1 : 0,                      
                       bgcolor:
                         message.sender === "user"
                           ? "primary.light"
                           : "background.paper",
+                      width: 'auto',                
                       color:
                         message.sender === "user"
                           ? "secondary.contrastText"
