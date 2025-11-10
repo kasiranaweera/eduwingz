@@ -109,7 +109,7 @@ const ChatHistoryPage = () => {
               <Typography color="text.secondary">No chats yet.</Typography>
             </Box>
           ) : (
-            sessions.map((s, idx) => (
+            sessions.reverse().map((s, idx) => (
               <React.Fragment key={s.id || idx}>
                 <ListItemButton alignItems="flex-start" onClick={() => openChat(s.id)}>
                   <ListItemAvatar>
