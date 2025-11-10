@@ -14,6 +14,7 @@ import PlatformCommunity from "../pages/PlatformCommunity";
 import DashboardQuizzesPage from "../pages/DashboardQuizzesPage";
 import DashboardAnaliticsPage from "../pages/DashboardAnalyticsPage"
 import DashboardMinehoarizonPage from "../pages/DashboardMinehorizonPage"
+import PlatformLessons from "../pages/PlatformLessons";
 
 export const routesGen = {
   dashboard: "/",
@@ -163,6 +164,15 @@ const dashboardRoutes = [
       </ProtectedPage>
     ),
     state: "platform-community",
+  },
+  {
+    path: "/dashboard/platform/lessons",
+    element: (
+      <ProtectedPage>
+      <PlatformLessons />
+      </ProtectedPage>
+    ),
+    state: "platform-lessons",
   },
 ];
 

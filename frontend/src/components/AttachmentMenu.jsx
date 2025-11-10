@@ -9,7 +9,8 @@ import {
 import {
   Add,
   CloudUpload,
-  InsertDriveFile
+  InsertDriveFile,
+  YouTube
 } from '@mui/icons-material';
 
 const AttachmentMenu = ({ onFileSelect }) => {
@@ -74,9 +75,9 @@ const AttachmentMenu = ({ onFileSelect }) => {
         </MenuItem>
         <MenuItem onClick={() => handleFileUpload('dropbox')}>
           <ListItemIcon>
-            <CloudUpload fontSize="small" />
+            <YouTube fontSize="small" />
           </ListItemIcon>
-          <Typography variant="body2">Dropbox</Typography>
+          <Typography variant="body2">YouTube</Typography>
         </MenuItem>
       </Menu>
     </>
