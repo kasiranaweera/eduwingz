@@ -565,3 +565,23 @@ class DocumentListView(APIView):
             serialize_document(doc, request=request)
             for doc in documents
         ])
+
+class MessageDocumentView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, message_id):
+        """Get all documents attached to a specific message"""
+        try:
+            message = Message.objects.get(id=message_id)
+            # Verify the message belongs to a session owned by the user
+            if message.session.user != request.user:
+                return APIErrorResponse.forbidden("You don't have permission to access this message's documents")
+            
+            documents = Document.objects.filter(message=message, user=request.user).order_by("uploaded_at")
+            return Response([
+                serialize_document(doc, request=request)
+                for doc in documents
+            ])
+        except Message.DoesNotExist:
+            return APIErrorResponse.not_found("Message not found")

@@ -4,6 +4,7 @@ const chatEndpoints = {
   sessions: (sessionId = "") => `chat/sessions/${sessionId ? `${sessionId}/` : ""}`,
   messages: (sessionId) => `chat/sessions/${sessionId}/messages/`,
   documents: (sessionId) => `chat/sessions/${sessionId}/documents/`,
+  documentsByMessage: (messageId) => `chat/documents/${messageId}/`,
   documentsList: (params = {}) => {
     const query = new URLSearchParams(params).toString();
     return `chat/documents/${query ? `?${query}` : ""}`;
@@ -92,6 +93,15 @@ const chatApi = {
   listAllDocuments: async (params = {}) => {
     try {
       const response = await privateClient.get(chatEndpoints.documentsList(params));
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+
+  getDocumentsByMessage: async (messageId) => {
+    try {
+      const response = await privateClient.get(chatEndpoints.documentsByMessage(messageId));
       return { response };
     } catch (err) {
       return { err };

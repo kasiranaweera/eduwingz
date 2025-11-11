@@ -23,7 +23,7 @@ import AttachmentMenu from "./AttachmentMenu";
 import AddIcon from "@mui/icons-material/Add";
 import { Link } from "react-router-dom";
 import FloatingPageUpButton from "./FloatingPageUpButton";
-import FilePresentOutlinedIcon from '@mui/icons-material/FilePresentOutlined';
+import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
@@ -45,6 +45,7 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
     onSubmit: async (values, { resetForm, setSubmitting }) => {
       try {
         const filesToSend = uploadFiles.map((item) => item.file);
+        console.log("Submitting message with files:", filesToSend.map(f => ({ name: f.name, size: f.size })));
         const success = await handleSendMessage(values.message, filesToSend);
         if (success) {
           resetForm();
@@ -54,7 +55,11 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
             }
           });
           setUploadFiles([]);
+        } else {
+          console.error("Message sending failed - keeping files in upload list");
         }
+      } catch (error) {
+        console.error("Error in form submission:", error);
       } finally {
         setSubmitting(false);
       }
@@ -227,7 +232,7 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
                           </Avatar>
                         ) : file.type.startsWith("application/") ? (
                           <Avatar variant="rounded">
-                            <FilePresentOutlinedIcon />
+                            <PictureAsPdfOutlinedIcon />
                           </Avatar>
                         ) : (
                           <Avatar variant="rounded">
