@@ -27,6 +27,7 @@ import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
+import MicOutlinedIcon from '@mui/icons-material/MicOutlined';
 
 const ChatSection = ({ sx, handleSendMessage, main }) => {
   const { themeMode } = useSelector((state) => state.themeMode);
@@ -200,7 +201,7 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
                     : "primary.contrastText",
               }}
             >
-              <SendIcon />
+              {chatFormik.values.message.length > 0 ? <SendIcon /> : <MicOutlinedIcon />}
             </IconButton>
           )}
         </Box>

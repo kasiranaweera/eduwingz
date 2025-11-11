@@ -41,6 +41,7 @@ import FilePresentOutlinedIcon from "@mui/icons-material/FilePresentOutlined";
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
+import ShinyText from "../components/common/ShinyText";
 
 const normalizeMessage = (source, sender, fallbackIdPrefix) => {
   if (!source) return null;
@@ -560,6 +561,7 @@ const ChatPage = () => {
             {isLoading && (
               <ListItem sx={{ justifyContent: "center" }}>
                 <CircularProgress size={24} />
+                
               </ListItem>
             )}
             <Box ref={messagesEndRef} />
