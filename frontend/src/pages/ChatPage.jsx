@@ -42,6 +42,8 @@ import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import ShinyText from "../components/common/ShinyText";
+import TextType from "../components/common/TextType";
+import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined';
 
 const normalizeMessage = (source, sender, fallbackIdPrefix) => {
   if (!source) return null;
@@ -66,6 +68,23 @@ const ChatPage = () => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  const [animatedMessages, setAnimatedMessages] = useState(new Set());
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const [animatedTexts, setAnimatedTexts] = useState({});
+  const sendingRef = useRef(false);
+
+  const [handleCopyMessage, setHandleCopyMessage] = useState(false);
+  const [handleCopyMessageId, setHandleCopyMessageId] = useState(null);
+  
+  const loadingMessages = [
+    "Thinking...",
+    "Searching knowledge base...",
+    "Summarizing your data...",
+    "Analyzing your document...",
+    "AI is thinking...",
+    "Processing your request...",
+    "Gathering information...",
+  ];
 
   /* ---------------------------------------------------------- */
   /* 1. SEND MESSAGE – fixed duplicate logic                    */
@@ -73,6 +92,13 @@ const ChatPage = () => {
   const handleSendMessage = async (messageText, attachments = []) => {
     const trimmed = messageText?.trim();
     if (!trimmed) return false;
+    
+    // Prevent multiple simultaneous sends
+    if (sendingRef.current) {
+      console.warn("Message send already in progress");
+      return false;
+    }
+    sendingRef.current = true;
 
     // ---- optimistic UI only for *new* sessions ----
     if (!sessionId) {
@@ -89,7 +115,13 @@ const ChatPage = () => {
           file_url: URL.createObjectURL(file),
         })),
       };
-      setMessages((prev) => [...prev, userMessage]);
+      setMessages((prev) => {
+        // Check for duplicates
+        if (!prev.find(m => m.id === userMessage.id)) {
+          return [...prev, userMessage];
+        }
+        return prev;
+      });
       setIsLoading(true);
       setTimeout(() => {
         const botMessage = {
@@ -99,7 +131,13 @@ const ChatPage = () => {
           timestamp: new Date(),
           attachments: [],
         };
-        setMessages((prev) => [...prev, botMessage]);
+        setMessages((prev) => {
+          // Check for duplicates
+          if (!prev.find(m => m.id === botMessage.id)) {
+            return [...prev, botMessage];
+          }
+          return prev;
+        });
         setIsLoading(false);
       }, 1500);
       return true;
@@ -175,8 +213,15 @@ const ChatPage = () => {
 
         setMessages((prev) => {
           const out = [...prev];
-          if (normalizedUser) out.push(normalizedUser);
-          if (normalizedAssistant) out.push(normalizedAssistant);
+          // Check for duplicates before adding
+          if (normalizedUser && !out.find(m => m.id === normalizedUser.id)) {
+            out.push(normalizedUser);
+          }
+          if (normalizedAssistant && !out.find(m => m.id === normalizedAssistant.id)) {
+            out.push(normalizedAssistant);
+            // Don't mark new messages as animated - let them animate
+            // Only existing messages (from API) should skip animation
+          }
           return out;
         });
         success = true;
@@ -185,6 +230,7 @@ const ChatPage = () => {
       console.error(e);
     } finally {
       setIsLoading(false);
+      sendingRef.current = false;
     }
 
     return success;
@@ -220,6 +266,20 @@ const ChatPage = () => {
               if (assistantMessage) flat.push(assistantMessage);
             });
             setMessages(flat);
+
+            // Mark all existing bot messages as already animated (skip animation on load)
+            if (mounted) {
+              const botMessageIds = flat
+                .filter((msg) => msg.sender === "bot" && msg.id)
+                .map((msg) => msg.id);
+              if (botMessageIds.length > 0) {
+                setAnimatedMessages((prev) => {
+                  const newSet = new Set(prev);
+                  botMessageIds.forEach((id) => newSet.add(id));
+                  return newSet;
+                });
+              }
+            }
 
             // Then, fetch documents for each user message
             if (mounted) {
@@ -279,7 +339,13 @@ const ChatPage = () => {
             timestamp: new Date(),
             attachments: [],
           };
-          setMessages((prev) => [...prev, botMessage]);
+          setMessages((prev) => {
+            // Check for duplicates
+            if (!prev.find(m => m.id === botMessage.id)) {
+              return [...prev, botMessage];
+            }
+            return prev;
+          });
           setIsLoading(false);
         }, 1500);
       }
@@ -295,7 +361,43 @@ const ChatPage = () => {
   }, [messages]);
 
   /* ---------------------------------------------------------- */
-  /* 4. DEBUG CONSOLE LOG (every render)                      */
+  /* 4. LOADING MESSAGE ROTATION                               */
+  /* ---------------------------------------------------------- */
+  useEffect(() => {
+    if (!isLoading) {
+      setLoadingMessageIndex(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [isLoading, loadingMessages.length]);
+
+  /* ---------------------------------------------------------- */
+  /* 5. MESSAGE ANIMATION TRACKING                             */
+  /* ---------------------------------------------------------- */
+  const handleAnimationComplete = (messageId) => {
+    setAnimatedMessages((prev) => new Set([...prev, messageId]));
+    // Clear the animated text when animation completes to avoid showing both versions
+    setAnimatedTexts((prev) => {
+      const newTexts = { ...prev };
+      delete newTexts[messageId];
+      return newTexts;
+    });
+  };
+
+  const handleTextUpdate = (messageId, text) => {
+    setAnimatedTexts((prev) => ({
+      ...prev,
+      [messageId]: text,
+    }));
+  };
+
+  /* ---------------------------------------------------------- */
+  /* 6. DEBUG CONSOLE LOG (every render)                      */
   /* ---------------------------------------------------------- */
   useEffect(() => {
     console.group("Chat messages (rendered)");
@@ -316,13 +418,100 @@ const ChatPage = () => {
     console.groupEnd();
   }, [messages]);
 
-  console.log("messages", messages);
+  const handleCopy = async (text, id) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setHandleCopyMessage(true);
+      setHandleCopyMessageId(id);
+      setTimeout(() => {
+        setHandleCopyMessage(false);
+        setHandleCopyMessageId(null);
+      }, 3000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
 
   /* ---------------------------------------------------------- */
-  /* UI (unchanged, only tiny style tweak)                     */
+  /* MARKDOWN COMPONENTS (extracted to avoid duplication)     */
+  /* ---------------------------------------------------------- */
+  const markdownComponents = {
+    code({ node, inline, className, children, ...props }) {
+      const match = /language-(\w+)/.exec(className || "");
+      if (!inline && match) {
+        return (
+          <Box
+            sx={{
+              my: 1,
+              p: 1.5,
+              backgroundColor: "grey.900",
+              color: "grey.100",
+              borderRadius: 1,
+              overflowX: "auto",
+              fontFamily: "Monospace",
+              fontSize: "0.85rem",
+              display: "block",
+            }}
+          >
+            <pre style={{ margin: 0 }}>
+              <code>{String(children).replace(/\n$/, "")}</code>
+            </pre>
+          </Box>
+        );
+      }
+      return (
+        <code
+          style={{
+            backgroundColor: "rgba(0,0,0,0.07)",
+            padding: "0.2em 0.4em",
+            borderRadius: "3px",
+            fontSize: "0.9em",
+          }}
+          {...props}
+        >
+          {children}
+        </code>
+      );
+    },
+    h1: ({ children }) => (
+      <Box component="h1" sx={{ fontSize: "1.4rem", mt: 1.5, mb: 0.5, display: "block" }}>
+        {children}
+      </Box>
+    ),
+    h2: ({ children }) => (
+      <Box component="h2" sx={{ fontSize: "1.2rem", mt: 1.2, mb: 0.5, display: "block" }}>
+        {children}
+      </Box>
+    ),
+    ul: ({ children }) => (
+      <Box component="ul" sx={{ pl: 2, my: 1, display: "block" }}>
+        {children}
+      </Box>
+    ),
+    ol: ({ children }) => (
+      <Box component="ol" sx={{ pl: 2, my: 1, display: "block" }}>
+        {children}
+      </Box>
+    ),
+    p: ({ children, ...props }) => (
+      <Box component="span" sx={{ display: "inline", m: 0 }} {...props}>
+        {children}
+      </Box>
+    ),
+  };
+
+  /* ---------------------------------------------------------- */
+  /* UI                                                         */
   /* ---------------------------------------------------------- */
   return (
-    <Container sx={{ position: "relative", height: window.innerHeight - 100 }}>
+    <>
+      <style>{`
+        @keyframes blink {
+          0%, 50% { opacity: 1; }
+          51%, 100% { opacity: 0; }
+        }
+      `}</style>
+      <Container sx={{ position: "relative", height: window.innerHeight - 100 }}>
       <Box sx={{ display: "flex", flexDirection: "column" }}>
         <Box sx={{ overflowY: "auto", minHeight: window.innerHeight - 250 }}>
           <List sx={{ width: "100%", maxWidth: "75%", mx: "auto" }}>
@@ -377,77 +566,62 @@ const ChatPage = () => {
                       overflow: "hidden",
                     }}
                   >
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        code({ node, inline, className, children, ...props }) {
-                          const match = /language-(\w+)/.exec(className || "");
-                          if (!inline && match) {
-                            return (
-                              <Box
-                                sx={{
-                                  my: 1,
-                                  p: 1.5,
-                                  backgroundColor: "grey.900",
-                                  color: "grey.100",
-                                  borderRadius: 1,
-                                  overflowX: "auto",
-                                  fontFamily: "Monospace",
-                                  fontSize: "0.85rem",
+                    {message.sender === "bot" ? (
+                      <Box sx={{ minHeight: '1.5em' }}>
+                        {!animatedMessages.has(message.id) ? (
+                          <>
+                            {/* Animated Typing Version - Only render this during animation */}
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={markdownComponents}
+                            >
+                              {animatedTexts[message.id] || ""}
+                            </ReactMarkdown>
+                            
+                            {/* Blinking cursor during typing */}
+                            {animatedTexts[message.id] && 
+                             animatedTexts[message.id].length < message.text.length && (
+                              <span
+                                style={{
+                                  display: 'inline',
+                                  marginLeft: '0.25rem',
+                                  animation: 'blink 0.5s linear infinite',
                                 }}
                               >
-                                <pre style={{ margin: 0 }}>
-                                  <code>
-                                    {String(children).replace(/\n$/, "")}
-                                  </code>
-                                </pre>
-                              </Box>
-                            );
-                          }
-                          return (
-                            <code
-                              style={{
-                                backgroundColor: "rgba(0,0,0,0.07)",
-                                padding: "0.2em 0.4em",
-                                borderRadius: "3px",
-                                fontSize: "0.9em",
-                              }}
-                              {...props}
-                            >
-                              {children}
-                            </code>
-                          );
-                        },
-                        h1: ({ children }) => (
-                          <Box
-                            component="h1"
-                            sx={{ fontSize: "1.4rem", mt: 1.5, mb: 0.5 }}
+                                |
+                              </span>
+                            )}
+
+                            {/* Hidden TextType to drive animation */}
+                            <TextType
+                              text={message.text}
+                              typingSpeed={70}
+                              showCursor={false}
+                              loop={false}
+                              onSentenceComplete={() => handleAnimationComplete(message.id)}
+                              onTextUpdate={(text) => handleTextUpdate(message.id, text)}
+                              style={{ display: 'none' }}
+                            />
+                          </>
+                        ) : (
+                          /* Static Full Version - Only render this after animation completes */
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={markdownComponents}
                           >
-                            {children}
-                          </Box>
-                        ),
-                        h2: ({ children }) => (
-                          <Box
-                            component="h2"
-                            sx={{ fontSize: "1.2rem", mt: 1.2, mb: 0.5 }}
-                          >
-                            {children}
-                          </Box>
-                        ),
-                        ul: ({ children }) => (
-                          <Box component="ul" sx={{ pl: 2, my: 1 }}>
-                            {children}
-                          </Box>
-                        ),
-                        ol: ({ children }) => (
-                          <Box component="ol" sx={{ pl: 2, my: 1 }}>
-                            {children}
-                          </Box>
-                        ),
-                      }}
-                    >
-                      {message.text}
-                    </ReactMarkdown>
+                            {message.text}
+                          </ReactMarkdown>
+                        )}
+                      </Box>
+                    ) : (
+                      /* User Message */
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={markdownComponents}
+                      >
+                        {message.text}
+                      </ReactMarkdown>
+                    )}
 
                     <Box
                       sx={{
@@ -529,8 +703,8 @@ const ChatPage = () => {
                         <ReplayIcon sx={{ fontSize: 18 }} />
                       </IconButton></Tooltip>
                       <Tooltip title="Copy Response" arrow>
-                      <IconButton>
-                        <ContentCopyIcon sx={{ fontSize: 18 }} />
+                      <IconButton onClick={() => handleCopy(message.text, message.id)}>
+                        {handleCopyMessage && handleCopyMessageId === message.id ? <CheckOutlinedIcon sx={{ fontSize: 18 }} /> : <ContentCopyIcon sx={{ fontSize: 18 }} />}
                       </IconButton></Tooltip>
                       <Tooltip title="Target Reply" arrow>
                       <IconButton>
@@ -559,9 +733,18 @@ const ChatPage = () => {
             ))}
 
             {isLoading && (
-              <ListItem sx={{ justifyContent: "center" }}>
-                <CircularProgress size={24} />
-                
+              <ListItem sx={{ justifyContent: "center", alignItems: "center", gap: 2 }}>
+                <ShinyText variant="body2" sx={{ ml: 1 }}>
+                  <TextType
+                    text={loadingMessages}
+                    typingSpeed={80}
+                    deletingSpeed={50}
+                    pauseDuration={1500}
+                    loop={true}
+                    showCursor={true}
+                    cursorCharacter="|"
+                  />
+                </ShinyText>
               </ListItem>
             )}
             <Box ref={messagesEndRef} />
@@ -577,6 +760,7 @@ const ChatPage = () => {
         handleSendMessage={handleSendMessage}
       />
     </Container>
+    </>
   );
 };
 

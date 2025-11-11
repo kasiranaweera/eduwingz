@@ -45,11 +45,12 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
     }),
     onSubmit: async (values, { resetForm, setSubmitting }) => {
       try {
+        resetForm();
         const filesToSend = uploadFiles.map((item) => item.file);
         console.log("Submitting message with files:", filesToSend.map(f => ({ name: f.name, size: f.size })));
         const success = await handleSendMessage(values.message, filesToSend);
         if (success) {
-          resetForm();
+          
           uploadFiles.forEach((item) => {
             if (item.previewUrl) {
               URL.revokeObjectURL(item.previewUrl);

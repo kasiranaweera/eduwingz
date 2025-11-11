@@ -1,0 +1,178 @@
+{
+  "4d07b8dd-ee6d-4ca5-82b8-1a04512f6e1c": {
+    "user_id": "4d07b8dd-ee6d-4ca5-82b8-1a04512f6e1c",
+    "dimensions": {
+      "active_reflective": -1.0,
+      "sensing_intuitive": 0,
+      "visual_verbal": 1,
+      "sequential_global": 0
+    },
+    "total_interactions": 2,
+    "interaction_history": [
+      {
+        "timestamp": "2025-11-12T00:46:11.611471",
+        "indicators": {
+          "active_learning": true,
+          "brief_communication": true
+        },
+        "dimensions": {
+          "active_reflective": -1.5,
+          "sensing_intuitive": 0,
+          "visual_verbal": 0,
+          "sequential_global": 0
+        }
+      },
+      {
+        "timestamp": "2025-11-12T00:48:46.938841",
+        "indicators": {
+          "reflective_learning": true,
+          "verbal_preference": true,
+          "brief_communication": true
+        },
+        "dimensions": {
+          "active_reflective": -1.0,
+          "sensing_intuitive": 0,
+          "visual_verbal": 1,
+          "sequential_global": 0
+        }
+      }
+    ]
+  },
+  "d85d1773-85b4-48e9-8b1b-61b988363243": {
+    "user_id": "d85d1773-85b4-48e9-8b1b-61b988363243",
+    "dimensions": {
+      "active_reflective": -7.5,
+      "sensing_intuitive": -1,
+      "visual_verbal": 2,
+      "sequential_global": 0
+    },
+    "total_interactions": 15,
+    "interaction_history": [
+      {
+        "timestamp": "2025-11-12T02:52:22.051025",
+        "indicators": {
+          "brief_communication": true
+        },
+        "dimensions": {
+          "active_reflective": -4.0,
+          "sensing_intuitive": -1,
+          "visual_verbal": 0,
+          "sequential_global": 0
+        }
+      },
+      {
+        "timestamp": "2025-11-12T02:53:28.668122",
+        "indicators": {
+          "brief_communication": true
+        },
+        "dimensions": {
+          "active_reflective": -4.5,
+          "sensing_intuitive": -1,
+          "visual_verbal": 0,
+          "sequential_global": 0
+        }
+      },
+      {
+        "timestamp": "2025-11-12T02:58:00.728240",
+        "indicators": {
+          "active_learning": true,
+          "brief_communication": true
+        },
+        "dimensions": {
+          "active_reflective": -6.0,
+          "sensing_intuitive": -1,
+          "visual_verbal": 0,
+          "sequential_global": 0
+        }
+      },
+      {
+        "timestamp": "2025-11-12T03:01:42.246552",
+        "indicators": {
+          "reflective_learning": true,
+          "verbal_preference": true,
+          "brief_communication": true
+        },
+        "dimensions": {
+          "active_reflective": -5.5,
+          "sensing_intuitive": -1,
+          "visual_verbal": 1,
+          "sequential_global": 0
+        }
+      },
+      {
+        "timestamp": "2025-11-12T03:04:24.564119",
+        "indicators": {
+          "brief_communication": true
+        },
+        "dimensions": {
+          "active_reflective": -6.0,
+          "sensing_intuitive": -1,
+          "visual_verbal": 1,
+          "sequential_global": 0
+        }
+      },
+      {
+        "timestamp": "2025-11-12T03:08:27.694302",
+        "indicators": {
+          "reflective_learning": true,
+          "verbal_preference": true,
+          "brief_communication": true
+        },
+        "dimensions": {
+          "active_reflective": -5.5,
+          "sensing_intuitive": -1,
+          "visual_verbal": 2,
+          "sequential_global": 0
+        }
+      },
+      {
+        "timestamp": "2025-11-12T03:23:04.850851",
+        "indicators": {
+          "brief_communication": true
+        },
+        "dimensions": {
+          "active_reflective": -6.0,
+          "sensing_intuitive": -1,
+          "visual_verbal": 2,
+          "sequential_global": 0
+        }
+      },
+      {
+        "timestamp": "2025-11-12T03:40:33.385811",
+        "indicators": {
+          "brief_communication": true
+        },
+        "dimensions": {
+          "active_reflective": -6.5,
+          "sensing_intuitive": -1,
+          "visual_verbal": 2,
+          "sequential_global": 0
+        }
+      },
+      {
+        "timestamp": "2025-11-12T03:49:59.324230",
+        "indicators": {
+          "brief_communication": true
+        },
+        "dimensions": {
+          "active_reflective": -7.0,
+          "sensing_intuitive": -1,
+          "visual_verbal": 2,
+          "sequential_global": 0
+        }
+      },
+      {
+        "timestamp": "2025-11-12T03:55:46.031495",
+        "indicators": {
+          "brief_communication": true
+        },
+        "dimensions": {
+          "active_reflective": -7.5,
+          "sensing_intuitive": -1,
+          "visual_verbal": 2,
+          "sequential_global": 0
+        }
+      }
+    ]
+  }
+}
