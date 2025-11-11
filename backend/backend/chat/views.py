@@ -14,6 +14,35 @@ from backend.errors import APIErrorResponse
 
 logger = logging.getLogger(__name__)
 
+def serialize_document(document, request=None):
+    if not document:
+        return None
+
+    file_url = None
+    if document.file:
+        file_url = document.file.url
+        if request:
+            try:
+                file_url = request.build_absolute_uri(file_url)
+            except Exception:
+                pass
+    elif document.file_path:
+        file_url = document.file_path
+        if request and not document.file_path.startswith('http'):
+            base_path = document.file_path.lstrip('/')
+            media_url = getattr(settings, 'MEDIA_URL', '/media/')
+            file_url = request.build_absolute_uri(f"{media_url}{base_path}")
+
+    return {
+        "id": str(document.id),
+        "filename": document.filename,
+        "processed": document.processed,
+        "uploaded_at": document.uploaded_at,
+        "session_id": str(document.session_id),
+        "message_id": str(document.message_id) if document.message_id else None,
+        "file_url": file_url
+    }
+
 class ChatSessionView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -113,7 +142,11 @@ class ChatMessageView(APIView):
                             "message_type": user_message.message_type,
                             "content": user_message.content,
                             "context": None,
-                            "timestamp": user_message.timestamp
+                        "timestamp": user_message.timestamp,
+                        "documents": [
+                            serialize_document(doc, request=request)
+                            for doc in user_message.documents.all()
+                        ]
                         },
                         "assistant_message": {
                             "id": str(assistant_message.id),
@@ -161,6 +194,26 @@ class ChatMessageView(APIView):
             if not content:
                 return APIErrorResponse.bad_request("Content is required")
 
+            document_ids = request.data.get("document_ids", [])
+            if isinstance(document_ids, str):
+                try:
+                    parsed_value = json.loads(document_ids)
+                    document_ids = parsed_value if isinstance(parsed_value, list) else [document_ids]
+                except json.JSONDecodeError:
+                    document_ids = [document_ids]
+
+            if not isinstance(document_ids, list):
+                return APIErrorResponse.bad_request("document_ids must be a list")
+
+            document_ids = [doc_id for doc_id in document_ids if doc_id]
+            documents = Document.objects.filter(id__in=document_ids, user=request.user, session=session)
+            if documents.count() != len(set(document_ids)):
+                return APIErrorResponse.bad_request("One or more documents were not found for this session")
+
+            for document in documents:
+                if document.message_id:
+                    return APIErrorResponse.bad_request("One or more documents are already attached to another message")
+
             # Store user message
             user_message = Message.objects.create(
                 session=session,
@@ -171,11 +224,18 @@ class ChatMessageView(APIView):
             # Forward query to FastAPI
             fastapi_url = f"{settings.FASTAPI_URL}/api/chat/process"
             headers = {"Authorization": f"Bearer {request.auth}"}
+            payload = {
+                "content": content,
+                "session_id": str(session_id)
+            }
+            if documents:
+                payload["document_ids"] = [str(doc.id) for doc in documents]
+
             try:
                 response = requests.post(
                     fastapi_url,
                     headers=headers,
-                    json={"content": content, "session_id": str(session_id)}
+                    json=payload
                 )
                 response.raise_for_status()
                 fastapi_data = response.json()
@@ -189,6 +249,13 @@ class ChatMessageView(APIView):
                     parent_message=user_message
                 )
 
+                # Attach documents to the user message
+                for document in documents:
+                    document.message = user_message
+                    if not document.filename:
+                        document.filename = os.path.basename(document.file.name) if document.file else document.filename
+                    document.save(update_fields=["message", "filename"])
+
                 # Update session title if empty
                 if not session.title:
                     session.title = content[:50] + ("..." if len(content) > 50 else "")
@@ -200,7 +267,11 @@ class ChatMessageView(APIView):
                         "message_type": user_message.message_type,
                         "content": user_message.content,
                         "context": None,
-                        "timestamp": user_message.timestamp
+                        "timestamp": user_message.timestamp,
+                        "documents": [
+                            serialize_document(doc, request=request)
+                            for doc in user_message.documents.all()
+                        ]
                     },
                     "assistant_message": {
                         "id": str(assistant_message.id),
@@ -225,10 +296,33 @@ class ChatMessageView(APIView):
                 assistant_message = user_message.child_messages.first()
                 if not assistant_message:
                     return APIErrorResponse.bad_request("No assistant message linked to this user message")
-                
+
                 new_content = request.data.get("content")
                 if not new_content:
                     return APIErrorResponse.bad_request("Content is required")
+
+                document_ids = request.data.get("document_ids", None)
+                if isinstance(document_ids, str):
+                    try:
+                        parsed_value = json.loads(document_ids)
+                        document_ids = parsed_value if isinstance(parsed_value, list) else [document_ids]
+                    except json.JSONDecodeError:
+                        document_ids = [document_ids]
+
+                documents = None
+                if document_ids is not None:
+                    if not isinstance(document_ids, list):
+                        return APIErrorResponse.bad_request("document_ids must be a list")
+                    document_ids = [doc_id for doc_id in document_ids if doc_id]
+                    documents = list(Document.objects.filter(id__in=document_ids, user=request.user, session=session))
+                    if len(set(document_ids)) != len(documents):
+                        return APIErrorResponse.bad_request("One or more documents were not found for this session")
+                    for document in documents:
+                        if document.message_id and document.message_id != str(user_message.id):
+                            return APIErrorResponse.bad_request("One or more documents are already attached to another message")
+                else:
+                    documents = list(user_message.documents.all())
+                    document_ids = [str(doc.id) for doc in documents]
 
                 # Update user message
                 user_message.content = new_content
@@ -237,11 +331,18 @@ class ChatMessageView(APIView):
                 # Reprocess through FastAPI for updated assistant response
                 fastapi_url = f"{settings.FASTAPI_URL}/api/chat/process"
                 headers = {"Authorization": f"Bearer {request.auth}"}
+                payload = {
+                    "content": new_content,
+                    "session_id": str(session_id)
+                }
+                if document_ids:
+                    payload["document_ids"] = document_ids
+
                 try:
                     response = requests.post(
                         fastapi_url,
                         headers=headers,
-                        json={"content": new_content, "session_id": str(session_id)}
+                        json=payload
                     )
                     response.raise_for_status()
                     fastapi_data = response.json()
@@ -251,13 +352,26 @@ class ChatMessageView(APIView):
                     assistant_message.context = json.dumps(fastapi_data.get("context", []))
                     assistant_message.save()
 
+                    if request.data.get("document_ids", None) is not None:
+                        # Detach documents not in the updated list
+                        Document.objects.filter(message=user_message).exclude(id__in=document_ids).update(message=None)
+                        for document in documents:
+                            document.message = user_message
+                            if not document.filename:
+                                document.filename = os.path.basename(document.file.name) if document.file else document.filename
+                            document.save(update_fields=["message", "filename"])
+
                     return Response({
                         "user_message": {
                             "id": str(user_message.id),
                             "message_type": user_message.message_type,
                             "content": user_message.content,
                             "context": None,
-                            "timestamp": user_message.timestamp
+                            "timestamp": user_message.timestamp,
+                            "documents": [
+                                serialize_document(doc, request=request)
+                                for doc in user_message.documents.all()
+                            ]
                         },
                         "assistant_message": {
                             "id": str(assistant_message.id),
@@ -291,53 +405,148 @@ class ChatMessageView(APIView):
         except ChatSession.DoesNotExist:
             return APIErrorResponse.not_found("Session not found")
 
-class DocumentUploadView(APIView):
+class SessionDocumentView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser]
 
-    def post(self, request):
-        """Upload a PDF and process it via FastAPI"""
+    def get(self, request, session_id):
+        """List all documents for a session owned by the authenticated user"""
+        try:
+            ChatSession.objects.get(id=session_id, user=request.user)
+        except ChatSession.DoesNotExist:
+            return APIErrorResponse.not_found("Session not found")
+
+        documents = Document.objects.filter(user=request.user, session_id=session_id).order_by("uploaded_at")
+        return Response([
+            serialize_document(document, request=request)
+            for document in documents
+        ])
+
+    def post(self, request, session_id):
+        """Upload a PDF for a session and process it via FastAPI"""
+        logger.info(f"Upload request received for session {session_id}")
+        logger.info(f"Request FILES keys: {list(request.FILES.keys())}")
+        logger.info(f"Request content type: {request.content_type}")
+        
+        try:
+            session = ChatSession.objects.get(id=session_id, user=request.user)
+        except ChatSession.DoesNotExist:
+            return APIErrorResponse.not_found("Session not found")
+
         file = request.FILES.get("file")
-        if not file or not file.name.endswith('.pdf'):
+        if not file:
+            logger.error("No file in request.FILES")
+            logger.error(f"Available keys: {list(request.FILES.keys())}")
+            return APIErrorResponse.bad_request("No file provided")
+        
+        logger.info(f"File received: {file.name}, size: {file.size}, content_type: {file.content_type}")
+        
+        if not file.name.lower().endswith('.pdf'):
             return APIErrorResponse.bad_request("Only PDF files are supported")
 
-        # Save file with unique name
-        file_id = uuid.uuid4()
-        file_path = f"media/uploads/{file_id}_{file.name}"
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        with open(file_path, "wb") as f:
-            f.write(file.read())
+        # Ensure media directory exists
+        media_root = settings.MEDIA_ROOT
+        documents_dir = os.path.join(media_root, 'documents')
+        os.makedirs(documents_dir, exist_ok=True)
+        logger.info(f"Media root: {media_root}, Documents dir: {documents_dir}")
 
-        # Create Document record
+        unique_name = f"{uuid.uuid4()}_{file.name}"
+        logger.info(f"Creating document with unique name: {unique_name}")
+        
         document = Document.objects.create(
             user=request.user,
+            session=session,
             filename=file.name,
-            file_path=file_path,
             processed=False
         )
+        
+        try:
+            # Reset file pointer to beginning
+            file.seek(0)
+            
+            # Method 1: Use Django's file.save() method
+            logger.info(f"Saving file using document.file.save()...")
+            document.file.save(unique_name, file, save=True)
+            
+            # Refresh from DB to get the updated file path
+            document.refresh_from_db()
+            
+            logger.info(f"After save - document.file.name: {document.file.name}")
+            logger.info(f"document.file: {document.file}")
+            
+            # Verify file was saved
+            if not document.file or not document.file.name:
+                # Try alternative method: save file manually
+                logger.warning("File field empty, trying manual save...")
+                file.seek(0)
+                file_path = os.path.join(documents_dir, unique_name)
+                
+                # Write file manually
+                with open(file_path, 'wb+') as destination:
+                    for chunk in file.chunks():
+                        destination.write(chunk)
+                
+                # Now use Django's file storage to save it properly
+                from django.core.files import File as DjangoFile
+                with open(file_path, 'rb') as f:
+                    document.file.save(unique_name, DjangoFile(f), save=True)
+                
+                document.refresh_from_db()
+                document.file_path = document.file.name or f"documents/{unique_name}"
+                document.save(update_fields=["file_path"])
+                logger.info(f"File saved manually to: {file_path}, document.file.name: {document.file.name}")
+            else:
+                document.file_path = document.file.name
+                document.save(update_fields=["file_path"])
+            
+            # Verify file exists
+            if document.file:
+                file_path = document.file.path if hasattr(document.file, 'path') else os.path.join(media_root, document.file.name)
+                if not os.path.exists(file_path):
+                    raise ValueError(f"File does not exist at path: {file_path}")
+                
+                file_size = os.path.getsize(file_path)
+                logger.info(f"File saved successfully: {document.file.name} at {file_path}, size: {file_size} bytes")
+            else:
+                raise ValueError("File field is still empty after save")
+                
+        except Exception as e:
+            logger.error(f"Error saving file: {str(e)}", exc_info=True)
+            if document.id:
+                document.delete()
+            return APIErrorResponse.server_error(f"Failed to save file: {str(e)}")
 
-        # Process via FastAPI
         fastapi_url = f"{settings.FASTAPI_URL}/api/documents/process"
         headers = {"Authorization": f"Bearer {request.auth}"}
         try:
-            with open(file_path, "rb") as f:
+            # Open the saved file for FastAPI
+            if not document.file:
+                raise ValueError("File field is empty")
+            with document.file.open("rb") as file_obj:
                 response = requests.post(
                     fastapi_url,
                     headers=headers,
-                    files={"file": (f"{file_id}_{file.name}", f, "application/pdf")}
+                    files={"file": (unique_name, file_obj, "application/pdf")},
+                    data={
+                        "session_id": str(session_id),
+                        "document_id": str(document.id)
+                    }
                 )
                 response.raise_for_status()
                 document.processed = True
-                document.save()
+                document.save(update_fields=["processed"])
                 return Response({
                     "id": str(document.id),
                     "filename": document.filename,
                     "processed": document.processed,
+                    "session_id": str(document.session_id),
+                    "file_url": serialize_document(document, request=request)["file_url"],
                     "message": "Document uploaded and processed successfully"
                 }, status=201)
         except requests.RequestException as e:
             logger.error(f"Error processing document via FastAPI: {str(e)}")
+            document.delete()
             return APIErrorResponse.server_error(str(e))
 
 class DocumentListView(APIView):
@@ -347,12 +556,12 @@ class DocumentListView(APIView):
     def get(self, request):
         """List all documents for the authenticated user"""
         documents = Document.objects.filter(user=request.user)
+        session_filter = request.query_params.get("session_id")
+        if session_filter:
+            documents = documents.filter(session_id=session_filter)
+
+        documents = documents.order_by("-uploaded_at")
         return Response([
-            {
-                "id": str(doc.id),
-                "filename": doc.filename,
-                "processed": doc.processed,
-                "uploaded_at": doc.uploaded_at
-            }
+            serialize_document(doc, request=request)
             for doc in documents
         ])

@@ -33,8 +33,11 @@ class Message(models.Model):
 class Document(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name='documents')
+    message = models.ForeignKey('Message', null=True, blank=True, on_delete=models.CASCADE, related_name='documents')
     filename = models.CharField(max_length=255)
-    file_path = models.CharField(max_length=255)
+    file = models.FileField(upload_to='documents/', null=True, blank=True)
+    file_path = models.CharField(max_length=255, blank=True)
     processed = models.BooleanField(default=False)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
@@ -42,4 +45,12 @@ class Document(models.Model):
         db_table = 'documents'
 
     def __str__(self):
-        return self.filename
+        display_name = self.filename or (self.file.name if self.file else None)
+        return display_name or str(self.id)[:12]
+
+    def delete(self, using=None, keep_parents=False):
+        storage = self.file.storage if self.file else None
+        file_name = self.file.name if self.file else None
+        super().delete(using=using, keep_parents=keep_parents)
+        if storage and file_name:
+            storage.delete(file_name)

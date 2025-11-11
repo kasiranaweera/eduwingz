@@ -1,296 +1,3 @@
-// import React, { useState, useRef, useEffect } from "react";
-// import {
-//   Box,
-//   Avatar,
-//   List,
-//   ListItem,
-//   ListItemAvatar,
-//   ListItemText,
-//   Paper,
-//   CircularProgress,
-//   useTheme,
-//   useMediaQuery,
-// } from "@mui/material";
-// import {
-//   AccountCircle,
-// } from "@mui/icons-material";
-// import { Container } from "@mui/system";
-// import ChatSection from "../components/ChatSection";
-// import logoicon from "../assets/logo/eduwingz_logo.png";
-// import { useLocation, useParams, useNavigate } from "react-router-dom";
-// import chatApi from "../api/modules/chat.api";
-// import { useSelector } from "react-redux";
-
-// const ChatPage = () => {
-//     const { themeMode } = useSelector((state) => state.themeMode);
-
-//   const theme = useTheme();
-//   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-//   const location = useLocation();
-//   // If opened from a session route, `sessionId` will be present in params
-//   const { sessionId } = useParams();
-//   const navigate = useNavigate();
-//   const user_message = location.state?.message || "";
-//   const [messages, setMessages] = useState([
-//     // {
-//     //   id: 1,
-//     //   text: user_message,
-//     //   sender: "user",
-//     //   timestamp: new Date(),
-//     // },
-//     // {
-//     //   id: 2,
-//     //   text: "Based on the information provided, EduWingz appears to be an educational platform with a technical infrastructure that includes React.js for frontend development and Django framework for the backend. \n\nThe implementation of EduWingz requires careful consideration of software, hardware, and data resources. The React.js frontend ensures a responsive and interactive user interface for users, while the Django backend provides robust server-side functionality. \n Without additional information in the provided context, I can't determine the specific educational features, target audience, or exact purpose of EduWingz beyond it being a web-based educational platform with the technical stack mentioned.",
-//     //   sender: "bot",
-//     //   timestamp: new Date(),
-//     // },
-//   ]);
-//   const [inputValue, setInputValue] = useState("");
-//   const [isLoading, setIsLoading] = useState(false);
-//   const messagesEndRef = useRef(null);
-
-//   const handleSendMessage = (messageText) => {
-
-//     // Add user message to chat
-//     const userMessage = {
-//       id: messages.length + 1,
-//       text: messageText,
-//       sender: "user",
-//       timestamp: new Date(),
-//     };
-//     setMessages([...messages, userMessage]);
-
-//     // Simulate bot response
-//     setIsLoading(true);
-//     (async () => {
-//       try {
-//         // If we have a sessionId, post to backend; otherwise just simulate
-//         if (sessionId) {
-//           const { response, err } = await chatApi.postMessage(sessionId, { content: messageText });
-//           if (err) {
-//             console.error('post message error', err);
-//             // on auth error, redirect to login
-//             if (err?.detail && err.detail.toString().toLowerCase().includes('authentication')) {
-//               navigate('/auth');
-//               return;
-//             }
-//           } else if (response) {
-//             // response contains user_message and assistant_message
-//             const um = response.user_message;
-//             const am = response.assistant_message;
-//             setMessages((prev) => {
-//               const out = [...prev];
-//               if (um) out.push({ id: um.id, text: um.content, sender: 'user', timestamp: um.timestamp ? new Date(um.timestamp) : new Date() });
-//               if (am) out.push({ id: am.id, text: am.content, sender: 'bot', timestamp: am.timestamp ? new Date(am.timestamp) : new Date() });
-//               return out;
-//             });
-//             setIsLoading(false);
-//             return;
-//           }
-//         }
-
-//         // fallback: local simulated response
-//         setTimeout(() => {
-//           const botMessage = {
-//             id: messages.length + 2,
-//             text: `Response to: "${messageText}"`,
-//             sender: "bot",
-//             timestamp: new Date(),
-//           };
-//           setMessages((prev) => [...prev, botMessage]);
-//           setIsLoading(false);
-//         }, 1500);
-//       } catch (e) {
-//         console.error(e);
-//         setIsLoading(false);
-//       }
-//     })();
-//   };
-
-//   const handleKeyPress = (e) => {
-//     if (e.key === "Enter" && !e.shiftKey) {
-//       e.preventDefault();
-//       handleSendMessage();
-//     }
-//   };
-
-//   // Auto-scroll to bottom when messages change
-//   // useEffect(() => {
-//   //   messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-//   // }, [messages]);
-
-//   useEffect(() => {
-//     // If sessionId present, load messages from backend
-//     let mounted = true;
-//     (async () => {
-//       if (sessionId) {
-//         try {
-//           setIsLoading(true);
-//           const { response, err } = await chatApi.getMessages(sessionId);
-//           setIsLoading(false);
-//           if (err) {
-//             console.error('get messages error', err);
-//             return;
-//           }
-//             if (response && mounted) {
-//               // backend returns an array of pairs: { user_message: {...}, assistant_message: {...} }
-//               const pairs = Array.isArray(response) ? response : (response.results || response.data || []);
-//               const flat = [];
-//               pairs.forEach((pair, idx) => {
-//                 const u = pair.user_message;
-//                 if (u) {
-//                   flat.push({
-//                     id: u.id ?? `u-${idx}`,
-//                     text: u.content ?? '',
-//                     sender: 'user',
-//                     timestamp: u.timestamp ? new Date(u.timestamp) : new Date()
-//                   });
-//                 }
-//                 const a = pair.assistant_message;
-//                 if (a) {
-//                   flat.push({
-//                     id: a.id ?? `a-${idx}`,
-//                     text: a.content ?? '',
-//                     sender: 'bot',
-//                     timestamp: a.timestamp ? new Date(a.timestamp) : new Date()
-//                   });
-//                 }
-//               });
-//               setMessages(flat);
-//             }
-//         } catch (e) {
-//           console.error(e);
-//         }
-//         return;
-//       }
-
-//       if (user_message) {
-//         const userMessage = {
-//           id: 1,
-//           text: user_message,
-//           sender: "user",
-//           timestamp: new Date(),
-//         };
-//         setMessages((prev) => [...prev, userMessage]);
-
-//         setIsLoading(true);
-//         setTimeout(() => {
-//           const botMessage = {
-//             id: 2,
-//             text: `Response to: "${user_message}"`,
-//             sender: "bot",
-//             timestamp: new Date(),
-//           };
-//           setMessages((prev) => [...prev, botMessage]);
-//           setIsLoading(false);
-//         }, 1500);
-//       }
-//     })();
-//   }, [user_message, sessionId]);
-
-//   return (
-//     <Container sx={{ position: "relative", height: window.innerHeight - 100 }}>
-//       <Box
-//         sx={{
-//           display: "flex",
-//           flexDirection: "column",
-//         }}
-//       >
-//         {/* Chat Messages Area */}
-//         <Box
-//           sx={{
-//             overflowY: "visible",
-//             minHeight: window.innerHeight - 250,
-//           }}
-//         >
-//           <List sx={{ width: "100%", maxWidth: "75%", mx: "auto" }}>
-//             {messages.map((message) => (
-//               <ListItem
-//                 key={message.id}
-//                 sx={{
-//                   display: "flex",
-//                   flexDirection:
-//                     message.sender === "user" ? "row-reverse" : "row",
-//                   alignItems: "center",
-//                 }}
-//               >
-//                 <ListItemAvatar
-//                   sx={{
-//                     alignSelf: "flex-start",
-//                     minWidth: "40px",
-//                   }}
-//                 >
-//                   {message.sender === "user" ? (
-//                     <Avatar sx={{ bgcolor: "primary.main" }}>
-//                       <AccountCircle />
-//                     </Avatar>
-//                   ) : (
-//                     <img
-//                       src={logoicon}
-//                       alt="Bot Avatar"
-//                       style={{
-//                         width: "40px",
-//                         height: "40px",
-//                       }}
-//                     />
-//                   )}
-//                 </ListItemAvatar>
-//                 <Paper
-//                   elevation={2}
-//                   sx={{
-//                     p: 2,
-//                     ml: message.sender === "user" ? 0 : 1,
-//                     mr: message.sender === "user" ? 1 : 0,
-//                     maxWidth: "75%",
-//                     bgcolor:
-//                       message.sender === "user"
-//                         ? "primary.light"
-//                         : "background.paper",
-//                     color:
-//                       message.sender === "user"
-//                         ? "secondary.contrastText"
-//                         : "primary.contrastText",
-//                     borderRadius:
-//                       message.sender === "user"
-//                         ? "18px 0 18px 18px"
-//                         : "0 18px 18px 18px",
-//                   }}
-//                 >
-//                   <ListItemText
-//                     primary={message.text}
-//                     secondary={message.timestamp.toLocaleTimeString()}
-//                     secondaryTypographyProps={{
-//                       color:
-//                         message.sender === "user"
-//                           ? "secondary.contrastText"
-//                           : "primary.contrastText",
-//                       fontSize: "0.75rem",
-//                       marginTop: 1,
-//                     }}
-//                   />
-//                 </Paper>
-//               </ListItem>
-//             ))}
-//             {isLoading && (
-//               <ListItem sx={{ justifyContent: "center" }}>
-//                 <CircularProgress size={24} />
-//               </ListItem>
-//             )}
-//             <div ref={messagesEndRef} />
-//           </List>
-//         </Box>
-//       </Box>
-//       <ChatSection
-//         className="chatSection"
-//         sx={{ position: "sticky", bottom: 0, width: "100%" }}
-//         handleSendMessage={handleSendMessage}
-//       />
-//     </Container>
-//   );
-// };
-
-// export default ChatPage;
-
 import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
@@ -304,6 +11,7 @@ import {
   useTheme,
   useMediaQuery,
   IconButton,
+  Button,
 } from "@mui/material";
 import { Container, display } from "@mui/system";
 import ChatSection from "../components/ChatSection";
@@ -327,11 +35,23 @@ import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import StarOutlineIcon from "@mui/icons-material/StarOutline";
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import FilePresentOutlinedIcon from "@mui/icons-material/FilePresentOutlined";
+
+const normalizeMessage = (source, sender, fallbackIdPrefix) => {
+  if (!source) return null;
+  const timestamp = source.timestamp ? new Date(source.timestamp) : new Date();
+  return {
+    id: source.id ?? `${fallbackIdPrefix}-${timestamp.getTime()}`,
+    text: source.content ?? "",
+    sender,
+    timestamp,
+    attachments: Array.isArray(source.documents) ? source.documents : [],
+  };
+};
 
 const ChatPage = () => {
   const { themeMode } = useSelector((state) => state.themeMode);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const location = useLocation();
   const { sessionId } = useParams();
   const navigate = useNavigate();
@@ -344,77 +64,93 @@ const ChatPage = () => {
   /* ---------------------------------------------------------- */
   /* 1. SEND MESSAGE – fixed duplicate logic                    */
   /* ---------------------------------------------------------- */
-  const handleSendMessage = async (messageText) => {
-    if (!messageText?.trim()) return;
+  const handleSendMessage = async (messageText, attachments = []) => {
+    const trimmed = messageText?.trim();
+    if (!trimmed) return false;
 
     // ---- optimistic UI only for *new* sessions ----
     if (!sessionId) {
+      const now = new Date();
       const userMessage = {
-        id: Date.now(),
-        text: messageText,
+        id: now.getTime(),
+        text: trimmed,
         sender: "user",
-        timestamp: new Date(),
+        timestamp: now,
+        attachments: attachments.map((file, index) => ({
+          id: `${now.getTime()}-${index}`,
+          filename: file.name,
+          processed: false,
+          file_url: URL.createObjectURL(file),
+        })),
       };
       setMessages((prev) => [...prev, userMessage]);
+      setIsLoading(true);
+      setTimeout(() => {
+        const botMessage = {
+          id: Date.now() + 1,
+          text: `Response to: "${trimmed}"`,
+          sender: "bot",
+          timestamp: new Date(),
+          attachments: [],
+        };
+        setMessages((prev) => [...prev, botMessage]);
+        setIsLoading(false);
+      }, 1500);
+      return true;
     }
 
     setIsLoading(true);
+    let success = false;
 
     try {
-      if (sessionId) {
-        const { response, err } = await chatApi.postMessage(sessionId, {
-          content: messageText,
-        });
-
-        if (err) {
-          console.error("post message error", err);
-          if (err?.detail?.toLowerCase().includes("authentication")) {
-            navigate("/auth");
+      let documentIds = [];
+      if (attachments.length) {
+        const uploadedDocuments = [];
+        for (const file of attachments) {
+          const { response: uploadResponse, err: uploadErr } = await chatApi.uploadDocument(sessionId, file);
+          if (uploadErr) {
+            console.error("upload document error", uploadErr);
+            throw uploadErr;
           }
-          return;
+          uploadedDocuments.push(uploadResponse);
         }
+        documentIds = uploadedDocuments
+          .map((doc) => doc?.id)
+          .filter(Boolean);
+      }
 
-        if (response) {
-          const um = response.user_message;
-          const am = response.assistant_message;
+      const { response, err } = await chatApi.postMessage(sessionId, {
+        content: trimmed,
+        document_ids: documentIds,
+      });
 
-          setMessages((prev) => {
-            const out = [...prev];
-            if (um)
-              out.push({
-                id: um.id,
-                text: um.content,
-                sender: "user",
-                timestamp: new Date(um.timestamp),
-              });
-            if (am)
-              out.push({
-                id: am.id,
-                text: am.content,
-                sender: "bot",
-                timestamp: new Date(am.timestamp),
-              });
-            return out;
-          });
+      if (err) {
+        console.error("post message error", err);
+        if (typeof err?.detail === "string" && err.detail.toLowerCase().includes("authentication")) {
+          navigate("/auth");
         }
-      } else {
-        // ---- local simulation ----
-        setTimeout(() => {
-          const botMessage = {
-            id: Date.now() + 1,
-            text: `Response to: "${messageText}"`,
-            sender: "bot",
-            timestamp: new Date(),
-          };
-          setMessages((prev) => [...prev, botMessage]);
-          setIsLoading(false);
-        }, 1500);
+        return false;
+      }
+
+      if (response) {
+        const normalizedUser = normalizeMessage(response.user_message, "user", "user");
+        const normalizedAssistant = normalizeMessage(response.assistant_message, "bot", "assistant");
+
+        setMessages((prev) => {
+          const out = [...prev];
+          if (normalizedUser) out.push(normalizedUser);
+          if (normalizedAssistant) out.push(normalizedAssistant);
+          return out;
+        });
+        success = true;
       }
     } catch (e) {
       console.error(e);
     } finally {
       setIsLoading(false);
     }
+
+    return success;
   };
 
   /* ---------------------------------------------------------- */
@@ -425,33 +161,28 @@ const ChatPage = () => {
     (async () => {
       if (sessionId) {
         setIsLoading(true);
-        const { response, err } = await chatApi.getMessages(sessionId);
-        setIsLoading(false);
-        if (err) return console.error(err);
-        if (response && mounted) {
-          const pairs = Array.isArray(response)
-            ? response
-            : response.results || response.data || [];
-          const flat = [];
-          pairs.forEach((pair, idx) => {
-            const u = pair.user_message;
-            const a = pair.assistant_message;
-            if (u)
-              flat.push({
-                id: u.id ?? `u-${idx}`,
-                text: u.content ?? "",
-                sender: "user",
-                timestamp: u.timestamp ? new Date(u.timestamp) : new Date(),
-              });
-            if (a)
-              flat.push({
-                id: a.id ?? `a-${idx}`,
-                text: a.content ?? "",
-                sender: "bot",
-                timestamp: a.timestamp ? new Date(a.timestamp) : new Date(),
-              });
-          });
-          setMessages(flat);
+        try {
+          const { response, err } = await chatApi.getMessages(sessionId);
+          console.log("response", response);
+          if (err) {
+            console.error(err);
+            return;
+          }
+          if (response && mounted) {
+            const pairs = Array.isArray(response)
+              ? response
+              : response.results || response.data || [];
+            const flat = [];
+            pairs.forEach((pair, idx) => {
+              const userMessage = normalizeMessage(pair.user_message, "user", `u-${idx}`);
+              const assistantMessage = normalizeMessage(pair.assistant_message, "bot", `a-${idx}`);
+              if (userMessage) flat.push(userMessage);
+              if (assistantMessage) flat.push(assistantMessage);
+            });
+            setMessages(flat);
+          }
+        } finally {
+          setIsLoading(false);
         }
         return;
       }
@@ -463,6 +194,7 @@ const ChatPage = () => {
           text: user_message,
           sender: "user",
           timestamp: new Date(),
+          attachments: [],
         };
         setMessages([userMessage]);
 
@@ -473,6 +205,7 @@ const ChatPage = () => {
             text: `Response to: "${user_message}"`,
             sender: "bot",
             timestamp: new Date(),
+            attachments: [],
           };
           setMessages((prev) => [...prev, botMessage]);
           setIsLoading(false);
@@ -501,9 +234,17 @@ const ChatPage = () => {
         "color: inherit"
       );
       console.log("  id:", m.id, "time:", m.timestamp.toLocaleTimeString());
+      if (m.attachments?.length) {
+        console.log(
+          "  attachments:",
+          m.attachments.map((attachment) => attachment.filename || attachment.id).join(", ")
+        );
+      }
     });
     console.groupEnd();
   }, [messages]);
+
+  console.log("messages", messages);
 
   /* ---------------------------------------------------------- */
   /* UI (unchanged, only tiny style tweak)                     */
@@ -635,6 +376,54 @@ const ChatPage = () => {
                     >
                       {message.text}
                     </ReactMarkdown>
+
+                    {message.attachments?.length ? (
+                      <Box
+                        sx={{
+                          mt: 1,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 0.5,
+                        }}
+                      >
+                        {message.attachments.map((attachment) => (
+                          <Button
+                            key={attachment.id || attachment.filename}
+                            variant="outlined"
+                            size="small"
+                            startIcon={<FilePresentOutlinedIcon fontSize="small" />}
+                            sx={{
+                              justifyContent: "flex-start",
+                              textTransform: "none",
+                              borderColor:
+                                message.sender === "user"
+                                  ? "secondary.contrastText"
+                                  : "divider",
+                              color:
+                                message.sender === "user"
+                                  ? "secondary.contrastText"
+                                  : "primary.contrastText",
+                              "&:hover": {
+                                borderColor: "primary.main",
+                                color: "primary.main",
+                              },
+                              maxWidth: "100%",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                            onClick={() => {
+                              if (attachment.file_url) {
+                                window.open(attachment.file_url, "_blank", "noopener,noreferrer");
+                              }
+                            }}
+                            disabled={!attachment.file_url}
+                          >
+                            {attachment.filename || "Attachment"}
+                          </Button>
+                        ))}
+                      </Box>
+                    ) : null}
 
                     <Box
                       sx={{
