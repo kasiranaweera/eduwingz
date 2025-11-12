@@ -28,11 +28,13 @@ import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 import MicOutlinedIcon from '@mui/icons-material/MicOutlined';
+import StopCircleOutlinedIcon from '@mui/icons-material/StopCircleOutlined';
 
 const ChatSection = ({ sx, handleSendMessage, main }) => {
   const { themeMode } = useSelector((state) => state.themeMode);
   const [templateModalOpen, setTemplateModalOpen] = useState();
   const [uploadFiles, setUploadFiles] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const chatFormik = useFormik({
     initialValues: {
@@ -45,8 +47,12 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
     }),
     onSubmit: async (values, { resetForm, setSubmitting }) => {
       try {
-        resetForm();
+        setIsLoading(true);
         const filesToSend = uploadFiles.map((item) => item.file);
+
+        resetForm();
+        setUploadFiles([]);
+
         console.log("Submitting message with files:", filesToSend.map(f => ({ name: f.name, size: f.size })));
         const success = await handleSendMessage(values.message, filesToSend);
         if (success) {
@@ -56,7 +62,7 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
               URL.revokeObjectURL(item.previewUrl);
             }
           });
-          setUploadFiles([]);
+          
         } else {
           console.error("Message sending failed - keeping files in upload list");
         }
@@ -64,6 +70,7 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
         console.error("Error in form submission:", error);
       } finally {
         setSubmitting(false);
+        setIsLoading(false);
       }
     },
   });
@@ -192,7 +199,7 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
           ) : (
             <IconButton
               type="submit"
-              disabled={!chatFormik.values.message || chatFormik.isSubmitting}
+              disabled={chatFormik.isSubmitting}
               sx={{
                 display: { xs: "none", md: "flex" },
                 "&:hover": { color: "primary.main" },
@@ -202,7 +209,7 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
                     : "primary.contrastText",
               }}
             >
-              {chatFormik.values.message.length > 0 ? <SendIcon /> : <MicOutlinedIcon />}
+              {chatFormik.values.message.length > 0 ? <SendIcon /> : isLoading ? <StopCircleOutlinedIcon /> : <MicOutlinedIcon />}
             </IconButton>
           )}
         </Box>
