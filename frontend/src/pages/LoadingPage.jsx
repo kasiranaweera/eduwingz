@@ -11,7 +11,7 @@ import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
 import OrbElement from "../components/common/OrbElement";
 import DecryptedText from "../components/common/DecryptedText";
-import ShinyText from "../components/common/ShineText";
+import ShinyText from "../components/common/ShinyText";
 
 const LoadingPage = () => {
   const { themeMode } = useSelector((state) => state.themeMode);

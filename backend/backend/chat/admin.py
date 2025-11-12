@@ -19,8 +19,8 @@ class MessageAdmin(admin.ModelAdmin):
 
 @admin.register(Document)
 class DocumentAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'filename', 'processed', 'uploaded_at')
-    search_fields = ('id', 'filename', 'user__username', 'user__email')
+    list_display = ('id', 'user', 'session', 'message', 'filename', 'processed', 'uploaded_at')
+    search_fields = ('id', 'filename', 'user__username', 'user__email', 'session__id')
     list_filter = ('processed', 'uploaded_at')
     readonly_fields = ('id', 'uploaded_at')
-    fields = ('user', 'filename', 'file_path', 'processed')
+    fields = ('user', 'session', 'message', 'filename', 'file', 'processed')

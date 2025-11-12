@@ -23,17 +23,19 @@ import AttachmentMenu from "./AttachmentMenu";
 import AddIcon from "@mui/icons-material/Add";
 import { Link } from "react-router-dom";
 import FloatingPageUpButton from "./FloatingPageUpButton";
-import FilePresentOutlinedIcon from '@mui/icons-material/FilePresentOutlined';
+import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
+import MicOutlinedIcon from '@mui/icons-material/MicOutlined';
+import StopCircleOutlinedIcon from '@mui/icons-material/StopCircleOutlined';
 
 const ChatSection = ({ sx, handleSendMessage, main }) => {
   const { themeMode } = useSelector((state) => state.themeMode);
   const [templateModalOpen, setTemplateModalOpen] = useState();
   const [uploadFiles, setUploadFiles] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Main chat formik
   const chatFormik = useFormik({
     initialValues: {
       message: "",
@@ -43,9 +45,33 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
         .required("Message is required")
         .max(5000, "Message too long (max 5000 characters)"),
     }),
-    onSubmit: (values, { resetForm }) => {
-      handleSendMessage(values.message);
-      resetForm();
+    onSubmit: async (values, { resetForm, setSubmitting }) => {
+      try {
+        setIsLoading(true);
+        const filesToSend = uploadFiles.map((item) => item.file);
+
+        resetForm();
+        setUploadFiles([]);
+
+        console.log("Submitting message with files:", filesToSend.map(f => ({ name: f.name, size: f.size })));
+        const success = await handleSendMessage(values.message, filesToSend);
+        if (success) {
+          
+          uploadFiles.forEach((item) => {
+            if (item.previewUrl) {
+              URL.revokeObjectURL(item.previewUrl);
+            }
+          });
+          
+        } else {
+          console.error("Message sending failed - keeping files in upload list");
+        }
+      } catch (error) {
+        console.error("Error in form submission:", error);
+      } finally {
+        setSubmitting(false);
+        setIsLoading(false);
+      }
     },
   });
 
@@ -57,10 +83,15 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
   };
 
   const handleFileSelect = (file) => {
-    // Handle the selected file (upload, display, etc.)
-    console.log("Selected file:", file);
-    setUploadFiles((prevFiles) => [...prevFiles, file]);
-    // You might want to add the file name to the message or upload it
+    if (!file) return;
+    const previewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : null;
+    setUploadFiles((prevFiles) => [
+      ...prevFiles,
+      {
+        file,
+        previewUrl,
+      },
+    ]);
   };
 
   const handleClick = () => {
@@ -68,10 +99,15 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
   };
 
   const handleDelete = (idx) => {
-    setUploadFiles((prev) => prev.filter((_, i) => i !== idx));
+    setUploadFiles((prev) => {
+      const next = [...prev];
+      const [removed] = next.splice(idx, 1);
+      if (removed?.previewUrl) {
+        URL.revokeObjectURL(removed.previewUrl);
+      }
+      return next;
+    });
   };
-
-  console.log("Selected files List:", uploadFiles);
 
   return (
     <Box sx={{ ...sx }}>
@@ -146,7 +182,7 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
           {main === "true" ? (
             <IconButton
               type="submit"
-              disabled={!chatFormik.values.message}
+              disabled={!chatFormik.values.message || chatFormik.isSubmitting}
               component={Link}
               to="/dashboard/chat"
               sx={{
@@ -163,7 +199,7 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
           ) : (
             <IconButton
               type="submit"
-              disabled={!chatFormik.values.message}
+              disabled={chatFormik.isSubmitting}
               sx={{
                 display: { xs: "none", md: "flex" },
                 "&:hover": { color: "primary.main" },
@@ -173,42 +209,64 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
                     : "primary.contrastText",
               }}
             >
-              <SendIcon />
+              {chatFormik.values.message.length > 0 ? <SendIcon /> : isLoading ? <StopCircleOutlinedIcon /> : <MicOutlinedIcon />}
             </IconButton>
           )}
         </Box>
         {uploadFiles.length > 0 ? (
           <>
             <Divider sx={{ my: 1 }} orientation="horizontal" flexItem />
-            <Box sx={{display:'flex', gap:1, maxWidth:'100%', flexWrap:'wrap'}}>
-              {uploadFiles.map((file, index) => (<Box sx={{position:'relative'}}><Tooltip title={file.name} arrow>
-                <Box sx={{ display:'flex', alignItems:'center', gap:1, border:1, borderColor:'graycolor.two', borderRadius: 3, py:1,pl:1,pr:4 }} key={index}>
-                    {file.type.startsWith("image/") ? (
-                      <Avatar variant="rounded" src={URL.createObjectURL(file)} alt={file.name} sx={{ }}>
-                        <ImageOutlinedIcon />
-                      </Avatar>
-                    ) : file.type.startsWith("application/") ? (
-                      <Avatar variant="rounded" sx={{ }}>
-                        <FilePresentOutlinedIcon />
-                      </Avatar>
-                    ) : (
-                      <Avatar variant="rounded" sx={{  }}>
-                        <UploadFileOutlinedIcon />
-                      </Avatar>
-                    )}
-                    
-                  <Box sx={{width:'100%'}}>
-                    <Typography sx={{ }} variant="body2">{file.name}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {(file.size / 1024).toFixed(2)} KB
-                    </Typography>
+            <Box sx={{ display: "flex", gap: 1, maxWidth: "100%", flexWrap: "wrap" }}>
+              {uploadFiles.map((item, index) => {
+                const { file, previewUrl } = item;
+                return (
+                  <Box sx={{ position: "relative" }} key={`${file.name}-${index}`}>
+                    <Tooltip title={file.name} arrow>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          border: 1,
+                          borderColor: "graycolor.two",
+                          borderRadius: 3,
+                          py: 1,
+                          pl: 1,
+                          pr: 4,
+                        }}
+                      >
+                        {file.type.startsWith("image/") ? (
+                          <Avatar variant="rounded" src={previewUrl || undefined} alt={file.name}>
+                            <ImageOutlinedIcon />
+                          </Avatar>
+                        ) : file.type.startsWith("application/") ? (
+                          <Avatar variant="rounded">
+                            <PictureAsPdfOutlinedIcon />
+                          </Avatar>
+                        ) : (
+                          <Avatar variant="rounded">
+                            <UploadFileOutlinedIcon />
+                          </Avatar>
+                        )}
+
+                        <Box sx={{ width: "100%" }}>
+                          <Typography variant="body2">{file.name}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {(file.size / 1024).toFixed(2)} KB
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Tooltip>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDelete(index)}
+                      sx={{ position: "absolute", top: 0, right: 0 }}
+                    >
+                      <CloseOutlinedIcon sx={{ width: "16px", height: "16px" }} />
+                    </IconButton>
                   </Box>
-                </Box></Tooltip>
-                <IconButton size="small" onClick={() => handleDelete(index)} sx={{position:'absolute', top:0, right:0,}}>
-                  <CloseOutlinedIcon sx={{width: '16px', height: '16px'}} />
-                </IconButton>
-                </Box>
-              ))}
+                );
+              })}
             </Box>
           </>
         ) : (
@@ -220,7 +278,7 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
       <TemplateModal
         open={templateModalOpen}
         onClose={() => setTemplateModalOpen(false)}
-        onSubmit={(template) => handleSendMessage(template)}
+        onSubmit={(template) => handleSendMessage(template, [])}
       />
     </Box>
   );

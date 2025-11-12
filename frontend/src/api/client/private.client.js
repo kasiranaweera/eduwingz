@@ -33,9 +33,12 @@ privateClient.interceptors.request.use(async config => {
   }
 
   const headers = {
-    "Content-Type": "application/json",
     ...(config && config.headers ? config.headers : {})
   };
+  // Only set Content-Type to application/json if it's not already set (e.g., for multipart/form-data)
+  if (!headers["Content-Type"] && !(config.data instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
   // Mutate and return the config object as expected by axios
