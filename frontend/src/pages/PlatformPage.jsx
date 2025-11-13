@@ -26,9 +26,10 @@ import uiConfigs from "../configs/ui.config";
 
 // Components
 import RecentActivities from "../components/RecentActivities";
+import { useSelector } from "react-redux";
 
 const DashboardPlatformPage = () => {
-  const username = "Saman Perera";
+  const { user } = useSelector((state) => state.user); 
   const greeting = getGreeting();
 
   // States
@@ -67,7 +68,7 @@ const DashboardPlatformPage = () => {
             >
               <Box>
                 <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                  {greeting}, <strong>{username}</strong> 👋
+                  {greeting}, <strong>{user.username}</strong> 👋
                 </Typography>
                 <Typography>
                   Ready to continue your learning journey?
