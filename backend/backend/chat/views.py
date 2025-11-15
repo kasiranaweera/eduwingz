@@ -206,13 +206,33 @@ class ChatMessageView(APIView):
                 return APIErrorResponse.bad_request("document_ids must be a list")
 
             document_ids = [doc_id for doc_id in document_ids if doc_id]
-            documents = Document.objects.filter(id__in=document_ids, user=request.user, session=session)
-            if documents.count() != len(set(document_ids)):
-                return APIErrorResponse.bad_request("One or more documents were not found for this session")
-
-            for document in documents:
-                if document.message_id:
-                    return APIErrorResponse.bad_request("One or more documents are already attached to another message")
+            
+            # Documents to attach to this message (only explicitly provided ones)
+            documents_to_attach = None
+            
+            # Documents to search in RAG (all session documents if none specified)
+            documents_to_search = None
+            
+            if not document_ids:
+                # If no document_ids provided, get all processed documents from the session for RAG search
+                documents_to_search = Document.objects.filter(
+                    user=request.user, 
+                    session=session,
+                    processed=True
+                ).order_by("-uploaded_at")
+            else:
+                # Validate provided document_ids
+                documents_to_attach = Document.objects.filter(id__in=document_ids, user=request.user, session=session)
+                if documents_to_attach.count() != len(set(document_ids)):
+                    return APIErrorResponse.bad_request("One or more documents were not found for this session")
+                
+                # Check if documents are already attached to another message
+                for document in documents_to_attach:
+                    if document.message_id:
+                        return APIErrorResponse.bad_request("One or more documents are already attached to another message")
+                
+                # Use provided documents for search
+                documents_to_search = documents_to_attach
 
             # Store user message
             user_message = Message.objects.create(
@@ -228,8 +248,9 @@ class ChatMessageView(APIView):
                 "content": content,
                 "session_id": str(session_id)
             }
-            if documents:
-                payload["document_ids"] = [str(doc.id) for doc in documents]
+            # Always include document_ids if there are processed documents to search
+            if documents_to_search and documents_to_search.exists():
+                payload["document_ids"] = [str(doc.id) for doc in documents_to_search]
 
             try:
                 response = requests.post(
@@ -241,26 +262,44 @@ class ChatMessageView(APIView):
                 fastapi_data = response.json()
 
                 # Store assistant message, linking to user message
+                # Store is_incomplete flag in context metadata if present
+                context_data = fastapi_data.get("context", [])
+                if fastapi_data.get("is_incomplete"):
+                    # Add incomplete flag to context metadata
+                    context_metadata = {"is_incomplete": True}
+                    if isinstance(context_data, list):
+                        context_metadata["context_docs"] = context_data
+                    else:
+                        context_metadata["context_docs"] = []
+                    context_json = json.dumps(context_metadata)
+                else:
+                    context_json = json.dumps(context_data)
+                
                 assistant_message = Message.objects.create(
                     session=session,
                     message_type="assistant",
                     content=fastapi_data["answer"],
-                    context=json.dumps(fastapi_data.get("context", [])),
+                    context=context_json,
                     parent_message=user_message
                 )
 
-                # Attach documents to the user message
-                for document in documents:
-                    document.message = user_message
-                    if not document.filename:
-                        document.filename = os.path.basename(document.file.name) if document.file else document.filename
-                    document.save(update_fields=["message", "filename"])
+                # Attach documents to the user message (only if explicitly provided)
+                if documents_to_attach:
+                    for document in documents_to_attach:
+                        document.message = user_message
+                        if not document.filename:
+                            document.filename = os.path.basename(document.file.name) if document.file else document.filename
+                        document.save(update_fields=["message", "filename"])
 
                 # Update session title if empty
                 if not session.title:
                     session.title = content[:50] + ("..." if len(content) > 50 else "")
                     session.save()
 
+                # Parse context to check for is_incomplete flag
+                context_data = fastapi_data.get("context", [])
+                is_incomplete = fastapi_data.get("is_incomplete", False)
+                
                 return Response({
                     "user_message": {
                         "id": str(user_message.id),
@@ -277,7 +316,8 @@ class ChatMessageView(APIView):
                         "id": str(assistant_message.id),
                         "message_type": assistant_message.message_type,
                         "content": assistant_message.content,
-                        "context": fastapi_data.get("context"),
+                        "context": context_data,
+                        "is_incomplete": is_incomplete,
                         "timestamp": assistant_message.timestamp
                     }
                 }, status=201)
@@ -565,6 +605,54 @@ class DocumentListView(APIView):
             serialize_document(doc, request=request)
             for doc in documents
         ])
+
+class ContinueMessageView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, session_id):
+        """Continue generating response from where it left off"""
+        try:
+            session = ChatSession.objects.get(id=session_id, user=request.user)
+        except ChatSession.DoesNotExist:
+            return APIErrorResponse.not_found("Session not found")
+
+        # Forward continue request to FastAPI
+        fastapi_url = f"{settings.FASTAPI_URL}/api/chat/continue"
+        headers = {"Authorization": f"Bearer {request.auth}"}
+        payload = {
+            "session_id": str(session_id)
+        }
+
+        try:
+            response = requests.post(
+                fastapi_url,
+                headers=headers,
+                json=payload
+            )
+            response.raise_for_status()
+            fastapi_data = response.json()
+
+            # Get the last assistant message and update it
+            last_assistant_message = Message.objects.filter(
+                session=session,
+                message_type="assistant"
+            ).order_by("-timestamp").first()
+
+            if last_assistant_message:
+                # Update with full answer
+                last_assistant_message.content = fastapi_data.get("full_answer", fastapi_data.get("answer", ""))
+                last_assistant_message.save()
+
+            return Response({
+                "answer": fastapi_data.get("answer", ""),
+                "full_answer": fastapi_data.get("full_answer", ""),
+                "is_incomplete": fastapi_data.get("is_incomplete", False),
+                "message_id": str(last_assistant_message.id) if last_assistant_message else None
+            })
+        except requests.RequestException as e:
+            logger.error(f"Error continuing response via FastAPI: {str(e)}")
+            return APIErrorResponse.server_error(str(e))
 
 class MessageDocumentView(APIView):
     authentication_classes = [JWTAuthentication]

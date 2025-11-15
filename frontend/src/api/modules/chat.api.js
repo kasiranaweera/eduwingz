@@ -3,6 +3,7 @@ import privateClient from "../client/private.client";
 const chatEndpoints = {
   sessions: (sessionId = "") => `chat/sessions/${sessionId ? `${sessionId}/` : ""}`,
   messages: (sessionId) => `chat/sessions/${sessionId}/messages/`,
+  continue: (sessionId) => `chat/sessions/${sessionId}/continue/`,
   documents: (sessionId) => `chat/sessions/${sessionId}/documents/`,
   documentsByMessage: (messageId) => `chat/documents/${messageId}/`,
   documentsList: (params = {}) => {
@@ -112,6 +113,15 @@ const chatApi = {
     console.log("delete one button", sessionId)
     try {
       const response = await privateClient.delete(chatEndpoints.sessions(sessionId));
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+
+  continueMessage: async (sessionId) => {
+    try {
+      const response = await privateClient.post(chatEndpoints.continue(sessionId), {});
       return { response };
     } catch (err) {
       return { err };

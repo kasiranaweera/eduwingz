@@ -6,10 +6,13 @@ from datetime import datetime
 import jwt
 import os
 from pydantic import BaseModel, Field
+from typing import Optional, List
 import asyncio
 from contextlib import asynccontextmanager
 from services.rag_service import RAGService
 from config import settings
+from fastapi import Form
+from langchain_core.messages import AIMessage, HumanMessage
 
 rag_service = RAGService()
 
@@ -56,19 +59,30 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 class MessageCreate(BaseModel):
     content: str = Field(..., min_length=1)
     session_id: str
+    document_ids: Optional[List[str]] = None
 
 @app.post("/api/chat/process")
 async def process_message(message: MessageCreate, user_id: int = Depends(verify_token)):
     """Process a chat message with RAG"""
-    response_data = await rag_service.chat(message.content, message.session_id)
+    response_data = await rag_service.chat(
+        message.content, 
+        message.session_id,
+        document_ids=message.document_ids
+    )
     return {
         "answer": response_data["answer"],
+        "is_incomplete": response_data.get("is_incomplete", False),
         "context": response_data.get("context", [])
     }
 
 @app.post("/api/documents/process")
-async def process_document(file: UploadFile = File(...), user_id: int = Depends(verify_token)):
-    """Process a PDF document"""
+async def process_document(
+    file: UploadFile = File(...),
+    session_id: str = Form(...),
+    document_id: str = Form(...),
+    user_id: int = Depends(verify_token)
+):
+    """Process a PDF document with session and document metadata"""
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
     
@@ -78,7 +92,7 @@ async def process_document(file: UploadFile = File(...), user_id: int = Depends(
         content = await file.read()
         f.write(content)
     
-    success = await rag_service.process_document(file_path)
+    success = await rag_service.process_document(file_path, session_id=session_id, document_id=document_id)
     return {"processed": success}
 
 @app.post("/api/chat/clear/{session_id}")
@@ -94,6 +108,145 @@ async def health_check():
         "timestamp": datetime.utcnow(),
         "version": "1.0.0"
     }
+
+class QuestionnaireSubmit(BaseModel):
+    session_id: str
+    active_reflective: int = Field(..., ge=-11, le=11)
+    sensing_intuitive: int = Field(..., ge=-11, le=11)
+    visual_verbal: int = Field(..., ge=-11, le=11)
+    sequential_global: int = Field(..., ge=-11, le=11)
+
+@app.post("/api/learning/questionnaire")
+async def submit_questionnaire(
+    questionnaire: QuestionnaireSubmit,
+    user_id: int = Depends(verify_token)
+):
+    """Submit ILS questionnaire responses and update learning profile"""
+    try:
+        print(f"📝 [Questionnaire] Received questionnaire submission for session: {questionnaire.session_id}")
+        learning_profile = rag_service.get_or_create_learning_profile(questionnaire.session_id)
+        
+        questionnaire_data = {
+            'active_reflective': questionnaire.active_reflective,
+            'sensing_intuitive': questionnaire.sensing_intuitive,
+            'visual_verbal': questionnaire.visual_verbal,
+            'sequential_global': questionnaire.sequential_global
+        }
+        
+        learning_profile.set_questionnaire_data(questionnaire_data)
+        
+        # Save the updated profile
+        rag_service._save_learning_profiles()
+        
+        # Get the updated learning style
+        learning_style = learning_profile.get_learning_style()
+        
+        return {
+            "success": True,
+            "message": "Questionnaire submitted successfully",
+            "learning_style": learning_style,
+            "dimensions": learning_profile.dimensions
+        }
+    except Exception as e:
+        print(f"❌ [Questionnaire] Error submitting questionnaire: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error processing questionnaire: {str(e)}")
+
+@app.get("/api/learning/profile/{session_id}")
+async def get_learning_profile(
+    session_id: str,
+    user_id: int = Depends(verify_token)
+):
+    """Get learning profile for a session"""
+    try:
+        learning_profile = rag_service.get_or_create_learning_profile(session_id)
+        learning_style = learning_profile.get_learning_style()
+        
+        return {
+            "session_id": session_id,
+            "dimensions": learning_profile.dimensions,
+            "learning_style": learning_style,
+            "total_interactions": learning_profile.total_interactions,
+            "questionnaire_completed": learning_profile.questionnaire_completed,
+            "questionnaire_timestamp": learning_profile.questionnaire_timestamp
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving profile: {str(e)}")
+
+class ContinueMessage(BaseModel):
+    session_id: str
+
+@app.post("/api/chat/continue")
+async def continue_response(
+    continue_msg: ContinueMessage,
+    user_id: int = Depends(verify_token)
+):
+    """Continue generating response from where it left off"""
+    try:
+        print(f"🔄 [Continue] Continuing response for session: {continue_msg.session_id}")
+        
+        # Get the last assistant message from history
+        history = rag_service.get_session_history(continue_msg.session_id)
+        if not history.messages or len(history.messages) == 0:
+            raise HTTPException(status_code=400, detail="No conversation history found")
+        
+        # Get the last assistant message (the incomplete one)
+        last_assistant_msg = None
+        for msg in reversed(history.messages):
+            if msg.type == "ai":
+                last_assistant_msg = msg
+                break
+        
+        if not last_assistant_msg:
+            raise HTTPException(status_code=400, detail="No assistant message found to continue")
+        
+        print(f"   📝 Last assistant message length: {len(last_assistant_msg.content)} chars")
+        
+        # Build messages for continuation (include all history + continuation prompt)
+        lc_messages = []
+        for msg in history.messages:
+            if msg.type == "human":
+                lc_messages.append(HumanMessage(content=msg.content))
+            elif msg.type == "ai":
+                lc_messages.append(AIMessage(content=msg.content))
+        
+        # Add a continuation prompt asking to continue from the last response
+        continuation_prompt = "Please continue your previous response from where you left off. Complete your thought."
+        lc_messages.append(HumanMessage(content=continuation_prompt))
+        
+        print(f"   🤖 Generating continuation (max_tokens: {settings.MAX_TOKENS})")
+        
+        # Generate continuation
+        continuation = await asyncio.get_event_loop().run_in_executor(
+            None, lambda: rag_service.llm.invoke(lc_messages, max_tokens=settings.MAX_TOKENS)
+        )
+        
+        # Combine the original response with continuation
+        combined_response = last_assistant_msg.content + " " + continuation.content
+        
+        # Update the last assistant message in history
+        # Find the index of the last assistant message and update it
+        for i in range(len(history.messages) - 1, -1, -1):
+            if history.messages[i].type == "ai":
+                history.messages[i].content = combined_response
+                break
+        
+        # Check if still incomplete
+        is_incomplete = rag_service._is_response_incomplete(combined_response)
+        
+        print(f"✅ [Continue] Continuation generated (total length: {len(combined_response)} chars, incomplete: {is_incomplete})")
+        
+        return {
+            "answer": continuation.content,  # Return only the continuation part
+            "full_answer": combined_response,  # Return the full combined answer
+            "is_incomplete": is_incomplete
+        }
+    except Exception as e:
+        print(f"❌ [Continue] Error continuing response: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error continuing response: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

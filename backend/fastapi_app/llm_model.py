@@ -17,7 +17,7 @@ class LLM_Model:
                     model=settings.OLLAMA_MODEL,
                     base_url=settings.OLLAMA_BASE_URL,
                     temperature=0.7,
-                    num_predict=512  # Equivalent to max_tokens
+                    num_predict=settings.MAX_TOKENS  # Use configurable max tokens
                 )
                 # ChatOllama.invoke takes list of messages and returns AIMessage with .content
             elif self.backend == "huggingface":
@@ -33,7 +33,9 @@ class LLM_Model:
                     device=-1 if device.type == "cpu" else 0,
                 )
                 # Create a wrapper for invoke that takes list of langchain messages
-                def hf_invoke(lc_messages, max_tokens=512):
+                def hf_invoke(lc_messages, max_tokens=None):
+                    if max_tokens is None:
+                        max_tokens = settings.MAX_TOKENS
                     messages = []
                     for msg in lc_messages:
                         if isinstance(msg, SystemMessage):

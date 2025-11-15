@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     CHUNK_SIZE: int = 1000
     CHUNK_OVERLAP: int = 200
     TOP_K: int = 5
+    MAX_TOKENS: int = 2048  # Maximum tokens for LLM response generation
     HUGGINGFACE_TOKEN: str | None = None  # Optional, for HuggingFace authentication if needed
     DEBUG: bool = True  # Optional, for debugging
     FASTAPI_URL: str = "http://localhost:8000"  # For Django-FastAPI communication

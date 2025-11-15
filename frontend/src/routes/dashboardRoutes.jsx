@@ -15,6 +15,7 @@ import DashboardQuizzesPage from "../pages/DashboardQuizzesPage";
 import DashboardAnaliticsPage from "../pages/DashboardAnalyticsPage"
 import DashboardMinehoarizonPage from "../pages/DashboardMinehorizonPage"
 import PlatformLessons from "../pages/PlatformLessons";
+import PlatformLessonId from "../pages/PlatformLessonId";
 
 export const routesGen = {
   dashboard: "/",
@@ -170,6 +171,15 @@ const dashboardRoutes = [
     element: (
       <ProtectedPage>
       <PlatformLessons />
+      </ProtectedPage>
+    ),
+    state: "platform-lessons",
+  },
+  {
+    path: "/dashboard/platform/lessons/lessonId",
+    element: (
+      <ProtectedPage>
+      <PlatformLessonId />
       </ProtectedPage>
     ),
     state: "platform-lessons",
