@@ -107,5 +107,70 @@ async def health_check():
         "version": "1.0.0"
     }
 
+class QuestionnaireSubmit(BaseModel):
+    session_id: str
+    active_reflective: int = Field(..., ge=-11, le=11)
+    sensing_intuitive: int = Field(..., ge=-11, le=11)
+    visual_verbal: int = Field(..., ge=-11, le=11)
+    sequential_global: int = Field(..., ge=-11, le=11)
+
+@app.post("/api/learning/questionnaire")
+async def submit_questionnaire(
+    questionnaire: QuestionnaireSubmit,
+    user_id: int = Depends(verify_token)
+):
+    """Submit ILS questionnaire responses and update learning profile"""
+    try:
+        print(f"📝 [Questionnaire] Received questionnaire submission for session: {questionnaire.session_id}")
+        learning_profile = rag_service.get_or_create_learning_profile(questionnaire.session_id)
+        
+        questionnaire_data = {
+            'active_reflective': questionnaire.active_reflective,
+            'sensing_intuitive': questionnaire.sensing_intuitive,
+            'visual_verbal': questionnaire.visual_verbal,
+            'sequential_global': questionnaire.sequential_global
+        }
+        
+        learning_profile.set_questionnaire_data(questionnaire_data)
+        
+        # Save the updated profile
+        rag_service._save_learning_profiles()
+        
+        # Get the updated learning style
+        learning_style = learning_profile.get_learning_style()
+        
+        return {
+            "success": True,
+            "message": "Questionnaire submitted successfully",
+            "learning_style": learning_style,
+            "dimensions": learning_profile.dimensions
+        }
+    except Exception as e:
+        print(f"❌ [Questionnaire] Error submitting questionnaire: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error processing questionnaire: {str(e)}")
+
+@app.get("/api/learning/profile/{session_id}")
+async def get_learning_profile(
+    session_id: str,
+    user_id: int = Depends(verify_token)
+):
+    """Get learning profile for a session"""
+    try:
+        learning_profile = rag_service.get_or_create_learning_profile(session_id)
+        learning_style = learning_profile.get_learning_style()
+        
+        return {
+            "session_id": session_id,
+            "dimensions": learning_profile.dimensions,
+            "learning_style": learning_style,
+            "total_interactions": learning_profile.total_interactions,
+            "questionnaire_completed": learning_profile.questionnaire_completed,
+            "questionnaire_timestamp": learning_profile.questionnaire_timestamp
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving profile: {str(e)}")
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

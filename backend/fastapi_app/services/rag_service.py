@@ -312,14 +312,18 @@ class RAGService:
                 await self.initialize()
             
             # Get or create learning profile
+            print(f"👤 [RAG Service] Getting/creating learning profile for session: {session_id}")
             learning_profile = self.get_or_create_learning_profile(session_id)
             
             # Analyze user message for learning patterns
             if use_adaptive_learning:
+                print(f"🧠 [RAG Service] Using adaptive learning - analyzing message patterns")
                 indicators = learning_profile.analyze_message_patterns(message)
                 learning_profile.update_from_interaction(indicators)
                 learning_style = learning_profile.get_learning_style()
+                print(f"✅ [RAG Service] Learning style determined: {learning_style}")
             else:
+                print(f"ℹ️ [RAG Service] Adaptive learning disabled")
                 learning_style = {}
             
             # Retrieve relevant context with adaptive ranking
@@ -378,8 +382,10 @@ class RAGService:
                 print(f"   This means the document might not be processed or indexed correctly")
             
             # Generate adaptive system prompt
+            print(f"📝 [RAG Service] Generating system prompt")
             if not context:
                 # No context available - tell user the document might not be processed
+                print(f"   ⚠️ No context available - using fallback prompt")
                 system_content = (
                     "You are an intelligent chatbot. "
                     "The user is asking about a document, but the document content is not available in the system. "
@@ -387,8 +393,10 @@ class RAGService:
                     "Please inform the user that the document needs to be processed first, or ask them to re-upload it."
                 )
             elif use_adaptive_learning:
+                print(f"   🎨 Using adaptive learning prompt generator")
                 system_content = self.prompt_generator.generate_prompt(learning_profile, context)
             else:
+                print(f"   📄 Using standard prompt")
                 priority_instruction = ""
                 if document_ids and len(document_ids) > 0:
                     priority_instruction = "IMPORTANT: Base your answer primarily on the PRIMARY CONTEXT section (from the uploaded documents). Use the ADDITIONAL CONTEXT only for supplementary information if needed. "
@@ -402,7 +410,9 @@ class RAGService:
                 )
             
             # Build conversation history
+            print(f"💬 [RAG Service] Building conversation history")
             history = self.get_session_history(session_id)
+            print(f"   📚 History contains {len(history.messages)} previous messages")
             lc_messages = [SystemMessage(content=system_content)]
             
             for msg in history.messages:
@@ -412,18 +422,23 @@ class RAGService:
                     lc_messages.append(AIMessage(content=msg.content))
             
             lc_messages.append(HumanMessage(content=message))
+            print(f"   📝 Total messages to LLM: {len(lc_messages)}")
             
             # Run the LLM
+            print(f"🤖 [RAG Service] Invoking LLM to generate response")
             response = await asyncio.get_event_loop().run_in_executor(
                 None, lambda: self.llm.invoke(lc_messages)
             )
+            print(f"✅ [RAG Service] LLM response generated (length: {len(response.content)} chars)")
             
             # Save to history
             history.add_user_message(message)
             history.add_ai_message(response.content)
+            print(f"💾 [RAG Service] Conversation history updated")
             
             # Save learning profiles periodically
             if learning_profile.total_interactions % 5 == 0:
+                print(f"💾 [RAG Service] Saving learning profiles (periodic save)")
                 self._save_learning_profiles()
             
             return {
