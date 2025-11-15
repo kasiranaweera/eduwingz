@@ -291,6 +291,51 @@ class RAGService:
     def clear_session_history(self, session_id: str):
         if session_id in self.session_histories:
             del self.session_histories[session_id]
+    
+    def _is_response_incomplete(self, response_text: str) -> bool:
+        """Check if response appears to be incomplete/cut off"""
+        if not response_text or len(response_text.strip()) == 0:
+            return False
+        
+        # Remove trailing whitespace
+        text = response_text.strip()
+        
+        # Check if ends with incomplete sentence (no punctuation)
+        # Common incomplete patterns:
+        # - Ends without sentence-ending punctuation (. ! ?)
+        # - Ends mid-word (unlikely but possible)
+        # - Ends with comma or semicolon (might be incomplete)
+        # - Very short response relative to context
+        
+        # Check for sentence-ending punctuation
+        ends_with_punctuation = text[-1] in '.!?。！？'
+        
+        # Check if ends with common incomplete patterns
+        incomplete_patterns = [',', ';', ':', '-', '—', '…']
+        ends_with_incomplete = text[-1] in incomplete_patterns
+        
+        # Check if response is suspiciously short (less than 50 chars might be incomplete)
+        is_very_short = len(text) < 50
+        
+        # If it doesn't end with proper punctuation and isn't very short, might be incomplete
+        # But also check if it seems like it was cut off mid-sentence
+        last_sentence = text.split('.')[-1].split('!')[-1].split('?')[-1].strip()
+        if last_sentence and len(last_sentence) > 0:
+            # If last "sentence" is very long without punctuation, might be cut off
+            if len(last_sentence) > 200 and not ends_with_punctuation:
+                return True
+        
+        # If ends with incomplete pattern and response is substantial, likely incomplete
+        if ends_with_incomplete and len(text) > 100:
+            return True
+        
+        # If response doesn't end with punctuation and is substantial, might be incomplete
+        if not ends_with_punctuation and len(text) > 100 and not is_very_short:
+            # But allow if it ends with common non-sentence endings like lists
+            if not text[-1].isdigit() and text[-1] not in ')】」':
+                return True
+        
+        return False
 
     async def chat(
         self, 
@@ -425,11 +470,16 @@ class RAGService:
             print(f"   📝 Total messages to LLM: {len(lc_messages)}")
             
             # Run the LLM
-            print(f"🤖 [RAG Service] Invoking LLM to generate response")
+            print(f"🤖 [RAG Service] Invoking LLM to generate response (max_tokens: {settings.MAX_TOKENS})")
             response = await asyncio.get_event_loop().run_in_executor(
-                None, lambda: self.llm.invoke(lc_messages)
+                None, lambda: self.llm.invoke(lc_messages, max_tokens=settings.MAX_TOKENS)
             )
             print(f"✅ [RAG Service] LLM response generated (length: {len(response.content)} chars)")
+            
+            # Check if response seems incomplete (ends with incomplete sentence or seems cut off)
+            is_incomplete = self._is_response_incomplete(response.content)
+            if is_incomplete:
+                print(f"⚠️ [RAG Service] Response appears incomplete - may need continuation")
             
             # Save to history
             history.add_user_message(message)
@@ -443,6 +493,7 @@ class RAGService:
             
             return {
                 "answer": response.content,
+                "is_incomplete": is_incomplete,
                 "context": [
                     {
                         "content": doc["content"][:200] + "..." if len(doc["content"]) > 200 else doc["content"],

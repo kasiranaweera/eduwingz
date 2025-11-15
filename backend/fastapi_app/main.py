@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager
 from services.rag_service import RAGService
 from config import settings
 from fastapi import Form
+from langchain_core.messages import AIMessage, HumanMessage
 
 rag_service = RAGService()
 
@@ -70,6 +71,7 @@ async def process_message(message: MessageCreate, user_id: int = Depends(verify_
     )
     return {
         "answer": response_data["answer"],
+        "is_incomplete": response_data.get("is_incomplete", False),
         "context": response_data.get("context", [])
     }
 
@@ -171,6 +173,80 @@ async def get_learning_profile(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving profile: {str(e)}")
+
+class ContinueMessage(BaseModel):
+    session_id: str
+
+@app.post("/api/chat/continue")
+async def continue_response(
+    continue_msg: ContinueMessage,
+    user_id: int = Depends(verify_token)
+):
+    """Continue generating response from where it left off"""
+    try:
+        print(f"🔄 [Continue] Continuing response for session: {continue_msg.session_id}")
+        
+        # Get the last assistant message from history
+        history = rag_service.get_session_history(continue_msg.session_id)
+        if not history.messages or len(history.messages) == 0:
+            raise HTTPException(status_code=400, detail="No conversation history found")
+        
+        # Get the last assistant message (the incomplete one)
+        last_assistant_msg = None
+        for msg in reversed(history.messages):
+            if msg.type == "ai":
+                last_assistant_msg = msg
+                break
+        
+        if not last_assistant_msg:
+            raise HTTPException(status_code=400, detail="No assistant message found to continue")
+        
+        print(f"   📝 Last assistant message length: {len(last_assistant_msg.content)} chars")
+        
+        # Build messages for continuation (include all history + continuation prompt)
+        lc_messages = []
+        for msg in history.messages:
+            if msg.type == "human":
+                lc_messages.append(HumanMessage(content=msg.content))
+            elif msg.type == "ai":
+                lc_messages.append(AIMessage(content=msg.content))
+        
+        # Add a continuation prompt asking to continue from the last response
+        continuation_prompt = "Please continue your previous response from where you left off. Complete your thought."
+        lc_messages.append(HumanMessage(content=continuation_prompt))
+        
+        print(f"   🤖 Generating continuation (max_tokens: {settings.MAX_TOKENS})")
+        
+        # Generate continuation
+        continuation = await asyncio.get_event_loop().run_in_executor(
+            None, lambda: rag_service.llm.invoke(lc_messages, max_tokens=settings.MAX_TOKENS)
+        )
+        
+        # Combine the original response with continuation
+        combined_response = last_assistant_msg.content + " " + continuation.content
+        
+        # Update the last assistant message in history
+        # Find the index of the last assistant message and update it
+        for i in range(len(history.messages) - 1, -1, -1):
+            if history.messages[i].type == "ai":
+                history.messages[i].content = combined_response
+                break
+        
+        # Check if still incomplete
+        is_incomplete = rag_service._is_response_incomplete(combined_response)
+        
+        print(f"✅ [Continue] Continuation generated (total length: {len(combined_response)} chars, incomplete: {is_incomplete})")
+        
+        return {
+            "answer": continuation.content,  # Return only the continuation part
+            "full_answer": combined_response,  # Return the full combined answer
+            "is_incomplete": is_incomplete
+        }
+    except Exception as e:
+        print(f"❌ [Continue] Error continuing response: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error continuing response: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

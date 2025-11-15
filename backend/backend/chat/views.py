@@ -262,11 +262,24 @@ class ChatMessageView(APIView):
                 fastapi_data = response.json()
 
                 # Store assistant message, linking to user message
+                # Store is_incomplete flag in context metadata if present
+                context_data = fastapi_data.get("context", [])
+                if fastapi_data.get("is_incomplete"):
+                    # Add incomplete flag to context metadata
+                    context_metadata = {"is_incomplete": True}
+                    if isinstance(context_data, list):
+                        context_metadata["context_docs"] = context_data
+                    else:
+                        context_metadata["context_docs"] = []
+                    context_json = json.dumps(context_metadata)
+                else:
+                    context_json = json.dumps(context_data)
+                
                 assistant_message = Message.objects.create(
                     session=session,
                     message_type="assistant",
                     content=fastapi_data["answer"],
-                    context=json.dumps(fastapi_data.get("context", [])),
+                    context=context_json,
                     parent_message=user_message
                 )
 
@@ -283,6 +296,10 @@ class ChatMessageView(APIView):
                     session.title = content[:50] + ("..." if len(content) > 50 else "")
                     session.save()
 
+                # Parse context to check for is_incomplete flag
+                context_data = fastapi_data.get("context", [])
+                is_incomplete = fastapi_data.get("is_incomplete", False)
+                
                 return Response({
                     "user_message": {
                         "id": str(user_message.id),
@@ -299,7 +316,8 @@ class ChatMessageView(APIView):
                         "id": str(assistant_message.id),
                         "message_type": assistant_message.message_type,
                         "content": assistant_message.content,
-                        "context": fastapi_data.get("context"),
+                        "context": context_data,
+                        "is_incomplete": is_incomplete,
                         "timestamp": assistant_message.timestamp
                     }
                 }, status=201)
@@ -587,6 +605,54 @@ class DocumentListView(APIView):
             serialize_document(doc, request=request)
             for doc in documents
         ])
+
+class ContinueMessageView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, session_id):
+        """Continue generating response from where it left off"""
+        try:
+            session = ChatSession.objects.get(id=session_id, user=request.user)
+        except ChatSession.DoesNotExist:
+            return APIErrorResponse.not_found("Session not found")
+
+        # Forward continue request to FastAPI
+        fastapi_url = f"{settings.FASTAPI_URL}/api/chat/continue"
+        headers = {"Authorization": f"Bearer {request.auth}"}
+        payload = {
+            "session_id": str(session_id)
+        }
+
+        try:
+            response = requests.post(
+                fastapi_url,
+                headers=headers,
+                json=payload
+            )
+            response.raise_for_status()
+            fastapi_data = response.json()
+
+            # Get the last assistant message and update it
+            last_assistant_message = Message.objects.filter(
+                session=session,
+                message_type="assistant"
+            ).order_by("-timestamp").first()
+
+            if last_assistant_message:
+                # Update with full answer
+                last_assistant_message.content = fastapi_data.get("full_answer", fastapi_data.get("answer", ""))
+                last_assistant_message.save()
+
+            return Response({
+                "answer": fastapi_data.get("answer", ""),
+                "full_answer": fastapi_data.get("full_answer", ""),
+                "is_incomplete": fastapi_data.get("is_incomplete", False),
+                "message_id": str(last_assistant_message.id) if last_assistant_message else None
+            })
+        except requests.RequestException as e:
+            logger.error(f"Error continuing response via FastAPI: {str(e)}")
+            return APIErrorResponse.server_error(str(e))
 
 class MessageDocumentView(APIView):
     authentication_classes = [JWTAuthentication]

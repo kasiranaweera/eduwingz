@@ -54,6 +54,7 @@ const normalizeMessage = (source, sender, fallbackIdPrefix) => {
     sender,
     timestamp,
     attachments: Array.isArray(source.documents) ? source.documents : [],
+    is_incomplete: source.is_incomplete ?? false,
   };
 };
 
@@ -433,6 +434,42 @@ const ChatPage = () => {
   };
 
   /* ---------------------------------------------------------- */
+  /* CONTINUE MESSAGE HANDLER                                  */
+  /* ---------------------------------------------------------- */
+  const handleContinueMessage = async (messageId) => {
+    if (!sessionId || isLoading) return;
+    
+    setIsLoading(true);
+    try {
+      const { response, err } = await chatApi.continueMessage(sessionId);
+      if (err) {
+        console.error("Error continuing message:", err);
+        return;
+      }
+
+      if (response) {
+        // Find the message and update it
+        setMessages((prev) => {
+          return prev.map((msg) => {
+            if (msg.id === messageId && msg.sender === "bot") {
+              return {
+                ...msg,
+                text: response.full_answer || response.answer || msg.text,
+                is_incomplete: response.is_incomplete || false,
+              };
+            }
+            return msg;
+          });
+        });
+      }
+    } catch (e) {
+      console.error("Error continuing message:", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /* ---------------------------------------------------------- */
   /* MARKDOWN COMPONENTS (extracted to avoid duplication)     */
   /* ---------------------------------------------------------- */
   const markdownComponents = {
@@ -640,6 +677,24 @@ const ChatPage = () => {
                         second: "2-digit",
                       })}
                     </Box>
+                    
+                    {/* Continue button for incomplete bot messages */}
+                    {message.sender === "bot" && message.is_incomplete && (
+                      <Box sx={{ mt: 1, display: "flex", justifyContent: "flex-start" }}>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={() => handleContinueMessage(message.id)}
+                          disabled={isLoading}
+                          sx={{
+                            textTransform: "none",
+                            fontSize: "0.75rem",
+                          }}
+                        >
+                          Continue
+                        </Button>
+                      </Box>
+                    )}
                   </Paper>
                   {message.sender === "user" ? (
                     <>{message.attachments?.length ? (
