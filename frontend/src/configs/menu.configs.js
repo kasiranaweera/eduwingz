@@ -18,9 +18,12 @@ import GraphicEqOutlinedIcon from "@mui/icons-material/GraphicEqOutlined";
 import LocalLibraryOutlinedIcon from "@mui/icons-material/LocalLibraryOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
-import AddModeratorOutlinedIcon from '@mui/icons-material/AddModeratorOutlined';
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
-import FormatShapesIcon from '@mui/icons-material/FormatShapes';
+import AddModeratorOutlinedIcon from "@mui/icons-material/AddModeratorOutlined";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import FormatShapesIcon from "@mui/icons-material/FormatShapes";
+import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
+import FilePresentOutlinedIcon from '@mui/icons-material/FilePresentOutlined';
+import VoiceChatIcon from '@mui/icons-material/VoiceChat';
 
 const main = [
   {
@@ -190,6 +193,39 @@ const dashboardCommon = [
     state: "minehorizon",
   },
 ];
+const platformMenu = [
+  {
+    display: "Lessons",
+    path: "/dashboard/platform/lessons",
+    icon: <FormatShapesIcon />,
+    state: "platform-menu-lessons",
+  },
+  {
+    display: "Edits",
+    path: "/dashboard/platform/lessons",
+    icon: <EditNoteOutlinedIcon />,
+    state: "platform-menu-edits",
+  },
+  {
+    display: "Notes",
+    path: "/dashboard/platform/lessons",
+    icon: <DescriptionOutlinedIcon />,
+    state: "platform-menu-notes",
+  },
+  {
+    display: "Resources",
+    path: "/dashboard/platform/lessons",
+    icon: <FilePresentOutlinedIcon />,
+    state: "platform-menu-resources",
+  },
+  {
+    display: "Voice & Chat",
+    path: "/dashboard/platform/lessons",
+    icon: <VoiceChatIcon />,
+    state: "platform-menu-voicechat",
+  },
+  
+];
 
 const menuConfigs = {
   main,
@@ -199,6 +235,7 @@ const menuConfigs = {
   dashboardChat,
   dashboardCommon,
   dashboardPlatform,
+  platformMenu,
 };
 
 export default menuConfigs;

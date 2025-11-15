@@ -206,13 +206,33 @@ class ChatMessageView(APIView):
                 return APIErrorResponse.bad_request("document_ids must be a list")
 
             document_ids = [doc_id for doc_id in document_ids if doc_id]
-            documents = Document.objects.filter(id__in=document_ids, user=request.user, session=session)
-            if documents.count() != len(set(document_ids)):
-                return APIErrorResponse.bad_request("One or more documents were not found for this session")
-
-            for document in documents:
-                if document.message_id:
-                    return APIErrorResponse.bad_request("One or more documents are already attached to another message")
+            
+            # Documents to attach to this message (only explicitly provided ones)
+            documents_to_attach = None
+            
+            # Documents to search in RAG (all session documents if none specified)
+            documents_to_search = None
+            
+            if not document_ids:
+                # If no document_ids provided, get all processed documents from the session for RAG search
+                documents_to_search = Document.objects.filter(
+                    user=request.user, 
+                    session=session,
+                    processed=True
+                ).order_by("-uploaded_at")
+            else:
+                # Validate provided document_ids
+                documents_to_attach = Document.objects.filter(id__in=document_ids, user=request.user, session=session)
+                if documents_to_attach.count() != len(set(document_ids)):
+                    return APIErrorResponse.bad_request("One or more documents were not found for this session")
+                
+                # Check if documents are already attached to another message
+                for document in documents_to_attach:
+                    if document.message_id:
+                        return APIErrorResponse.bad_request("One or more documents are already attached to another message")
+                
+                # Use provided documents for search
+                documents_to_search = documents_to_attach
 
             # Store user message
             user_message = Message.objects.create(
@@ -228,8 +248,9 @@ class ChatMessageView(APIView):
                 "content": content,
                 "session_id": str(session_id)
             }
-            if documents:
-                payload["document_ids"] = [str(doc.id) for doc in documents]
+            # Always include document_ids if there are processed documents to search
+            if documents_to_search and documents_to_search.exists():
+                payload["document_ids"] = [str(doc.id) for doc in documents_to_search]
 
             try:
                 response = requests.post(
@@ -249,12 +270,13 @@ class ChatMessageView(APIView):
                     parent_message=user_message
                 )
 
-                # Attach documents to the user message
-                for document in documents:
-                    document.message = user_message
-                    if not document.filename:
-                        document.filename = os.path.basename(document.file.name) if document.file else document.filename
-                    document.save(update_fields=["message", "filename"])
+                # Attach documents to the user message (only if explicitly provided)
+                if documents_to_attach:
+                    for document in documents_to_attach:
+                        document.message = user_message
+                        if not document.filename:
+                            document.filename = os.path.basename(document.file.name) if document.file else document.filename
+                        document.save(update_fields=["message", "filename"])
 
                 # Update session title if empty
                 if not session.title:

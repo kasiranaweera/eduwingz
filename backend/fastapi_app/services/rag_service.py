@@ -249,7 +249,7 @@ class RAGService:
             self.learning_profiles[session_id] = ILSLearningProfile(session_id)
         return self.learning_profiles[session_id]
 
-    async def process_document(self, file_path: str) -> bool:
+    async def process_document(self, file_path: str, session_id: str = None, document_id: str = None) -> bool:
         try:
             loader = PyPDFLoader(file_path)
             docs = await asyncio.get_event_loop().run_in_executor(None, loader.load)
@@ -259,14 +259,28 @@ class RAGService:
             )
             chunks = text_splitter.split_documents(docs)
             texts = [chunk.page_content for chunk in chunks]
-            metadatas = [chunk.metadata for chunk in chunks]
+            # Add session_id and document_id to metadata
+            metadatas = []
+            for chunk in chunks:
+                metadata = chunk.metadata.copy()
+                if session_id:
+                    metadata['session_id'] = session_id
+                if document_id:
+                    metadata['document_id'] = document_id
+                metadatas.append(metadata)
             self.vectorstore.add_documents(texts, metadatas)
             os.makedirs("data", exist_ok=True)
             self.vectorstore.save_index("data/vectorstore")
-            print(f"✅ Processed document: {file_path}")
+            print(f"✅ Processed document: {file_path} (session_id: {session_id}, document_id: {document_id})")
+            print(f"   📊 Added {len(texts)} chunks to vectorstore. Total documents in store: {len(self.vectorstore.documents)}")
+            # Verify metadata was added correctly
+            if len(self.vectorstore.documents) > 0:
+                last_doc = self.vectorstore.documents[-1]
+                print(f"   🔍 Last document metadata check: session_id={last_doc.get('metadata', {}).get('session_id')}, document_id={last_doc.get('metadata', {}).get('document_id')}")
             return True
         except Exception as e:
             print(f"❌ Error processing document {file_path}: {e}")
+            traceback.print_exc()
             return False
 
     def get_session_history(self, session_id: str) -> BaseChatMessageHistory:
@@ -282,6 +296,7 @@ class RAGService:
         self, 
         message: str, 
         session_id: str,
+        document_ids: Optional[List[str]] = None,
         use_adaptive_learning: bool = True
     ) -> Dict:
         """
@@ -308,21 +323,79 @@ class RAGService:
                 learning_style = {}
             
             # Retrieve relevant context with adaptive ranking
+            # Filter by session_id and document_ids if provided
+            print(f"🔍 Searching for context - session_id: {session_id}, document_ids: {document_ids}")
+            
             if use_adaptive_learning and learning_style:
                 context_docs = self.vectorstore.adaptive_similarity_search(
-                    message, learning_style, k=settings.TOP_K
+                    message, learning_style, k=settings.TOP_K,
+                    session_id=session_id, document_ids=document_ids
                 )
             else:
-                context_docs = self.vectorstore.similarity_search(message, k=settings.TOP_K)
+                context_docs = self.vectorstore.similarity_search(
+                    message, k=settings.TOP_K,
+                    session_id=session_id, document_ids=document_ids
+                )
             
-            context = "\n\n".join([doc["content"] for doc in context_docs])
+            print(f"📄 Found {len(context_docs)} context documents")
+            if len(context_docs) == 0:
+                print(f"⚠️ No documents found! This might mean:")
+                print(f"   - Documents haven't been processed yet")
+                print(f"   - Documents don't have matching session_id or document_id metadata")
+                print(f"   - Vectorstore might be empty")
+            
+            # Prioritize content from uploaded documents
+            # Separate documents by priority (uploaded vs other)
+            uploaded_docs_content = []
+            other_docs_content = []
+            
+            for doc in context_docs:
+                metadata = doc.get("metadata", {})
+                doc_id = metadata.get("document_id")
+                # Check if this document is in the provided document_ids (uploaded document)
+                if document_ids and len(document_ids) > 0 and doc_id in document_ids:
+                    uploaded_docs_content.append(doc["content"])
+                    print(f"✅ Found uploaded document content (doc_id: {doc_id})")
+                else:
+                    other_docs_content.append(doc["content"])
+                    print(f"📚 Found other document content (doc_id: {doc_id})")
+            
+            # Build context with priority: uploaded documents first, then others
+            if uploaded_docs_content:
+                primary_context = "\n\n".join(uploaded_docs_content)
+                if other_docs_content:
+                    secondary_context = "\n\n".join(other_docs_content)
+                    context = f"PRIMARY CONTEXT (from uploaded documents - use this as the main source):\n{primary_context}\n\nADDITIONAL CONTEXT (for reference only):\n{secondary_context}"
+                else:
+                    context = primary_context
+            elif context_docs:
+                # If no uploaded docs but we have context, use all of it
+                context = "\n\n".join([doc["content"] for doc in context_docs])
+            else:
+                # No context found - this is a problem
+                context = ""
+                print(f"❌ ERROR: No context documents found for query: {message}")
+                print(f"   This means the document might not be processed or indexed correctly")
             
             # Generate adaptive system prompt
-            if use_adaptive_learning:
+            if not context:
+                # No context available - tell user the document might not be processed
+                system_content = (
+                    "You are an intelligent chatbot. "
+                    "The user is asking about a document, but the document content is not available in the system. "
+                    "This might mean the document hasn't been processed yet or there was an error processing it. "
+                    "Please inform the user that the document needs to be processed first, or ask them to re-upload it."
+                )
+            elif use_adaptive_learning:
                 system_content = self.prompt_generator.generate_prompt(learning_profile, context)
             else:
+                priority_instruction = ""
+                if document_ids and len(document_ids) > 0:
+                    priority_instruction = "IMPORTANT: Base your answer primarily on the PRIMARY CONTEXT section (from the uploaded documents). Use the ADDITIONAL CONTEXT only for supplementary information if needed. "
+                
                 system_content = (
                     "You are an intelligent chatbot with strong reasoning abilities. "
+                    f"{priority_instruction}"
                     "Use the following context to answer the question. Think step by step and provide clear reasoning. "
                     "If you don't know the answer based on the context, say that you don't know.\n\n"
                     f"Context:\n{context}\n\n"

@@ -6,10 +6,12 @@ from datetime import datetime
 import jwt
 import os
 from pydantic import BaseModel, Field
+from typing import Optional, List
 import asyncio
 from contextlib import asynccontextmanager
 from services.rag_service import RAGService
 from config import settings
+from fastapi import Form
 
 rag_service = RAGService()
 
@@ -56,19 +58,29 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 class MessageCreate(BaseModel):
     content: str = Field(..., min_length=1)
     session_id: str
+    document_ids: Optional[List[str]] = None
 
 @app.post("/api/chat/process")
 async def process_message(message: MessageCreate, user_id: int = Depends(verify_token)):
     """Process a chat message with RAG"""
-    response_data = await rag_service.chat(message.content, message.session_id)
+    response_data = await rag_service.chat(
+        message.content, 
+        message.session_id,
+        document_ids=message.document_ids
+    )
     return {
         "answer": response_data["answer"],
         "context": response_data.get("context", [])
     }
 
 @app.post("/api/documents/process")
-async def process_document(file: UploadFile = File(...), user_id: int = Depends(verify_token)):
-    """Process a PDF document"""
+async def process_document(
+    file: UploadFile = File(...),
+    session_id: str = Form(...),
+    document_id: str = Form(...),
+    user_id: int = Depends(verify_token)
+):
+    """Process a PDF document with session and document metadata"""
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
     
@@ -78,7 +90,7 @@ async def process_document(file: UploadFile = File(...), user_id: int = Depends(
         content = await file.read()
         f.write(content)
     
-    success = await rag_service.process_document(file_path)
+    success = await rag_service.process_document(file_path, session_id=session_id, document_id=document_id)
     return {"processed": success}
 
 @app.post("/api/chat/clear/{session_id}")

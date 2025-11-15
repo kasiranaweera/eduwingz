@@ -173,7 +173,14 @@ class AdaptiveSystemPromptGenerator:
         """Generate customized system prompt based on learning style"""
         style = learning_profile.get_learning_style()
         
+        # Check if context has priority markers (PRIMARY CONTEXT)
+        has_priority_context = "PRIMARY CONTEXT" in context
+        
         base_prompt = "You are an intelligent adaptive learning assistant with strong reasoning abilities. "
+        
+        # Add priority instruction if context has priority markers
+        if has_priority_context:
+            base_prompt += "IMPORTANT: Base your answer primarily on the PRIMARY CONTEXT section (from the uploaded documents). Use the ADDITIONAL CONTEXT only for supplementary information if needed. "
         
         # Add adaptive instructions based on learning style
         adaptations = []
@@ -291,37 +298,103 @@ class AdaptiveFAISSVectorStore:
         self, 
         query: str, 
         learning_style: Dict,
-        k: int = 5
+        k: int = 5,
+        session_id: str = None,
+        document_ids: List[str] = None
     ) -> List[Dict]:
-        """Search with learning style-based re-ranking"""
+        """Search with learning style-based re-ranking and optional filtering"""
         if self.index is None or len(self.documents) == 0:
             return []
         
-        # Get initial results (fetch more than k for re-ranking)
+        # Get initial results (fetch more than k for re-ranking and filtering)
         query_embedding = self.embedding_model.embed_query(query)
         query_np = np.array([query_embedding]).astype("float32")
         faiss.normalize_L2(query_np)
         
-        search_k = min(k * 3, len(self.documents))  # Get 3x for re-ranking
+        # When filtering by session_id or document_ids, we need to search through
+        # a much larger set to find matching documents, since they might not be
+        # in the top similarity results
+        if session_id or (document_ids and len(document_ids) > 0):
+            # Search through a large portion of documents when filtering
+            search_k = min(len(self.documents), max(k * 20, 200))  # Search more when filtering
+            print(f"   🔎 Filtering active - searching through {search_k} documents")
+        else:
+            search_k = min(k * 5, len(self.documents))  # Normal search
         scores, indices = self.index.search(query_np, search_k)
         
         results = []
+        total_checked = 0
+        filtered_by_session = 0
+        filtered_by_doc_id = 0
+        sample_metadata_shown = False
+        
         for score, idx in zip(scores[0], indices[0]):
             if idx != -1:
+                total_checked += 1
                 doc = self.documents[idx]
+                metadata = doc.get("metadata", {})
+                doc_id = metadata.get("document_id")
+                doc_session_id = metadata.get("session_id")
+                
+                # Debug: Show sample metadata for first few documents
+                if not sample_metadata_shown and total_checked <= 3:
+                    print(f"   📋 Sample doc {total_checked} metadata: session_id={doc_session_id}, document_id={doc_id}")
+                    if total_checked == 3:
+                        sample_metadata_shown = True
+                
+                # STRICT filtering: If session_id or document_ids are provided, 
+                # only include documents with proper metadata
+                if session_id:
+                    # If session_id is provided, document MUST have matching session_id
+                    if not doc_session_id or doc_session_id != session_id:
+                        filtered_by_session += 1
+                        continue
+                
+                # Filter by document_ids if provided (non-empty list) - STRICT filtering
+                if document_ids and len(document_ids) > 0:
+                    # Document MUST have a document_id and it MUST be in the provided list
+                    if not doc_id or doc_id not in document_ids:
+                        filtered_by_doc_id += 1
+                        continue
+                
                 # Apply learning style boost
                 style_score = self._calculate_style_score(doc, learning_style)
-                combined_score = float(score) * 0.7 + style_score * 0.3
+                
+                # Priority boost system:
+                # 1. Highest priority: documents matching provided document_ids (2x boost)
+                # 2. High priority: documents from current session (1.5x boost)
+                # 3. Normal priority: other documents (1x)
+                priority_multiplier = 1.0
+                if document_ids and len(document_ids) > 0 and doc_id in document_ids:
+                    # Maximum priority for explicitly requested documents
+                    priority_multiplier = 2.0
+                elif session_id and doc_session_id == session_id:
+                    # High priority for current session documents
+                    priority_multiplier = 1.5
+                
+                # Combine scores with priority boost
+                base_score = float(score) * 0.7 + style_score * 0.3
+                combined_score = base_score * priority_multiplier
                 
                 results.append({
                     **doc,
                     "semantic_score": float(score),
                     "style_score": style_score,
+                    "priority_multiplier": priority_multiplier,
                     "combined_score": combined_score
                 })
         
-        # Re-rank by combined score
+        # Re-rank by combined score (with priority boost)
         results.sort(key=lambda x: x['combined_score'], reverse=True)
+        
+        # Debug logging
+        if len(results) == 0:
+            print(f"⚠️ No results after filtering! Checked {total_checked} documents")
+            print(f"   - Filtered by session_id: {filtered_by_session}")
+            print(f"   - Filtered by document_ids: {filtered_by_doc_id}")
+            print(f"   - Requested session_id: {session_id}")
+            print(f"   - Requested document_ids: {document_ids}")
+        
         return results[:k]
 
     def _calculate_style_score(self, doc: Dict, learning_style: Dict) -> float:
@@ -361,19 +434,104 @@ class AdaptiveFAISSVectorStore:
         
         return min(1.0, score)
 
-    def similarity_search(self, query: str, k: int = 5) -> List[Dict]:
-        """Standard similarity search (backward compatibility)"""
+    def similarity_search(
+        self, 
+        query: str, 
+        k: int = 5,
+        session_id: str = None,
+        document_ids: List[str] = None
+    ) -> List[Dict]:
+        """Standard similarity search with optional filtering"""
         if self.index is None or len(self.documents) == 0:
             return []
         query_embedding = self.embedding_model.embed_query(query)
         query_np = np.array([query_embedding]).astype("float32")
         faiss.normalize_L2(query_np)
-        scores, indices = self.index.search(query_np, min(k, len(self.documents)))
+        
+        # When filtering by session_id or document_ids, we need to search through
+        # a much larger set to find matching documents, since they might not be
+        # in the top similarity results
+        if session_id or (document_ids and len(document_ids) > 0):
+            # Search through a large portion of documents when filtering
+            search_k = min(len(self.documents), max(k * 20, 200))  # Search more when filtering
+            print(f"   🔎 Filtering active - searching through {search_k} documents")
+        else:
+            search_k = min(k * 5, len(self.documents))  # Normal search
+        scores, indices = self.index.search(query_np, search_k)
+        
         results = []
+        total_checked = 0
+        filtered_by_session = 0
+        filtered_by_doc_id = 0
+        sample_metadata_shown = False
+        
         for score, idx in zip(scores[0], indices[0]):
             if idx != -1:
-                results.append({**self.documents[idx], "score": float(score)})
-        return results
+                total_checked += 1
+                doc = self.documents[idx]
+                metadata = doc.get("metadata", {})
+                doc_id = metadata.get("document_id")
+                doc_session_id = metadata.get("session_id")
+                
+                # Debug: Show sample metadata for first few documents
+                if not sample_metadata_shown and total_checked <= 3:
+                    print(f"   📋 Sample doc {total_checked} metadata: session_id={doc_session_id}, document_id={doc_id}")
+                    if total_checked == 3:
+                        sample_metadata_shown = True
+                
+                # STRICT filtering: If session_id or document_ids are provided, 
+                # only include documents with proper metadata
+                if session_id:
+                    # If session_id is provided, document MUST have matching session_id
+                    if not doc_session_id or doc_session_id != session_id:
+                        filtered_by_session += 1
+                        continue
+                
+                # Filter by document_ids if provided (non-empty list) - STRICT filtering
+                if document_ids and len(document_ids) > 0:
+                    # Document MUST have a document_id and it MUST be in the provided list
+                    if not doc_id or doc_id not in document_ids:
+                        filtered_by_doc_id += 1
+                        continue
+                
+                # Priority boost system:
+                # 1. Highest priority: documents matching provided document_ids (2x boost)
+                # 2. High priority: documents from current session (1.5x boost)
+                # 3. Normal priority: other documents (1x)
+                priority_multiplier = 1.0
+                if document_ids and len(document_ids) > 0 and doc_id in document_ids:
+                    # Maximum priority for explicitly requested documents
+                    priority_multiplier = 2.0
+                elif session_id and doc_session_id == session_id:
+                    # High priority for current session documents
+                    priority_multiplier = 1.5
+                
+                # Apply priority boost to score
+                boosted_score = float(score) * priority_multiplier
+                
+                results.append({
+                    **doc, 
+                    "score": float(score),
+                    "priority_multiplier": priority_multiplier,
+                    "boosted_score": boosted_score
+                })
+                
+                # Stop if we have enough results
+                if len(results) >= k:
+                    break
+        
+        # Re-rank by boosted score to ensure priority documents come first
+        results.sort(key=lambda x: x.get('boosted_score', x.get('score', 0)), reverse=True)
+        
+        # Debug logging
+        if len(results) == 0:
+            print(f"⚠️ No results after filtering! Checked {total_checked} documents")
+            print(f"   - Filtered by session_id: {filtered_by_session}")
+            print(f"   - Filtered by document_ids: {filtered_by_doc_id}")
+            print(f"   - Requested session_id: {session_id}")
+            print(f"   - Requested document_ids: {document_ids}")
+        
+        return results[:k]
 
     def save_index(self, path: str):
         if self.index is not None:
