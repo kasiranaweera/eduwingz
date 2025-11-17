@@ -29,7 +29,7 @@ import RecentActivities from "../components/RecentActivities";
 import { useSelector } from "react-redux";
 
 const DashboardPlatformPage = () => {
-  const { user } = useSelector((state) => state.user); 
+  const { user } = useSelector((state) => state.user);
   const greeting = getGreeting();
 
   // States
@@ -48,6 +48,18 @@ const DashboardPlatformPage = () => {
     if (hour < 17) return "Good Afternoon";
     return "Good Evening";
   }
+
+  const popularLesson = [
+    { topic: "Lesson Topic", counts: "19 Topics", to: "/dashboard/platform/lessons/lessonId" },
+    { topic: "Lesson Topic", counts: "19 Topics", to: "" },
+    { topic: "Lesson Topic", counts: "19 Topics", to: "" },
+  ];
+
+  const resentLesson = [
+    { topic: "Lesson Topic", counts: "19 Topics", to: "" },
+    { topic: "Lesson Topic", counts: "19 Topics", to: "" },
+    { topic: "Lesson Topic", counts: "19 Topics", to: "" },
+  ];
 
   return (
     <Grid container spacing={3}>
@@ -112,9 +124,14 @@ const DashboardPlatformPage = () => {
               }}
             >
               <Typography variant="h6">My Lessons</Typography>
-
-              <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-                {[1, 2, 3].map((lesson) => (
+              <Divider
+                sx={{ mt: 1, mb: 3 }}
+                orientation="horizontal"
+                flexItem
+              />{" "}
+              <Typography variant="paragraph">Popular Lessons</Typography>
+              <Box sx={{ display: "flex", gap: 1, mt: 1, mb:3}}>
+                {popularLesson.map((lesson) => (
                   <Box
                     key={lesson}
                     sx={{
@@ -141,14 +158,64 @@ const DashboardPlatformPage = () => {
                       />
                     </Box>
                     <Box>
-                      <Typography>Advanced Mathematics</Typography>
+                      <Typography>{lesson.topic}</Typography>
                       <Typography variant="subtitle2" sx={{ opacity: 0.75 }}>
-                        19 Topics
+                        {lesson.counts}
                       </Typography>
                     </Box>
                     <Button
                       size="small"
                       variant="text"
+                      href={lesson.to}
+                      sx={{
+                        textTransform: "none",
+                        "&:hover": { color: "primary.main" },
+                      }}
+                      endIcon={<ArrowRightAltIcon />}
+                    >
+                      Continue Learning
+                    </Button>
+                  </Box>
+                ))}
+              </Box>
+              <Typography sx={{}} variant="paragraph">Recent Lessons</Typography>
+              <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
+                {resentLesson.map((lesson) => (
+                  <Box
+                    key={lesson}
+                    sx={{
+                      width: "100%",
+                      border: 1,
+                      borderColor: "graycolor.two",
+                      borderRadius: 2,
+                      p: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 1,
+                    }}
+                  >
+                    <Box sx={{ height: "100px" }}>
+                      <img
+                        src={Image3D}
+                        alt="3D Illustration"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          borderRadius: 8,
+                        }}
+                      />
+                    </Box>
+                    <Box>
+                      <Typography>{lesson.topic}</Typography>
+                      <Typography variant="subtitle2" sx={{ opacity: 0.75 }}>
+                        {lesson.counts}
+                      </Typography>
+                    </Box>
+                    <Button
+                      size="small"
+                      variant="text"
+                      href={lesson.to}
                       sx={{
                         textTransform: "none",
                         "&:hover": { color: "primary.main" },

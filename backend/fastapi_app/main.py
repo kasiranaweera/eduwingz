@@ -10,16 +10,24 @@ from typing import Optional, List
 import asyncio
 from contextlib import asynccontextmanager
 from services.rag_service import RAGService
+from services.agent_service import ReasoningAgent
 from config import settings
 from fastapi import Form
 from langchain_core.messages import AIMessage, HumanMessage
 
 rag_service = RAGService()
+agent_service = None  # Will be initialized after RAG service
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global agent_service
     print("🚀 Starting RAG Chat API...")
     await rag_service.initialize()
+    # Initialize agent service with RAG service's LLM
+    agent_service = ReasoningAgent(
+        llm_client=rag_service.llm,
+        embedding_model=rag_service.embedding_model
+    )
     print("✅ Services initialized successfully!")
     yield
     print("🔄 Shutting down...")
@@ -63,17 +71,70 @@ class MessageCreate(BaseModel):
 
 @app.post("/api/chat/process")
 async def process_message(message: MessageCreate, user_id: int = Depends(verify_token)):
-    """Process a chat message with RAG"""
-    response_data = await rag_service.chat(
-        message.content, 
-        message.session_id,
-        document_ids=message.document_ids
-    )
-    return {
-        "answer": response_data["answer"],
-        "is_incomplete": response_data.get("is_incomplete", False),
-        "context": response_data.get("context", [])
-    }
+    """Process a chat message with intelligent agent routing
+    
+    The system will:
+    1. First check if documents/RAG have relevant content
+    2. If RAG results are insufficient (low relevance), automatically use search tools
+    3. Activate other tools (code execution, etc.) as needed based on query type
+    """
+    try:
+        # First, try to get RAG results
+        rag_response = await rag_service.chat(
+            message.content, 
+            message.session_id,
+            document_ids=message.document_ids
+        )
+        
+        rag_score = rag_response.get("confidence_score", 0)
+        
+        print(f"📊 [RAG Score] Query: {message.content[:50]}... | Confidence: {rag_score:.2f}")
+        
+        # If RAG confidence is low (< 0.3), use agent with search tools
+        if rag_score < 0.3:
+            print(f"⚠️ [Agent Activation] Low RAG confidence ({rag_score:.2f}), activating agent with search tools...")
+            
+            # Use agent to search for better information
+            # Max iterations set to 3 for balanced reasoning
+            agent_response = await agent_service.reason_and_act(
+                message=message.content,
+                session_id=message.session_id,
+                context=rag_response.get("answer", ""),
+                enable_tools=True,
+                max_iterations=3
+            )
+            
+            # Extract tools used from reasoning chain
+            tools_used = []
+            if agent_response.get("reasoning_chain"):
+                for step in agent_response["reasoning_chain"]:
+                    if step.get("type") == "action":
+                        tools_used.append(step.get("action"))
+            
+            return {
+                "answer": agent_response.get("final_response", rag_response["answer"]),
+                "is_incomplete": False,
+                "context": rag_response.get("context", []),
+                "source": "agent_with_tools",
+                "tools_used": list(set(tools_used)),  # Remove duplicates
+                "reasoning_steps": len(agent_response.get("reasoning_chain", [])),
+                "iterations": agent_response.get("iterations", 0)
+            }
+        
+        # If RAG is sufficient, return RAG response
+        return {
+            "answer": rag_response["answer"],
+            "is_incomplete": rag_response.get("is_incomplete", False),
+            "context": rag_response.get("context", []),
+            "source": "rag",
+            "confidence_score": rag_score
+        }
+    
+    except Exception as e:
+        print(f"❌ Error in process_message: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error processing message: {str(e)}")
 
 @app.post("/api/documents/process")
 async def process_document(
@@ -247,6 +308,95 @@ async def continue_response(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error continuing response: {str(e)}")
+
+# ===== AGENT-ENHANCED ENDPOINTS =====
+
+class AgentChatRequest(BaseModel):
+    """Request for agent-based chat"""
+    content: str = Field(..., min_length=1)
+    session_id: str
+    document_ids: Optional[List[str]] = None
+    use_adaptive_learning: bool = True
+    enable_tools: bool = True
+    max_iterations: int = 5
+
+@app.post("/api/agent/chat")
+async def agent_chat(
+    request: AgentChatRequest,
+    user_id: int = Depends(verify_token)
+):
+    """
+    Enhanced chat with agent reasoning and tool integration
+    
+    The agent can:
+    - Search the web (Google Serper, DuckDuckGo)
+    - Query knowledge bases (Wikipedia, ArXiv, Wikidata)
+    - Execute code (Riza Code Interpreter)
+    - Browse web pages (Playwright)
+    - Access GitHub, YouTube, Weather, and create visualizations
+    - Combine RAG with reasoning for comprehensive answers
+    """
+    try:
+        print(f"\n📡 Agent Chat Request received")
+        
+        response = await rag_service.chat_with_agent(
+            message=request.content,
+            session_id=request.session_id,
+            document_ids=request.document_ids,
+            use_adaptive_learning=request.use_adaptive_learning,
+            enable_tools=request.enable_tools,
+            max_iterations=request.max_iterations
+        )
+        
+        return response
+    
+    except Exception as e:
+        print(f"❌ Agent chat error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Agent chat error: {str(e)}")
+
+@app.get("/api/agent/tools")
+async def get_available_tools(user_id: int = Depends(verify_token)):
+    """Get list of all available tools and their status"""
+    try:
+        tools_info = await rag_service.get_available_tools()
+        return {
+            "status": "success",
+            "tools": tools_info
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching tools: {str(e)}")
+
+@app.get("/api/agent/memory/{session_id}")
+async def get_agent_memory(
+    session_id: str,
+    user_id: int = Depends(verify_token)
+):
+    """Get agent's reasoning memory for a session"""
+    try:
+        memory_summary = rag_service.get_agent_memory_summary(session_id)
+        return {
+            "status": "success",
+            "memory": memory_summary
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching agent memory: {str(e)}")
+
+@app.post("/api/agent/memory/{session_id}/clear")
+async def clear_agent_memory(
+    session_id: str,
+    user_id: int = Depends(verify_token)
+):
+    """Clear agent's memory for a session"""
+    try:
+        rag_service.clear_agent_memory(session_id)
+        return {
+            "status": "success",
+            "message": f"Agent memory cleared for session {session_id}"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error clearing agent memory: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

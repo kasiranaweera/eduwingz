@@ -1,42 +1,21 @@
-import { Box, Button, IconButton, Modal, Typography } from "@mui/material";
+import { Box, Button, IconButton, Typography } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setAuthModalOpen } from "../redux/features/authModalSlice";
+import { useNavigate } from "react-router-dom";
 import { themeModes } from "../configs/theme.config";
-import { Link } from "react-router-dom";
 import { setThemeMode } from "../redux/features/themeModeSlice";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
-import SigninForm from "../components/SigninForm";
-import SignupForm from "../components/SignupForm";
-import ResetPasswordForm from "../components/ResetPasswordForm";
-import ProfileSetup from "../components/ProfileSetup"
+import ProfileSetup from "../components/ProfileSetup";
 import GlowCursor from "../components/common/GlowCursor";
 import Logo from "../components/common/Logo";
+import PageWrapper from "../components/PageWrapper";
 
-const actionState = {
-  signin: "signin",
-  signup: "signup",
-  resetpassword: "resetpassword",
-  profilesetup : "profilesetup",
-};
-
-const AuthPage = () => {
-  const { authModalOpen } = useSelector((state) => state.authModal);
+const ProfileSetupPage = () => {
   const { themeMode } = useSelector((state) => state.themeMode);
-
   const dispatch = useDispatch();
-  dispatch(setAuthModalOpen(true));
-
-  const [action, setAction] = useState(actionState.signin);
-
-  useEffect(() => {
-    if (authModalOpen) setAction(actionState.signin);
-  }, [authModalOpen]);
-
-  const handleClose = () => dispatch(setAuthModalOpen(false));
-
-  const switchAuthState = (state) => setAction(state);
+  const navigate = useNavigate();
+  const { user } = useSelector((state) => state.user);
 
   const height = window.innerHeight;
 
@@ -48,41 +27,51 @@ const AuthPage = () => {
 
   const specialDivRef = useRef(null);
 
+  const handleSkip = () => {
+    navigate("/home");
+  };
+
   return (
-    <Modal open={authModalOpen} onClose={handleClose}>
-      <Box>
-        <GlowCursor disableInRef={specialDivRef} />
+    <PageWrapper state="profilesetup">
       <Box
         sx={{
           "--dot-bg": themeMode === themeModes.dark ? "black" : "white",
-          "--dot-color": "rgba(255, 143, 0, 0.5)",
+          "--dot-color": "rgba(255, 143, 0, 0.3)",
           "--dot-size": "2px",
           "--dot-space": "30px",
           background: `linear-gradient(90deg, var(--dot-bg) calc(var(--dot-space) - var(--dot-size)), transparent 1%) center / var(--dot-space) var(--dot-space),
                        linear-gradient(var(--dot-bg) calc(var(--dot-space) - var(--dot-size)), transparent 1%) center / var(--dot-space) var(--dot-space),
                        var(--dot-color)`,
-          height: window.innerHeight,
+          height: height,
+          minHeight: "100vh",
         }}
       >
+        <GlowCursor disableInRef={specialDivRef} />
         <Box
           sx={{
             width: "100%",
             height: "100%",
-            display: "flow",
-            position: "static",
+            display: "flex",
+            flexDirection: "column",
+            position: "relative",
           }}
         >
+          {/* Header */}
           <Box
             ref={specialDivRef}
             sx={{
               display: "flex",
-              direction: "row",
               justifyContent: "space-between",
               alignItems: "center",
-              position: { md: "absolute", xs: "relative" },
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
               p: 3,
-              left: "0%",
-              width: { md: "100%", xs: "100%" },
+              width: "100%",
+              zIndex: 10,
+              backdropFilter: "blur(8px)",
+              borderBottom: "1px solid rgba(255,255,255,0.1)",
             }}
           >
             <Button
@@ -96,8 +85,7 @@ const AuthPage = () => {
                 width: "100px",
               }}
               variant="outlined"
-              componet={Link}
-              to='/home'
+              onClick={() => navigate("/home")}
             >
               Home
             </Button>
@@ -107,9 +95,8 @@ const AuthPage = () => {
             <Box
               sx={{
                 width: "100px",
-                justifyContent: "right",
                 display: "flex",
-                direction: "row",
+                justifyContent: "flex-end",
               }}
             >
               <IconButton
@@ -121,54 +108,41 @@ const AuthPage = () => {
               </IconButton>
             </Box>
           </Box>
+          {/* Main Content */}
           <Box
             sx={{
-              justifyContent: "center",
-              position: "static",
               display: "flex",
-              height: height,
-              alignItems: "center",
-              paddingTop: 10,
+              justifyContent: "center",
+              alignItems: "flex-start",
+              flex: 1,
+              padding: "40px 20px",
+              paddingTop: "80px",
+              overflowY: "auto",
             }}
           >
             <Box
               ref={specialDivRef}
               sx={{
-                padding: 3,
+                padding: 4,
                 border: 1,
-                width: "30vw",
-                justifyItems: "center",
+                width: "100%",
+                maxWidth: "600px",
                 borderRadius: 3,
                 borderColor:
                   themeMode === themeModes.dark
                     ? "rgba(255, 255, 255, 0.2)"
                     : "rgba(0, 0, 0, 0.2)",
                 position: "relative",
-                display: "flow",
                 backdropFilter: `blur(1px)`,
               }}
             >
-              {action === actionState.signin && (
-                <SigninForm
-                  switchAuthState={() => switchAuthState(actionState.signup)}
-                />
-              )}
-              {action === actionState.signup && (
-                <SignupForm
-                  switchAuthState={() => switchAuthState(actionState.signin)}
-                  profileSetupState={() => switchAuthState(actionState.profilesetup)}
-                  
-                />
-              )}
-              {action === actionState.resetpassword && <ResetPasswordForm />}
-              {action === actionState.profilesetup && <ProfileSetup switchAuthState={() => switchAuthState(actionState.signin)} />}
+              <ProfileSetup onSkip={handleSkip} onSuccess={() => navigate("/home")} />
             </Box>
           </Box>
         </Box>
       </Box>
-    </Box>
-    </Modal>
+    </PageWrapper>
   );
 };
 
-export default AuthPage;
+export default ProfileSetupPage;

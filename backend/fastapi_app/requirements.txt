@@ -1,16 +1,58 @@
+# FastAPI & Web Framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 python-jose[cryptography]==3.3.0
 python-multipart==0.0.6
+
+# Pydantic & Settings
 pydantic==2.5.0
 pydantic-settings==2.0.3
 python-dotenv==1.0.0
+
+# LangChain & AI
 langchain==0.1.0
 langchain-community==0.0.10
 langchain-ollama==0.1.0
+
+# Embeddings & Vector Store
 sentence-transformers==2.7.0
 faiss-cpu==1.7.4
-pypdf==3.17.0
+
+# ML & Data Processing
 torch==2.1.0
 transformers==4.36.0
 numpy==1.24.3
+pypdf==3.17.0
+
+# Primary & Search Tools
+google-search-results==2.4.2
+duckduckgo-search==3.9.10
+scholarly==1.2.3
+
+# Research & Knowledge
+wikipedia==1.4.0
+arxiv==1.4.7
+PyGithub==2.1.1
+
+# Web Browsing & Scraping
+playwright==1.40.0
+aiohttp==3.9.1
+requests==2.31.0
+
+# Code Execution
+riza==0.4.1
+
+# Data Visualization
+matplotlib==3.8.2
+
+# Wikidata
+SPARQLWrapper==2.0.0
+
+# RPA/Automation
+rpa==5.11.0
+
+# Google API
+google-api-python-client==2.104.0
+
+# Additional utilities
+certifi>=2024.0.0
