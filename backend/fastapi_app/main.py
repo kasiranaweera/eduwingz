@@ -48,6 +48,25 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"⚠️ Warning: TTS engine initialization failed: {e}")
         tts_engine = None
+    
+    # Initialize STT engine
+    try:
+        import sys
+        import os
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'speech-to-text'))
+        from stt_engine import stt
+        global stt_engine
+        print("🎤 STT engine already initialized in stt_engine.py")
+        stt_engine = stt
+        print("✅ STT engine ready!")
+    except ModuleNotFoundError as e:
+        print(f"⚠️ Warning: STT dependencies not installed: {e}")
+        print("   Install with: pip install torch transformers")
+        stt_engine = None
+    except Exception as e:
+        print(f"⚠️ Warning: STT engine initialization failed: {e}")
+        stt_engine = None
+    
     print("✅ Services initialized successfully!")
     yield
     print("🔄 Shutting down...")
@@ -517,6 +536,129 @@ async def generate_speech_stream(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error generating speech: {str(e)}")
+
+# ===== SPEECH-TO-TEXT ENDPOINTS =====
+
+class SpeechToTextRequest(BaseModel):
+    """Request for speech-to-text conversion"""
+    # Audio data can be sent as base64 or multipart form-data
+    pass
+
+@app.post("/api/stt/transcribe")
+async def transcribe_audio(
+    file: UploadFile = File(...),
+    user_id: int = Depends(verify_token)
+):
+    """Transcribe audio file to text using Speech-to-Text engine"""
+    try:
+        if not stt_engine:
+            raise HTTPException(
+                status_code=503,
+                detail="STT engine not available"
+            )
+        
+        # Save uploaded file temporarily
+        import tempfile
+        import shutil
+        
+        temp_dir = tempfile.mkdtemp()
+        temp_file_path = os.path.join(temp_dir, file.filename)
+        
+        try:
+            # Write uploaded file to disk
+            with open(temp_file_path, "wb") as f:
+                content = await file.read()
+                f.write(content)
+            
+            print(f"🎤 [STT] Transcribing audio file: {file.filename}")
+            
+            # Transcribe using STT engine
+            result = await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: stt_engine.transcribe(temp_file_path)
+            )
+            
+            # Extract text and segments
+            text = result.get("text", "").strip()
+            segments = result.get("chunks") or result.get("segments") or []
+            
+            print(f"✅ [STT] Transcription completed: {len(text)} characters")
+            
+            return {
+                "text": text,
+                "segments": segments,
+                "filename": file.filename,
+                "language": result.get("detected_language", "unknown"),
+                "status": "success"
+            }
+        
+        finally:
+            # Clean up temp files
+            shutil.rmtree(temp_dir, ignore_errors=True)
+    
+    except Exception as e:
+        print(f"❌ [STT] Error transcribing audio: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error transcribing audio: {str(e)}")
+
+@app.post("/api/stt/transcribe-base64")
+async def transcribe_audio_base64(
+    audio_base64: str = Form(...),
+    filename: str = Form(default="audio.wav"),
+    user_id: int = Depends(verify_token)
+):
+    """Transcribe audio from base64 encoded data"""
+    try:
+        if not stt_engine:
+            raise HTTPException(
+                status_code=503,
+                detail="STT engine not available"
+            )
+        
+        import tempfile
+        import shutil
+        
+        temp_dir = tempfile.mkdtemp()
+        temp_file_path = os.path.join(temp_dir, filename)
+        
+        try:
+            # Decode base64 and write to file
+            audio_bytes = base64.b64decode(audio_base64)
+            with open(temp_file_path, "wb") as f:
+                f.write(audio_bytes)
+            
+            print(f"🎤 [STT-Base64] Transcribing audio: {filename} ({len(audio_bytes)} bytes)")
+            
+            # Transcribe using STT engine
+            result = await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: stt_engine.transcribe(temp_file_path)
+            )
+            
+            # Extract text and segments
+            text = result.get("text", "").strip()
+            segments = result.get("chunks") or result.get("segments") or []
+            
+            print(f"✅ [STT-Base64] Transcription completed: {len(text)} characters")
+            
+            return {
+                "text": text,
+                "segments": segments,
+                "filename": filename,
+                "language": result.get("detected_language", "unknown"),
+                "status": "success"
+            }
+        
+        finally:
+            # Clean up temp files
+            shutil.rmtree(temp_dir, ignore_errors=True)
+    
+    except Exception as e:
+        print(f"❌ [STT-Base64] Error transcribing audio: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error transcribing audio: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
