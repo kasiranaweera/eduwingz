@@ -24,6 +24,7 @@ import { useSelector } from "react-redux";
 import { themeModes } from "../configs/theme.config";
 import {
   Close,
+  PauseCircleOutline,
   PlayCircleOutline,
   Stop,
   StopCircleOutlined,
@@ -32,6 +33,7 @@ import {
 const RecordingModal = ({ open, onClose, onSubmit, isLoading = false }) => {
   const { themeMode } = useSelector((state) => state.themeMode);
   const [isRecording, setIsRecording] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [recordedAudio, setRecordedAudio] = useState(null);
   const [audioUrl, setAudioUrl] = useState(null);
   const [transcribedText, setTranscribedText] = useState("");
@@ -145,11 +147,44 @@ const RecordingModal = ({ open, onClose, onSubmit, isLoading = false }) => {
     draw();
   };
 
+  const pauseRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      if (isPaused) {
+        // Resume recording
+        mediaRecorderRef.current.resume();
+        setIsPaused(false);
+        
+        // Resume timer
+        recordingTimerRef.current = setInterval(() => {
+          setRecordingTime((prev) => prev + 1);
+        }, 1000);
+        
+        // Resume visualization
+        drawVisualization();
+      } else {
+        // Pause recording
+        mediaRecorderRef.current.pause();
+        setIsPaused(true);
+        
+        // Stop timer
+        if (recordingTimerRef.current) {
+          clearInterval(recordingTimerRef.current);
+        }
+        
+        // Stop visualization
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+      }
+    }
+  };
+
   // Stop recording
   const stopRecording = () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      setIsPaused(false);
 
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
@@ -246,6 +281,7 @@ const RecordingModal = ({ open, onClose, onSubmit, isLoading = false }) => {
     setRecordingTime(0);
     setIsPlaying(false);
     setIsEditing(false);
+    setIsPaused(false);
     setAutoSubmitTimer(null);
 
     onClose();
@@ -312,13 +348,20 @@ const RecordingModal = ({ open, onClose, onSubmit, isLoading = false }) => {
             }}
           >
             {/* Record/Stop button */}
-            <IconButton onClick={isRecording ? stopRecording : startRecording}>
-              {isRecording ? <StopCircleOutlined /> : <PlayCircleOutline />}
-            </IconButton>
+
+            <Box sx={{ display: "flex", gap:1 }}>
+              <IconButton onClick={isRecording ? pauseRecording : startRecording }>
+                {isRecording ? (isPaused ? <PlayCircleOutline /> : <PauseCircleOutline />) : <PlayCircleOutline />}
+              </IconButton>
+              <IconButton onClick={stopRecording} disabled={!isRecording}>
+                <StopCircleOutlined />
+              </IconButton>
+              
+            </Box>
 
             {/* Recording indicator */}
             {isRecording && (
-              <Box sx={{ display: "flex", alignItems: "center" }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap:1 }}>
                 <Box
                   sx={{
                     display: "flex",
@@ -332,16 +375,16 @@ const RecordingModal = ({ open, onClose, onSubmit, isLoading = false }) => {
                       width: 16,
                       height: 16,
                       borderRadius: "50%",
-                      backgroundColor: "#ef4444",
-                      animation: "pulse 1s infinite",
+                      backgroundColor: isPaused ? "#f59e0b" : "#ef4444",
+                      animation: isPaused ? "none" : "pulse 1s infinite",
                       "@keyframes pulse": {
                         "0%, 100%": { opacity: 1 },
                         "50%": { opacity: 0.5 },
                       },
                     }}
                   />
-                  <Typography variant="body1" color="error">
-                    Recording...
+                  <Typography variant="body1" color={isPaused ? "warning" : "error"}>
+                    {isPaused ? "Paused" : "Recording..."}
                   </Typography>
                 </Box>
                 <Box>
@@ -349,7 +392,7 @@ const RecordingModal = ({ open, onClose, onSubmit, isLoading = false }) => {
                     variant="body1"
                     sx={{
                       fontFamily: "monospace",
-                      color: "error.main",
+                      color: isPaused ? "warning.main" : "error.main",
                     }}
                   >
                     {formatTime(recordingTime)}
@@ -374,7 +417,7 @@ const RecordingModal = ({ open, onClose, onSubmit, isLoading = false }) => {
             {/* Canvas for waveform visualization */}
             <canvas
               ref={canvasRef}
-              width={"550"}
+              width={"500"}
               height={50}
               style={{
                 border: `1px solid ${

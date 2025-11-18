@@ -339,7 +339,6 @@ const ChatSection = ({
                       <MicOutlinedIcon />
                     </IconButton>
                   </Tooltip>
-                  {isLoading && <CircularProgress size={24} />}
                 </>
               )}
             </Box>
