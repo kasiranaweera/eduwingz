@@ -10,7 +10,8 @@ import {
   Add,
   CloudUpload,
   InsertDriveFile,
-  YouTube
+  YouTube,
+  Task
 } from '@mui/icons-material';
 
 const AttachmentMenu = ({ onFileSelect }) => {
@@ -66,6 +67,12 @@ const AttachmentMenu = ({ onFileSelect }) => {
             <InsertDriveFile fontSize="small" />
           </ListItemIcon>
           <Typography variant="body2">Upload from device</Typography>
+        </MenuItem>
+        <MenuItem onClick={() => handleFileUpload('testbooks')}>
+          <ListItemIcon>
+            <Task fontSize="small" />
+          </ListItemIcon>
+          <Typography variant="body2">Select Textbook</Typography>
         </MenuItem>
         <MenuItem onClick={() => handleFileUpload('google-drive')}>
           <ListItemIcon>

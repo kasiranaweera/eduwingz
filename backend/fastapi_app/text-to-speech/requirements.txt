@@ -1,0 +1,6 @@
+torch==2.4.0
+transformers>=4.45.0
+datasets>=2.21.0
+gradio>=4.100.0
+soundfile
+librosa

@@ -36,7 +36,10 @@
           "sequential_global": 0
         }
       }
-    ]
+    ],
+    "questionnaire_data": null,
+    "questionnaire_completed": false,
+    "questionnaire_timestamp": null
   },
   "d85d1773-85b4-48e9-8b1b-61b988363243": {
     "user_id": "d85d1773-85b4-48e9-8b1b-61b988363243",
@@ -177,7 +180,10 @@
           "sequential_global": 0
         }
       }
-    ]
+    ],
+    "questionnaire_data": null,
+    "questionnaire_completed": false,
+    "questionnaire_timestamp": null
   },
   "47cfc75c-0eea-45ca-bf51-c1394bdc8a8a": {
     "user_id": "47cfc75c-0eea-45ca-bf51-c1394bdc8a8a",
@@ -214,7 +220,10 @@
           "sequential_global": -1
         }
       }
-    ]
+    ],
+    "questionnaire_data": null,
+    "questionnaire_completed": false,
+    "questionnaire_timestamp": null
   },
   "ce1ea0e2-1baf-4c58-bc0d-745d49e02077": {
     "user_id": "ce1ea0e2-1baf-4c58-bc0d-745d49e02077",
@@ -287,6 +296,82 @@
           "sequential_global": 0
         }
       }
-    ]
+    ],
+    "questionnaire_data": null,
+    "questionnaire_completed": false,
+    "questionnaire_timestamp": null
+  },
+  "2f9d5502-f32f-45e9-922e-5b5795b9e588": {
+    "user_id": "2f9d5502-f32f-45e9-922e-5b5795b9e588",
+    "dimensions": {
+      "active_reflective": -2.0,
+      "sensing_intuitive": 0,
+      "visual_verbal": 0,
+      "sequential_global": 0
+    },
+    "total_interactions": 5,
+    "interaction_history": [
+      {
+        "timestamp": "2025-11-17T19:05:00.592317",
+        "indicators": {
+          "brief_communication": true
+        },
+        "dimensions": {
+          "active_reflective": -0.5,
+          "sensing_intuitive": 0,
+          "visual_verbal": 0,
+          "sequential_global": 0
+        }
+      },
+      {
+        "timestamp": "2025-11-17T19:09:15.023392",
+        "indicators": {
+          "brief_communication": true
+        },
+        "dimensions": {
+          "active_reflective": -1.0,
+          "sensing_intuitive": 0,
+          "visual_verbal": 0,
+          "sequential_global": 0
+        }
+      },
+      {
+        "timestamp": "2025-11-17T19:18:03.987317",
+        "indicators": {},
+        "dimensions": {
+          "active_reflective": -1.0,
+          "sensing_intuitive": 0,
+          "visual_verbal": 0,
+          "sequential_global": 0
+        }
+      },
+      {
+        "timestamp": "2025-11-17T19:26:31.743131",
+        "indicators": {
+          "brief_communication": true
+        },
+        "dimensions": {
+          "active_reflective": -1.5,
+          "sensing_intuitive": 0,
+          "visual_verbal": 0,
+          "sequential_global": 0
+        }
+      },
+      {
+        "timestamp": "2025-11-17T19:44:40.311958",
+        "indicators": {
+          "brief_communication": true
+        },
+        "dimensions": {
+          "active_reflective": -2.0,
+          "sensing_intuitive": 0,
+          "visual_verbal": 0,
+          "sequential_global": 0
+        }
+      }
+    ],
+    "questionnaire_data": null,
+    "questionnaire_completed": false,
+    "questionnaire_timestamp": null
   }
 }

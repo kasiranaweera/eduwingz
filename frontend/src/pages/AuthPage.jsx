@@ -10,6 +10,7 @@ import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
 import SigninForm from "../components/SigninForm";
 import SignupForm from "../components/SignupForm";
 import ResetPasswordForm from "../components/ResetPasswordForm";
+import ProfileSetup from "../components/ProfileSetup"
 import GlowCursor from "../components/common/GlowCursor";
 import Logo from "../components/common/Logo";
 
@@ -17,6 +18,7 @@ const actionState = {
   signin: "signin",
   signup: "signup",
   resetpassword: "resetpassword",
+  profilesetup : "profilesetup",
 };
 
 const AuthPage = () => {
@@ -47,8 +49,9 @@ const AuthPage = () => {
   const specialDivRef = useRef(null);
 
   return (
-    <Box open={authModalOpen} onClose={handleClose}>
-      <GlowCursor disableInRef={specialDivRef} />
+    <Modal open={authModalOpen} onClose={handleClose}>
+      <Box>
+        <GlowCursor disableInRef={specialDivRef} />
       <Box
         sx={{
           "--dot-bg": themeMode === themeModes.dark ? "black" : "white",
@@ -153,14 +156,18 @@ const AuthPage = () => {
               {action === actionState.signup && (
                 <SignupForm
                   switchAuthState={() => switchAuthState(actionState.signin)}
+                  profileSetupState={() => switchAuthState(actionState.profilesetup)}
+                  
                 />
               )}
               {action === actionState.resetpassword && <ResetPasswordForm />}
+              {action === actionState.profilesetup && <ProfileSetup switchAuthState={() => switchAuthState(actionState.signin)} />}
             </Box>
           </Box>
         </Box>
       </Box>
     </Box>
+    </Modal>
   );
 };
 

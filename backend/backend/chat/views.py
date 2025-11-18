@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.parsers import MultiPartParser
 from django.conf import settings
-from .models import ChatSession, Message, Document
+from .models import ChatSession, Message, Document, Bookmark
 import uuid
 import logging
 from backend.errors import APIErrorResponse
@@ -153,7 +153,9 @@ class ChatMessageView(APIView):
                             "message_type": assistant_message.message_type,
                             "content": assistant_message.content,
                             "context": json.loads(assistant_message.context) if assistant_message.context else None,
-                            "timestamp": assistant_message.timestamp
+                            "timestamp": assistant_message.timestamp,
+                            "is_good": assistant_message.is_good,
+                            "is_bookmarked": assistant_message.is_bookmarked
                         } if assistant_message else None
                     }
                     return Response(response_data)
@@ -178,7 +180,9 @@ class ChatMessageView(APIView):
                             "message_type": assistant_message.message_type,
                             "content": assistant_message.content,
                             "context": json.loads(assistant_message.context) if assistant_message.context else None,
-                            "timestamp": assistant_message.timestamp
+                            "timestamp": assistant_message.timestamp,
+                            "is_good": assistant_message.is_good,
+                            "is_bookmarked": assistant_message.is_bookmarked
                         } if assistant_message else None
                     }
                     response_data.append(pair)
@@ -318,6 +322,8 @@ class ChatMessageView(APIView):
                         "content": assistant_message.content,
                         "context": context_data,
                         "is_incomplete": is_incomplete,
+                        "is_good": assistant_message.is_good,
+                        "is_bookmarked": assistant_message.is_bookmarked,
                         "timestamp": assistant_message.timestamp
                     }
                 }, status=201)
@@ -418,6 +424,8 @@ class ChatMessageView(APIView):
                             "message_type": assistant_message.message_type,
                             "content": assistant_message.content,
                             "context": fastapi_data.get("context"),
+                            "is_good": assistant_message.is_good,
+                            "is_bookmarked": assistant_message.is_bookmarked,
                             "timestamp": assistant_message.timestamp
                         }
                     })
@@ -440,6 +448,54 @@ class ChatMessageView(APIView):
                 if assistant_message:
                     assistant_message.delete()
                 return Response({"message": "Message pair deleted successfully"})
+            except Message.DoesNotExist:
+                return APIErrorResponse.not_found("Message not found")
+        except ChatSession.DoesNotExist:
+            return APIErrorResponse.not_found("Session not found")
+
+class MarkMessageGoodView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, session_id, message_id):
+        """Mark an assistant message as a good response"""
+        try:
+            session = ChatSession.objects.get(id=session_id, user=request.user)
+            try:
+                message = Message.objects.get(id=message_id, session=session, message_type="assistant")
+                is_good = request.data.get("is_good", True)
+                message.is_good = is_good
+                message.save(update_fields=["is_good"])
+                
+                return Response({
+                    "id": str(message.id),
+                    "message_type": message.message_type,
+                    "is_good": message.is_good,
+                    "content": message.content[:100] + "..." if len(message.content) > 100 else message.content,
+                    "message": f"Message marked as {'good' if is_good else 'not good'}"
+                })
+            except Message.DoesNotExist:
+                return APIErrorResponse.not_found("Message not found")
+        except ChatSession.DoesNotExist:
+            return APIErrorResponse.not_found("Session not found")
+
+    def put(self, request, session_id, message_id):
+        """Update the is_good status of an assistant message"""
+        try:
+            session = ChatSession.objects.get(id=session_id, user=request.user)
+            try:
+                message = Message.objects.get(id=message_id, session=session, message_type="assistant")
+                is_good = request.data.get("is_good", True)
+                message.is_good = is_good
+                message.save(update_fields=["is_good"])
+                
+                return Response({
+                    "id": str(message.id),
+                    "message_type": message.message_type,
+                    "is_good": message.is_good,
+                    "content": message.content[:100] + "..." if len(message.content) > 100 else message.content,
+                    "message": f"Message marked as {'good' if is_good else 'not good'}"
+                })
             except Message.DoesNotExist:
                 return APIErrorResponse.not_found("Message not found")
         except ChatSession.DoesNotExist:
@@ -673,3 +729,128 @@ class MessageDocumentView(APIView):
             ])
         except Message.DoesNotExist:
             return APIErrorResponse.not_found("Message not found")
+
+class BookmarkToggleView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, session_id, message_id):
+        """Toggle bookmark status for a message"""
+        try:
+            session = ChatSession.objects.get(id=session_id, user=request.user)
+            try:
+                message = Message.objects.get(id=message_id, session=session)
+                is_bookmarked = request.data.get("is_bookmarked", True)
+                
+                if is_bookmarked:
+                    # Create or get the bookmark
+                    title = request.data.get("title", message.content[:100])
+                    content = request.data.get("content", message.content)
+                    
+                    bookmark, created = Bookmark.objects.get_or_create(
+                        user=request.user,
+                        message=message,
+                        defaults={
+                            "title": title,
+                            "content": content
+                        }
+                    )
+                    message.is_bookmarked = True
+                else:
+                    # Delete the bookmark
+                    Bookmark.objects.filter(user=request.user, message=message).delete()
+                    message.is_bookmarked = False
+                
+                message.save(update_fields=["is_bookmarked"])
+                
+                return Response({
+                    "id": str(message.id),
+                    "is_bookmarked": message.is_bookmarked,
+                    "content": message.content[:100] + "..." if len(message.content) > 100 else message.content,
+                    "message": f"Message {'bookmarked' if is_bookmarked else 'unbookmarked'}"
+                })
+            except Message.DoesNotExist:
+                return APIErrorResponse.not_found("Message not found")
+        except ChatSession.DoesNotExist:
+            return APIErrorResponse.not_found("Session not found")
+
+    def put(self, request, session_id, message_id):
+        """Update bookmark status for a message"""
+        try:
+            session = ChatSession.objects.get(id=session_id, user=request.user)
+            try:
+                message = Message.objects.get(id=message_id, session=session)
+                is_bookmarked = request.data.get("is_bookmarked", True)
+                
+                if is_bookmarked:
+                    # Create or get the bookmark
+                    title = request.data.get("title", message.content[:100])
+                    content = request.data.get("content", message.content)
+                    
+                    bookmark, created = Bookmark.objects.get_or_create(
+                        user=request.user,
+                        message=message,
+                        defaults={
+                            "title": title,
+                            "content": content
+                        }
+                    )
+                    message.is_bookmarked = True
+                else:
+                    # Delete the bookmark
+                    Bookmark.objects.filter(user=request.user, message=message).delete()
+                    message.is_bookmarked = False
+                
+                message.save(update_fields=["is_bookmarked"])
+                
+                return Response({
+                    "id": str(message.id),
+                    "is_bookmarked": message.is_bookmarked,
+                    "content": message.content[:100] + "..." if len(message.content) > 100 else message.content,
+                    "message": f"Message {'bookmarked' if is_bookmarked else 'unbookmarked'}"
+                })
+            except Message.DoesNotExist:
+                return APIErrorResponse.not_found("Message not found")
+        except ChatSession.DoesNotExist:
+            return APIErrorResponse.not_found("Session not found")
+
+class BookmarksListView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """List all bookmarks for the authenticated user"""
+        bookmarks = Bookmark.objects.filter(user=request.user).order_by("-created_at")
+        response_data = [
+            {
+                "id": str(bookmark.id),
+                "message_id": str(bookmark.message.id),
+                "title": bookmark.title or "Untitled",
+                "content": bookmark.content,
+                "message_type": bookmark.message.message_type,
+                "session_id": str(bookmark.message.session.id),
+                "session_title": bookmark.message.session.title or "Untitled chat",
+                "created_at": bookmark.created_at,
+                "updated_at": bookmark.updated_at,
+                "message_content": bookmark.message.content[:200] + "..." if len(bookmark.message.content) > 200 else bookmark.message.content,
+                "message_timestamp": bookmark.message.timestamp
+            }
+            for bookmark in bookmarks
+        ]
+        return Response(response_data)
+
+    def delete(self, request, bookmark_id):
+        """Delete a specific bookmark"""
+        try:
+            bookmark = Bookmark.objects.get(id=bookmark_id, user=request.user)
+            message = bookmark.message
+            bookmark.delete()
+            
+            # Update message's is_bookmarked status if no more bookmarks exist
+            if not Bookmark.objects.filter(user=request.user, message=message).exists():
+                message.is_bookmarked = False
+                message.save(update_fields=["is_bookmarked"])
+            
+            return Response({"message": "Bookmark deleted successfully"})
+        except Bookmark.DoesNotExist:
+            return APIErrorResponse.not_found("Bookmark not found")

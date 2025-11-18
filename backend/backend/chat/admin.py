@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ChatSession, Message, Document
+from .models import ChatSession, Message, Document, Bookmark
 
 @admin.register(ChatSession)
 class ChatSessionAdmin(admin.ModelAdmin):
@@ -11,11 +11,19 @@ class ChatSessionAdmin(admin.ModelAdmin):
 
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):
-    list_display = ('id', 'session', 'message_type', 'content', 'timestamp')
+    list_display = ('id', 'session', 'message_type', 'content', 'is_good', 'is_bookmarked', 'timestamp')
     search_fields = ('id', 'content', 'session__id')
-    list_filter = ('message_type', 'timestamp')
+    list_filter = ('message_type', 'is_good', 'is_bookmarked', 'timestamp')
     readonly_fields = ('id', 'timestamp')
-    fields = ('session', 'message_type', 'content', 'context')
+    fields = ('session', 'message_type', 'content', 'context', 'is_good', 'is_bookmarked')
+
+@admin.register(Bookmark)
+class BookmarkAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'message', 'title', 'created_at')
+    search_fields = ('id', 'title', 'content', 'user__username', 'user__email', 'message__id')
+    list_filter = ('created_at', 'updated_at')
+    readonly_fields = ('id', 'created_at', 'updated_at')
+    fields = ('user', 'message', 'title', 'content', 'created_at', 'updated_at')
 
 @admin.register(Document)
 class DocumentAdmin(admin.ModelAdmin):

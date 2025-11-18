@@ -59,6 +59,7 @@ const HomePage = () => {
   const theme = useTheme();
   const [value, setValue] = useState(0);
   const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
+  const { user } = useSelector((state) => state.user);
 
   const settings = {
     dots: true,

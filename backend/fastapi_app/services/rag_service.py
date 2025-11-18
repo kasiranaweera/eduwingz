@@ -183,6 +183,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from llm_model import LLM_Model
 from config import settings
 from adaptive_learning import ILSLearningProfile, AdaptiveSystemPromptGenerator, AdaptiveFAISSVectorStore
+from .agent_service import ReasoningAgent
 import json
 import traceback
 
@@ -196,6 +197,7 @@ class RAGService:
         self.session_histories = {}
         self.learning_profiles = {}  # session_id -> ILSLearningProfile
         self.prompt_generator = AdaptiveSystemPromptGenerator()
+        self.agent = None  # Will be initialized with RAG service
         self._initialized = False
 
     async def initialize(self):
@@ -207,11 +209,14 @@ class RAGService:
             self.vectorstore = AdaptiveFAISSVectorStore(self.embedding_model)
             self.vectorstore.load_index("data/vectorstore")
             
+            # Initialize reasoning agent
+            self.agent = ReasoningAgent(self.llm, self.embedding_model)
+            
             # Load learning profiles if they exist
             self._load_learning_profiles()
             
             self._initialized = True
-            print("✅ RAG Service initialized successfully with ILS adaptive learning!")
+            print("✅ RAG Service initialized successfully with ILS adaptive learning and Agent!")
         except Exception as e:
             print(f"❌ Error initializing RAG service: {e}")
             raise
@@ -336,6 +341,33 @@ class RAGService:
                 return True
         
         return False
+
+    def _calculate_confidence_score(self, context_docs: List[Dict], context: str) -> float:
+        """
+        Calculate confidence score for RAG response
+        
+        Score factors:
+        - Number of relevant documents found (max 1.0)
+        - Average relevance scores of documents
+        - Amount of context available
+        
+        Returns score between 0.0 and 1.0
+        """
+        if not context_docs or not context:
+            return 0.0
+        
+        # Factor 1: Number of documents (normalized to 0-0.3)
+        doc_count_score = min(len(context_docs) / 5.0, 1.0) * 0.3
+        
+        # Factor 2: Average relevance scores (0-0.4)
+        avg_score = sum([doc.get("score", 0) for doc in context_docs]) / len(context_docs)
+        relevance_score = avg_score * 0.4
+        
+        # Factor 3: Context length (more context = more confidence, 0-0.3)
+        context_length_score = min(len(context) / 2000.0, 1.0) * 0.3
+        
+        total_score = doc_count_score + relevance_score + context_length_score
+        return min(total_score, 1.0)
 
     async def chat(
         self, 
@@ -491,6 +523,10 @@ class RAGService:
                 print(f"💾 [RAG Service] Saving learning profiles (periodic save)")
                 self._save_learning_profiles()
             
+            # Calculate confidence score
+            confidence_score = self._calculate_confidence_score(context_docs, context)
+            print(f"📊 [Confidence Score] {confidence_score:.2f} for query: {message[:50]}...")
+            
             return {
                 "answer": response.content,
                 "is_incomplete": is_incomplete,
@@ -502,6 +538,7 @@ class RAGService:
                     }
                     for doc in context_docs
                 ],
+                "confidence_score": confidence_score,
                 "learning_style": learning_style if use_adaptive_learning else None,
                 "learning_profile_summary": {
                     "dimensions": learning_profile.dimensions,
@@ -538,3 +575,151 @@ class RAGService:
             del self.learning_profiles[session_id]
             self._save_learning_profiles()
             print(f"✅ Reset learning profile for session: {session_id}")
+    
+    async def chat_with_agent(
+        self,
+        message: str,
+        session_id: str,
+        document_ids: Optional[List[str]] = None,
+        use_adaptive_learning: bool = True,
+        enable_tools: bool = True,
+        max_iterations: int = 5
+    ) -> Dict:
+        """
+        Enhanced chat with agent reasoning and tool usage
+        
+        Args:
+            message: User's message
+            session_id: Session identifier
+            document_ids: Optional list of document IDs to prioritize
+            use_adaptive_learning: Whether to use ILS-based adaptation
+            enable_tools: Whether to enable tool usage
+            max_iterations: Maximum reasoning iterations
+        
+        Returns:
+            Response with reasoning chain and tool usage
+        """
+        try:
+            if not self._initialized:
+                await self.initialize()
+            
+            print(f"\n🤖 [RAG+Agent] Starting enhanced chat for session: {session_id}")
+            print(f"   📋 Message: {message[:60]}...")
+            
+            # Get context from RAG (documents)
+            print(f"📚 [RAG+Agent] Retrieving context from documents...")
+            
+            learning_profile = self.get_or_create_learning_profile(session_id)
+            
+            if use_adaptive_learning and message:
+                indicators = learning_profile.analyze_message_patterns(message)
+                learning_profile.update_from_interaction(indicators)
+                learning_style = learning_profile.get_learning_style()
+            else:
+                learning_style = {}
+            
+            # Get context from vectorstore
+            if use_adaptive_learning and learning_style:
+                context_docs = self.vectorstore.adaptive_similarity_search(
+                    message, learning_style, k=settings.TOP_K,
+                    session_id=session_id, document_ids=document_ids
+                )
+            else:
+                context_docs = self.vectorstore.similarity_search(
+                    message, k=settings.TOP_K,
+                    session_id=session_id, document_ids=document_ids
+                )
+            
+            # Format context for agent
+            rag_context = ""
+            if context_docs:
+                rag_context = "## Retrieved Document Context\n"
+                for i, doc in enumerate(context_docs[:3], 1):
+                    rag_context += f"\n### Document {i}\n"
+                    rag_context += f"Source: {doc.get('metadata', {}).get('source', 'unknown')}\n"
+                    rag_context += f"Content: {doc['content'][:300]}...\n"
+            
+            print(f"✅ Retrieved {len(context_docs)} documents for context")
+            
+            # Use agent reasoning
+            print(f"🧠 [RAG+Agent] Starting agent reasoning...")
+            agent_result = await self.agent.reason_and_act(
+                message=message,
+                session_id=session_id,
+                context=rag_context,
+                enable_tools=enable_tools,
+                max_iterations=max_iterations
+            )
+            
+            if agent_result.get("status") == "error":
+                print(f"❌ Agent error: {agent_result.get('error')}")
+                return {
+                    "answer": f"Error in processing: {agent_result.get('error')}",
+                    "status": "error",
+                    "reasoning_chain": agent_result.get("reasoning_chain", [])
+                }
+            
+            # Extract final response
+            final_response = agent_result.get("final_response", "")
+            reasoning_chain = agent_result.get("reasoning_chain", [])
+            iterations = agent_result.get("iterations", 0)
+            
+            print(f"✅ Agent completed with {iterations} iterations")
+            
+            # Add to conversation history
+            history = self.get_session_history(session_id)
+            history.add_user_message(message)
+            history.add_ai_message(final_response)
+            
+            # Save profiles
+            if learning_profile.total_interactions % 5 == 0:
+                self._save_learning_profiles()
+            
+            # Build tools summary from reasoning chain
+            tools_used = []
+            for step in reasoning_chain:
+                if step.get("type") == "action":
+                    tools_used.append({
+                        "tool": step.get("action"),
+                        "result_summary": str(step.get("result", {}))[:100]
+                    })
+            
+            return {
+                "answer": final_response,
+                "status": "success",
+                "reasoning_chain": reasoning_chain,
+                "iterations": iterations,
+                "tools_used": tools_used,
+                "document_context_count": len(context_docs),
+                "learning_style": learning_style if use_adaptive_learning else None
+            }
+        
+        except Exception as e:
+            print(f"❌ Error in agent chat: {e}")
+            traceback.print_exc()
+            return {
+                "answer": f"Error: {str(e)}",
+                "status": "error",
+                "reasoning_chain": []
+            }
+    
+    async def get_available_tools(self) -> Dict:
+        """Get list of all available tools"""
+        if not self._initialized:
+            await self.initialize()
+        
+        tools_info = self.agent.tools_manager.get_tool_list()
+        return tools_info
+    
+    def get_agent_memory_summary(self, session_id: str) -> Dict:
+        """Get agent's memory summary for a session"""
+        if not self.agent:
+            return {"error": "Agent not initialized"}
+        
+        return self.agent.get_memory_summary(session_id)
+    
+    def clear_agent_memory(self, session_id: str):
+        """Clear agent's memory for a session"""
+        if self.agent:
+            self.agent.clear_memory(session_id)
+            print(f"✅ Cleared agent memory for session: {session_id}")

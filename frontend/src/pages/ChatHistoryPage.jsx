@@ -114,13 +114,11 @@ const ChatHistoryPage = () => {
         <Box
           sx={{
             mt: 1,
-            bgcolor: "background.paper",
-            borderRadius: 1,
             boxShadow: 1,
             overflow: "hidden",
           }}
         >
-          <List sx={{ backgroundColor: "background.default" }} disablePadding>
+          <List sx={{  }} disablePadding>
             {sessions.length === 0 ? (
               <Box sx={{ p: 3 }}>
                 <Typography color="text.secondary">No chats yet.</Typography>
@@ -133,6 +131,7 @@ const ChatHistoryPage = () => {
                       backgroundColor: "background.paper",
                       mb: 1,
                       alignItems: "center",
+                     
                     }}
                     alignItems="flex-start"
                   >

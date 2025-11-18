@@ -227,6 +227,7 @@ const platformMenu = [
   
 ];
 
+
 const menuConfigs = {
   main,
   footMenu,

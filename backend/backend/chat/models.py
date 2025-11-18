@@ -23,12 +23,30 @@ class Message(models.Model):
     context = models.TextField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     parent_message = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='child_messages')
+    is_good = models.BooleanField(default=False, help_text="Marks if this message is a good response")
+    is_bookmarked = models.BooleanField(default=False, help_text="Marks if this message is bookmarked")
 
     class Meta:
         db_table = 'messages'
 
     def __str__(self):
         return f"{self.message_type}: {self.content[:50]}..."
+
+class Bookmark(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookmarks')
+    message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='bookmarks')
+    title = models.CharField(max_length=255, null=True, blank=True)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'bookmarks'
+        unique_together = ('user', 'message')
+
+    def __str__(self):
+        return f"Bookmark: {self.title or self.message.id}"
 
 class Document(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

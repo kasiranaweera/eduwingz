@@ -25,7 +25,7 @@ import uiConfigs from "../configs/ui.config";
 
 // const swal = require('sweetalert2')
 
-const SignupForm = ({ switchAuthState }) => {
+const SignupForm = ({ switchAuthState, profileSetupState }) => {
   const { themeMode } = useSelector((state) => state.themeMode);
   const dispatch = useDispatch();
 
@@ -59,7 +59,6 @@ const SignupForm = ({ switchAuthState }) => {
     onSubmit: async (values) => {
       setErrorMessage(undefined);
       setIsLoginRequest(true);
-      console.log("asdasdasdasd", values);
       const { response, err } = await userApi.signup(values);
       setIsLoginRequest(false);
 
@@ -68,6 +67,7 @@ const SignupForm = ({ switchAuthState }) => {
         dispatch(setUser(response));
         dispatch(setAuthModalOpen(false));
         toast.success("Sign in success");
+        navigate("/profile-setup");
       }
 
       if (err) setErrorMessage(err.message);

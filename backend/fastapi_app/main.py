@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 import uvicorn
 from datetime import datetime
 import jwt
@@ -10,16 +11,62 @@ from typing import Optional, List
 import asyncio
 from contextlib import asynccontextmanager
 from services.rag_service import RAGService
+from services.agent_service import ReasoningAgent
 from config import settings
 from fastapi import Form
 from langchain_core.messages import AIMessage, HumanMessage
+import io
+import base64
 
 rag_service = RAGService()
+agent_service = None  # Will be initialized after RAG service
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global agent_service
     print("🚀 Starting RAG Chat API...")
     await rag_service.initialize()
+    # Initialize agent service with RAG service's LLM
+    agent_service = ReasoningAgent(
+        llm_client=rag_service.llm,
+        embedding_model=rag_service.embedding_model
+    )
+    # Initialize TTS engine
+    try:
+        import sys
+        import os
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'text-to-speech'))
+        from tts_engine import TextToSpeech
+        global tts_engine
+        print("📢 Initializing Text-to-Speech engine...")
+        tts_engine = TextToSpeech("eng")
+        print("✅ TTS engine initialized!")
+    except ModuleNotFoundError as e:
+        print(f"⚠️ Warning: TTS dependencies not installed: {e}")
+        print("   Install with: pip install torch transformers soundfile librosa")
+        tts_engine = None
+    except Exception as e:
+        print(f"⚠️ Warning: TTS engine initialization failed: {e}")
+        tts_engine = None
+    
+    # Initialize STT engine
+    try:
+        import sys
+        import os
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'speech-to-text'))
+        from stt_engine import stt
+        global stt_engine
+        print("🎤 STT engine already initialized in stt_engine.py")
+        stt_engine = stt
+        print("✅ STT engine ready!")
+    except ModuleNotFoundError as e:
+        print(f"⚠️ Warning: STT dependencies not installed: {e}")
+        print("   Install with: pip install torch transformers")
+        stt_engine = None
+    except Exception as e:
+        print(f"⚠️ Warning: STT engine initialization failed: {e}")
+        stt_engine = None
+    
     print("✅ Services initialized successfully!")
     yield
     print("🔄 Shutting down...")
@@ -63,17 +110,70 @@ class MessageCreate(BaseModel):
 
 @app.post("/api/chat/process")
 async def process_message(message: MessageCreate, user_id: int = Depends(verify_token)):
-    """Process a chat message with RAG"""
-    response_data = await rag_service.chat(
-        message.content, 
-        message.session_id,
-        document_ids=message.document_ids
-    )
-    return {
-        "answer": response_data["answer"],
-        "is_incomplete": response_data.get("is_incomplete", False),
-        "context": response_data.get("context", [])
-    }
+    """Process a chat message with intelligent agent routing
+    
+    The system will:
+    1. First check if documents/RAG have relevant content
+    2. If RAG results are insufficient (low relevance), automatically use search tools
+    3. Activate other tools (code execution, etc.) as needed based on query type
+    """
+    try:
+        # First, try to get RAG results
+        rag_response = await rag_service.chat(
+            message.content, 
+            message.session_id,
+            document_ids=message.document_ids
+        )
+        
+        rag_score = rag_response.get("confidence_score", 0)
+        
+        print(f"📊 [RAG Score] Query: {message.content[:50]}... | Confidence: {rag_score:.2f}")
+        
+        # If RAG confidence is low (< 0.3), use agent with search tools
+        if rag_score < 0.3:
+            print(f"⚠️ [Agent Activation] Low RAG confidence ({rag_score:.2f}), activating agent with search tools...")
+            
+            # Use agent to search for better information
+            # Max iterations set to 3 for balanced reasoning
+            agent_response = await agent_service.reason_and_act(
+                message=message.content,
+                session_id=message.session_id,
+                context=rag_response.get("answer", ""),
+                enable_tools=True,
+                max_iterations=3
+            )
+            
+            # Extract tools used from reasoning chain
+            tools_used = []
+            if agent_response.get("reasoning_chain"):
+                for step in agent_response["reasoning_chain"]:
+                    if step.get("type") == "action":
+                        tools_used.append(step.get("action"))
+            
+            return {
+                "answer": agent_response.get("final_response", rag_response["answer"]),
+                "is_incomplete": False,
+                "context": rag_response.get("context", []),
+                "source": "agent_with_tools",
+                "tools_used": list(set(tools_used)),  # Remove duplicates
+                "reasoning_steps": len(agent_response.get("reasoning_chain", [])),
+                "iterations": agent_response.get("iterations", 0)
+            }
+        
+        # If RAG is sufficient, return RAG response
+        return {
+            "answer": rag_response["answer"],
+            "is_incomplete": rag_response.get("is_incomplete", False),
+            "context": rag_response.get("context", []),
+            "source": "rag",
+            "confidence_score": rag_score
+        }
+    
+    except Exception as e:
+        print(f"❌ Error in process_message: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error processing message: {str(e)}")
 
 @app.post("/api/documents/process")
 async def process_document(
@@ -247,6 +347,318 @@ async def continue_response(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error continuing response: {str(e)}")
+
+# ===== AGENT-ENHANCED ENDPOINTS =====
+
+class AgentChatRequest(BaseModel):
+    """Request for agent-based chat"""
+    content: str = Field(..., min_length=1)
+    session_id: str
+    document_ids: Optional[List[str]] = None
+    use_adaptive_learning: bool = True
+    enable_tools: bool = True
+    max_iterations: int = 5
+
+@app.post("/api/agent/chat")
+async def agent_chat(
+    request: AgentChatRequest,
+    user_id: int = Depends(verify_token)
+):
+    """
+    Enhanced chat with agent reasoning and tool integration
+    
+    The agent can:
+    - Search the web (Google Serper, DuckDuckGo)
+    - Query knowledge bases (Wikipedia, ArXiv, Wikidata)
+    - Execute code (Riza Code Interpreter)
+    - Browse web pages (Playwright)
+    - Access GitHub, YouTube, Weather, and create visualizations
+    - Combine RAG with reasoning for comprehensive answers
+    """
+    try:
+        print(f"\n📡 Agent Chat Request received")
+        
+        response = await rag_service.chat_with_agent(
+            message=request.content,
+            session_id=request.session_id,
+            document_ids=request.document_ids,
+            use_adaptive_learning=request.use_adaptive_learning,
+            enable_tools=request.enable_tools,
+            max_iterations=request.max_iterations
+        )
+        
+        return response
+    
+    except Exception as e:
+        print(f"❌ Agent chat error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Agent chat error: {str(e)}")
+
+@app.get("/api/agent/tools")
+async def get_available_tools(user_id: int = Depends(verify_token)):
+    """Get list of all available tools and their status"""
+    try:
+        tools_info = await rag_service.get_available_tools()
+        return {
+            "status": "success",
+            "tools": tools_info
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching tools: {str(e)}")
+
+@app.get("/api/agent/memory/{session_id}")
+async def get_agent_memory(
+    session_id: str,
+    user_id: int = Depends(verify_token)
+):
+    """Get agent's reasoning memory for a session"""
+    try:
+        memory_summary = rag_service.get_agent_memory_summary(session_id)
+        return {
+            "status": "success",
+            "memory": memory_summary
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching agent memory: {str(e)}")
+
+@app.post("/api/agent/memory/{session_id}/clear")
+async def clear_agent_memory(
+    session_id: str,
+    user_id: int = Depends(verify_token)
+):
+    """Clear agent's memory for a session"""
+    try:
+        rag_service.clear_agent_memory(session_id)
+        return {
+            "status": "success",
+            "message": f"Agent memory cleared for session {session_id}"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error clearing agent memory: {str(e)}")
+
+# ===== TEXT-TO-SPEECH ENDPOINTS =====
+
+class TextToSpeechRequest(BaseModel):
+    """Request for text-to-speech conversion"""
+    text: str = Field(..., min_length=1)
+    language: str = Field(default="English")
+    speed: float = Field(default=1.0, ge=0.5, le=2.0)
+
+@app.post("/api/tts/generate")
+async def generate_speech(
+    request: TextToSpeechRequest,
+    user_id: int = Depends(verify_token)
+):
+    """Generate audio from text using Text-to-Speech engine"""
+    try:
+        if not tts_engine:
+            raise HTTPException(
+                status_code=503,
+                detail="TTS engine not available"
+            )
+        
+        print(f"📢 [TTS] Generating speech for text: {request.text[:50]}...")
+        
+        # Generate audio
+        audio_data, sample_rate = await asyncio.get_event_loop().run_in_executor(
+            None,
+            lambda: tts_engine.speak(request.text)
+        )
+        
+        # Convert audio to base64 for transmission
+        import soundfile as sf
+        
+        # Create bytes buffer
+        audio_buffer = io.BytesIO()
+        sf.write(audio_buffer, audio_data, sample_rate, format='WAV')
+        audio_buffer.seek(0)
+        
+        # Convert to base64
+        audio_bytes = audio_buffer.read()
+        audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+        
+        print(f"✅ [TTS] Audio generated successfully ({len(audio_bytes)} bytes)")
+        
+        return {
+            "audio": audio_base64,
+            "sample_rate": sample_rate,
+            "format": "wav",
+            "text": request.text,
+            "language": request.language
+        }
+    
+    except Exception as e:
+        print(f"❌ [TTS] Error generating speech: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error generating speech: {str(e)}")
+
+@app.post("/api/tts/generate-stream")
+async def generate_speech_stream(
+    request: TextToSpeechRequest,
+    user_id: int = Depends(verify_token)
+):
+    """Generate audio from text and stream as file (streaming response)"""
+    try:
+        if not tts_engine:
+            raise HTTPException(
+                status_code=503,
+                detail="TTS engine not available"
+            )
+        
+        print(f"📢 [TTS-Stream] Generating speech for text: {request.text[:50]}...")
+        
+        # Generate audio
+        audio_data, sample_rate = await asyncio.get_event_loop().run_in_executor(
+            None,
+            lambda: tts_engine.speak(request.text)
+        )
+        
+        # Create bytes buffer
+        import soundfile as sf
+        audio_buffer = io.BytesIO()
+        sf.write(audio_buffer, audio_data, sample_rate, format='WAV')
+        audio_buffer.seek(0)
+        
+        print(f"✅ [TTS-Stream] Audio generated successfully")
+        
+        return StreamingResponse(
+            audio_buffer,
+            media_type="audio/wav",
+            headers={
+                "Content-Disposition": "attachment; filename=speech.wav"
+            }
+        )
+    
+    except Exception as e:
+        print(f"❌ [TTS-Stream] Error generating speech: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error generating speech: {str(e)}")
+
+# ===== SPEECH-TO-TEXT ENDPOINTS =====
+
+class SpeechToTextRequest(BaseModel):
+    """Request for speech-to-text conversion"""
+    # Audio data can be sent as base64 or multipart form-data
+    pass
+
+@app.post("/api/stt/transcribe")
+async def transcribe_audio(
+    file: UploadFile = File(...),
+    user_id: int = Depends(verify_token)
+):
+    """Transcribe audio file to text using Speech-to-Text engine"""
+    try:
+        if not stt_engine:
+            raise HTTPException(
+                status_code=503,
+                detail="STT engine not available"
+            )
+        
+        # Save uploaded file temporarily
+        import tempfile
+        import shutil
+        
+        temp_dir = tempfile.mkdtemp()
+        temp_file_path = os.path.join(temp_dir, file.filename)
+        
+        try:
+            # Write uploaded file to disk
+            with open(temp_file_path, "wb") as f:
+                content = await file.read()
+                f.write(content)
+            
+            print(f"🎤 [STT] Transcribing audio file: {file.filename}")
+            
+            # Transcribe using STT engine
+            result = await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: stt_engine.transcribe(temp_file_path)
+            )
+            
+            # Extract text and segments
+            text = result.get("text", "").strip()
+            segments = result.get("chunks") or result.get("segments") or []
+            
+            print(f"✅ [STT] Transcription completed: {len(text)} characters")
+            
+            return {
+                "text": text,
+                "segments": segments,
+                "filename": file.filename,
+                "language": result.get("detected_language", "unknown"),
+                "status": "success"
+            }
+        
+        finally:
+            # Clean up temp files
+            shutil.rmtree(temp_dir, ignore_errors=True)
+    
+    except Exception as e:
+        print(f"❌ [STT] Error transcribing audio: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error transcribing audio: {str(e)}")
+
+@app.post("/api/stt/transcribe-base64")
+async def transcribe_audio_base64(
+    audio_base64: str = Form(...),
+    filename: str = Form(default="audio.wav"),
+    user_id: int = Depends(verify_token)
+):
+    """Transcribe audio from base64 encoded data"""
+    try:
+        if not stt_engine:
+            raise HTTPException(
+                status_code=503,
+                detail="STT engine not available"
+            )
+        
+        import tempfile
+        import shutil
+        
+        temp_dir = tempfile.mkdtemp()
+        temp_file_path = os.path.join(temp_dir, filename)
+        
+        try:
+            # Decode base64 and write to file
+            audio_bytes = base64.b64decode(audio_base64)
+            with open(temp_file_path, "wb") as f:
+                f.write(audio_bytes)
+            
+            print(f"🎤 [STT-Base64] Transcribing audio: {filename} ({len(audio_bytes)} bytes)")
+            
+            # Transcribe using STT engine
+            result = await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: stt_engine.transcribe(temp_file_path)
+            )
+            
+            # Extract text and segments
+            text = result.get("text", "").strip()
+            segments = result.get("chunks") or result.get("segments") or []
+            
+            print(f"✅ [STT-Base64] Transcription completed: {len(text)} characters")
+            
+            return {
+                "text": text,
+                "segments": segments,
+                "filename": filename,
+                "language": result.get("detected_language", "unknown"),
+                "status": "success"
+            }
+        
+        finally:
+            # Clean up temp files
+            shutil.rmtree(temp_dir, ignore_errors=True)
+    
+    except Exception as e:
+        print(f"❌ [STT-Base64] Error transcribing audio: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error transcribing audio: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

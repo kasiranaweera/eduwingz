@@ -1,0 +1,16 @@
+1
+00:00:00,400 --> 00:00:07,760
+good evening my project project is the AR space education developed for the
+
+2
+00:00:07,760 --> 00:00:15,620
+immersive technology development module I am KASI Ranavira and the project
+
+3
+00:00:15,620 --> 00:00:23,720
+focus on using augmented reality to make learning about space and astronomy
+
+4
+00:00:23,720 --> 00:00:27,540
+more interactive and fun
+
