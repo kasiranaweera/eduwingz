@@ -1,4 +1,5 @@
 import privateClient from "../client/private.client";
+import fastApiClient from "../client/fastapi.client";
 
 const chatEndpoints = {
   sessions: (sessionId = "") => `chat/sessions/${sessionId ? `${sessionId}/` : ""}`,
@@ -10,6 +11,7 @@ const chatEndpoints = {
     const query = new URLSearchParams(params).toString();
     return `chat/documents/${query ? `?${query}` : ""}`;
   },
+  textToSpeech: () => `api/tts/generate/`,
 };
 
 const chatApi = {
@@ -122,6 +124,18 @@ const chatApi = {
   continueMessage: async (sessionId) => {
     try {
       const response = await privateClient.post(chatEndpoints.continue(sessionId), {});
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+
+  textToSpeech: async (text, language = "English") => {
+    try {
+      const response = await fastApiClient.post(chatEndpoints.textToSpeech(), {
+        text,
+        language,
+      });
       return { response };
     } catch (err) {
       return { err };

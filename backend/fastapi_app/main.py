@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 import uvicorn
 from datetime import datetime
 import jwt
@@ -14,6 +15,8 @@ from services.agent_service import ReasoningAgent
 from config import settings
 from fastapi import Form
 from langchain_core.messages import AIMessage, HumanMessage
+import io
+import base64
 
 rag_service = RAGService()
 agent_service = None  # Will be initialized after RAG service
@@ -28,6 +31,23 @@ async def lifespan(app: FastAPI):
         llm_client=rag_service.llm,
         embedding_model=rag_service.embedding_model
     )
+    # Initialize TTS engine
+    try:
+        import sys
+        import os
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'text-to-speech'))
+        from tts_engine import TextToSpeech
+        global tts_engine
+        print("📢 Initializing Text-to-Speech engine...")
+        tts_engine = TextToSpeech("eng")
+        print("✅ TTS engine initialized!")
+    except ModuleNotFoundError as e:
+        print(f"⚠️ Warning: TTS dependencies not installed: {e}")
+        print("   Install with: pip install torch transformers soundfile librosa")
+        tts_engine = None
+    except Exception as e:
+        print(f"⚠️ Warning: TTS engine initialization failed: {e}")
+        tts_engine = None
     print("✅ Services initialized successfully!")
     yield
     print("🔄 Shutting down...")
@@ -397,6 +417,106 @@ async def clear_agent_memory(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error clearing agent memory: {str(e)}")
+
+# ===== TEXT-TO-SPEECH ENDPOINTS =====
+
+class TextToSpeechRequest(BaseModel):
+    """Request for text-to-speech conversion"""
+    text: str = Field(..., min_length=1)
+    language: str = Field(default="English")
+    speed: float = Field(default=1.0, ge=0.5, le=2.0)
+
+@app.post("/api/tts/generate")
+async def generate_speech(
+    request: TextToSpeechRequest,
+    user_id: int = Depends(verify_token)
+):
+    """Generate audio from text using Text-to-Speech engine"""
+    try:
+        if not tts_engine:
+            raise HTTPException(
+                status_code=503,
+                detail="TTS engine not available"
+            )
+        
+        print(f"📢 [TTS] Generating speech for text: {request.text[:50]}...")
+        
+        # Generate audio
+        audio_data, sample_rate = await asyncio.get_event_loop().run_in_executor(
+            None,
+            lambda: tts_engine.speak(request.text)
+        )
+        
+        # Convert audio to base64 for transmission
+        import soundfile as sf
+        
+        # Create bytes buffer
+        audio_buffer = io.BytesIO()
+        sf.write(audio_buffer, audio_data, sample_rate, format='WAV')
+        audio_buffer.seek(0)
+        
+        # Convert to base64
+        audio_bytes = audio_buffer.read()
+        audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+        
+        print(f"✅ [TTS] Audio generated successfully ({len(audio_bytes)} bytes)")
+        
+        return {
+            "audio": audio_base64,
+            "sample_rate": sample_rate,
+            "format": "wav",
+            "text": request.text,
+            "language": request.language
+        }
+    
+    except Exception as e:
+        print(f"❌ [TTS] Error generating speech: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error generating speech: {str(e)}")
+
+@app.post("/api/tts/generate-stream")
+async def generate_speech_stream(
+    request: TextToSpeechRequest,
+    user_id: int = Depends(verify_token)
+):
+    """Generate audio from text and stream as file (streaming response)"""
+    try:
+        if not tts_engine:
+            raise HTTPException(
+                status_code=503,
+                detail="TTS engine not available"
+            )
+        
+        print(f"📢 [TTS-Stream] Generating speech for text: {request.text[:50]}...")
+        
+        # Generate audio
+        audio_data, sample_rate = await asyncio.get_event_loop().run_in_executor(
+            None,
+            lambda: tts_engine.speak(request.text)
+        )
+        
+        # Create bytes buffer
+        import soundfile as sf
+        audio_buffer = io.BytesIO()
+        sf.write(audio_buffer, audio_data, sample_rate, format='WAV')
+        audio_buffer.seek(0)
+        
+        print(f"✅ [TTS-Stream] Audio generated successfully")
+        
+        return StreamingResponse(
+            audio_buffer,
+            media_type="audio/wav",
+            headers={
+                "Content-Disposition": "attachment; filename=speech.wav"
+            }
+        )
+    
+    except Exception as e:
+        print(f"❌ [TTS-Stream] Error generating speech: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error generating speech: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

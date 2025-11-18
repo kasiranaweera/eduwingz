@@ -30,7 +30,7 @@ import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 import MicOutlinedIcon from '@mui/icons-material/MicOutlined';
 import StopCircleOutlinedIcon from '@mui/icons-material/StopCircleOutlined';
 
-const ChatSection = ({ sx, handleSendMessage, main }) => {
+const ChatSection = ({ sx, handleSendMessage, main, quotedMessage, onClearQuote }) => {
   const { themeMode } = useSelector((state) => state.themeMode);
   const [templateModalOpen, setTemplateModalOpen] = useState();
   const [uploadFiles, setUploadFiles] = useState([]);
@@ -126,8 +126,55 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
           borderRadius: 5,
         }}
       >
+        {/* Quoted Message Display */}
+        {quotedMessage && (
+          <Box
+            sx={{
+              mb: 1,
+              p: 2,
+              border:1,
+              borderColor:'divider',
+              borderLeft:3,
+              borderLeftColor: "primary.main",
+              borderRadius: 3,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              gap: 1,
+            }}
+          >
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: "bold" }}>
+              Quoted Reply:
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  mt: 0.5,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  color: "text.primary",
+                }}
+              >
+                {quotedMessage}
+              </Typography>
+            </Box>
+            {onClearQuote && (
+              <IconButton
+                size="small"
+                onClick={onClearQuote}
+                sx={{ flexShrink: 0 }}
+              >
+                <CloseOutlinedIcon sx={{ width: "18px", height: "18px" }} />
+              </IconButton>
+            )}
+          </Box>
+        )}
         <TextField
-          sx={{ width: "100%", mb: 1 }}
+          sx={{ width: "100%", }}
           label="What can I do for you..."
           name="message"
           multiline
@@ -142,6 +189,7 @@ const ChatSection = ({ sx, handleSendMessage, main }) => {
           }
           helperText={chatFormik.touched.message && chatFormik.errors.message}
         />
+        
         <Box
           sx={{
             display: "flex",
