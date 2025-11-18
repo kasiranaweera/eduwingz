@@ -11,6 +11,8 @@ const chatEndpoints = {
     const query = new URLSearchParams(params).toString();
     return `chat/documents/${query ? `?${query}` : ""}`;
   },
+  bookmarkToggle: (sessionId, messageId) => `chat/sessions/${sessionId}/messages/${messageId}/bookmark/`,
+  bookmarks: (bookmarkId = "") => `chat/bookmarks/${bookmarkId ? `${bookmarkId}/` : ""}`,
   textToSpeech: () => `api/tts/generate/`,
 };
 
@@ -136,6 +138,36 @@ const chatApi = {
         text,
         language,
       });
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+
+  toggleBookmark: async (sessionId, messageId, data = {}) => {
+    try {
+      const response = await privateClient.post(
+        chatEndpoints.bookmarkToggle(sessionId, messageId),
+        data
+      );
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+
+  listBookmarks: async () => {
+    try {
+      const response = await privateClient.get(chatEndpoints.bookmarks());
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+
+  deleteBookmark: async (bookmarkId) => {
+    try {
+      const response = await privateClient.delete(chatEndpoints.bookmarks(bookmarkId));
       return { response };
     } catch (err) {
       return { err };

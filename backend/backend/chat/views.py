@@ -813,3 +813,44 @@ class BookmarkToggleView(APIView):
                 return APIErrorResponse.not_found("Message not found")
         except ChatSession.DoesNotExist:
             return APIErrorResponse.not_found("Session not found")
+
+class BookmarksListView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """List all bookmarks for the authenticated user"""
+        bookmarks = Bookmark.objects.filter(user=request.user).order_by("-created_at")
+        response_data = [
+            {
+                "id": str(bookmark.id),
+                "message_id": str(bookmark.message.id),
+                "title": bookmark.title or "Untitled",
+                "content": bookmark.content,
+                "message_type": bookmark.message.message_type,
+                "session_id": str(bookmark.message.session.id),
+                "session_title": bookmark.message.session.title or "Untitled chat",
+                "created_at": bookmark.created_at,
+                "updated_at": bookmark.updated_at,
+                "message_content": bookmark.message.content[:200] + "..." if len(bookmark.message.content) > 200 else bookmark.message.content,
+                "message_timestamp": bookmark.message.timestamp
+            }
+            for bookmark in bookmarks
+        ]
+        return Response(response_data)
+
+    def delete(self, request, bookmark_id):
+        """Delete a specific bookmark"""
+        try:
+            bookmark = Bookmark.objects.get(id=bookmark_id, user=request.user)
+            message = bookmark.message
+            bookmark.delete()
+            
+            # Update message's is_bookmarked status if no more bookmarks exist
+            if not Bookmark.objects.filter(user=request.user, message=message).exists():
+                message.is_bookmarked = False
+                message.save(update_fields=["is_bookmarked"])
+            
+            return Response({"message": "Bookmark deleted successfully"})
+        except Bookmark.DoesNotExist:
+            return APIErrorResponse.not_found("Bookmark not found")

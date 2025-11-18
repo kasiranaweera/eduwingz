@@ -1,72 +1,101 @@
 # stt_app.py
 import gradio as gr
 from stt_engine import stt
-import os
 from datetime import datetime
 from pathlib import Path
+import shutil
 
 UPLOAD_DIR = Path("uploads")
 OUTPUT_DIR = Path("outputs")
 UPLOAD_DIR.mkdir(exist_ok=True)
 OUTPUT_DIR.mkdir(exist_ok=True)
 
+
 def speech_to_text(audio_file=None, mic_audio=None):
     if audio_file is None and mic_audio is None:
-        return "No audio", None, None
+        return "No audio provided", None, None
 
-    # Use mic if available, else uploaded file
-    audio_path = mic_audio if mic_audio else audio_file
-    if isinstance(audio_path, str):
-        audio_path = Path(audio_path)
+    # Prioritize microphone input
+    source_path = mic_audio if mic_audio else audio_file
 
-    # Save uploaded file
-    if not audio_path.exists():
-        temp_path = UPLOAD_DIR / f"input_{datetime.now().strftime('%Y%m%d_%H%M%S')}.wav"
-        import shutil
-        shutil.copy(audio_path, temp_path)
-        audio_path = temp_path
-    else:
-        audio_path = Path(audio_path)
+    # Gradio gives temporary path as string → convert to Path
+    if isinstance(source_path, str):
+        source_path = Path(source_path)
+
+    # Copy to our persistent uploads folder (so file survives after temp cleanup)
+    if not source_path.exists():
+        return "Error: Audio file not found", None, None
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    final_audio_path = UPLOAD_DIR / f"input_{timestamp}.wav"
+    shutil.copy(source_path, final_audio_path)
 
     # Transcribe
-    result = stt.transcribe(str(audio_path))
-    text = result["text"]
-    segments = result.get("chunks", [])
+    result = stt.transcribe(str(final_audio_path))
+    text = result.get("text", "").strip()
+
+    # Get segments/chunks (supports both possible keys)
+    segments = result.get("chunks") or result.get("segments") or []
 
     # Save .txt
-    txt_path = OUTPUT_DIR / f"transcript_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+    txt_path = OUTPUT_DIR / f"transcript_{timestamp}.txt"
     txt_path.write_text(text, encoding="utf-8")
 
     # Save .srt
-    srt_path = OUTPUT_DIR / f"subtitles_{datetime.now().strftime('%Y%m%d_%H%M%S')}.srt"
+    srt_path = OUTPUT_DIR / f"subtitles_{timestamp}.srt"
     stt.save_srt(segments, str(srt_path))
 
     return text, str(txt_path), str(srt_path)
 
-# Gradio UI
-with gr.Blocks(title="Speech to Text – Whisper 2025") as demo:
-    gr.Markdown("# Free Offline Speech-to-Text (Whisper Large V3 Turbo)")
-    gr.Markdown("Supports **English, Sinhala, Tamil, Hindi** + 100+ languages")
 
-    with gr.Tab("Upload Audio"):
-        file_input = gr.Audio(label="Upload .wav, .mp3, .m4a", type="filepath")
-        btn1 = gr.Button("Transcribe", variant="primary")
+# Gradio Interface
+with gr.Blocks(title="Free Offline Whisper Turbo STT") as demo:
+    gr.Markdown("# Whisper Large V3 Turbo — Offline Speech-to-Text")
+    gr.Markdown("**100+ languages** • Fast • Accurate • Fully Local • Supports English, Sinhala, Tamil, Hindi, etc.")
+
+    with gr.Tab("Upload Audio File"):
+        file_input = gr.Audio(
+            label="Upload audio (.wav, .mp3, .m4a, .ogg, etc.)",
+            type="filepath",
+            sources=["upload"]
+        )
+        btn_upload = gr.Button("Transcribe Uploaded File", variant="primary")
+
+    with gr.Tab("Record from Microphone"):
+        mic_input = gr.Audio(
+            label="Record live audio",
+            type="filepath",
+            sources=["microphone"]
+        )
+        btn_mic = gr.Button("Transcribe Recording", variant="primary")
+
+    with gr.Row():
+        text_output = gr.Textbox(label="Transcription", lines=12, interactive=False)
     
-    with gr.Tab("Record Live"):
-        mic_input = gr.Audio(label="Record from mic", type="filepath", source="microphone")
-        btn2 = gr.Button("Transcribe", variant="primary")
+    with gr.Row():
+        txt_download = gr.File(label="Download Transcript (.txt)")
+        srt_download = gr.File(label="Download Subtitles (.srt)")
 
-    text_out = gr.Textbox(label="Transcription", lines=10)
-    txt_file = gr.File(label="Download .txt")
-    srt_file = gr.File(label="Download .srt (Subtitles)")
+    # Button actions
+    btn_upload.click(
+        fn=speech_to_text,
+        inputs=file_input,
+        outputs=[text_output, txt_download, srt_download]
+    )
+    btn_mic.click(
+        fn=speech_to_text,
+        inputs=mic_input,
+        outputs=[text_output, txt_download, srt_download]
+    )
 
-    btn1.click(speech_to_text, inputs=file_input, outputs=[text_out, txt_file, srt_file])
-    btn2.click(speech_to_text, inputs=mic_input, outputs=[text_out, txt_file, srt_file])
-
-    gr.Examples([
-        ["sample_english.wav"],
-        ["sample_sinhala.wav"]
-    ], inputs=file_input)
+    gr.Examples(
+        examples=[
+            ["sample_english.wav"],
+            ["sample_sinhala.wav"],
+            ["sample_tamil.wav"]
+        ],
+        inputs=file_input
+    )
 
 if __name__ == "__main__":
     demo.launch(share=True)
