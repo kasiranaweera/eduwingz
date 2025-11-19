@@ -21,9 +21,9 @@ import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import AddModeratorOutlinedIcon from "@mui/icons-material/AddModeratorOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import FormatShapesIcon from "@mui/icons-material/FormatShapes";
-import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
-import FilePresentOutlinedIcon from '@mui/icons-material/FilePresentOutlined';
-import VoiceChatIcon from '@mui/icons-material/VoiceChat';
+import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
+import FilePresentOutlinedIcon from "@mui/icons-material/FilePresentOutlined";
+import VoiceChatIcon from "@mui/icons-material/VoiceChat";
 
 const main = [
   {
@@ -139,10 +139,10 @@ const dashboardPlatform = [
     state: "platform-notes",
   },
   {
-    display: "Community",
-    path: "/dashboard/platform/community",
-    icon: <PeopleOutlinedIcon />,
-    state: "platform-community",
+    display: "Quizzes",
+    path: "/dashboard/quizzes",
+    icon: <QuizIcon />,
+    state: "quizzes",
   },
 ];
 
@@ -169,12 +169,6 @@ const dashboardChat = [
 
 const dashboardCommon = [
   {
-    display: "Quizzes",
-    path: "/dashboard/quizzes",
-    icon: <QuizIcon />,
-    state: "quizzes",
-  },
-  {
     display: "Documents",
     path: "/dashboard/documents",
     icon: <SourceIcon />,
@@ -187,11 +181,17 @@ const dashboardCommon = [
     state: "analytics",
   },
   {
-    display: "Mine Horizon",
-    path: "/dashboard/mine-horizon",
-    icon: <GraphicEqOutlinedIcon />,
-    state: "minehorizon",
+    display: "Community",
+    path: "/dashboard/platform/community",
+    icon: <PeopleOutlinedIcon />,
+    state: "platform-community",
   },
+  // {
+  //   display: "Mine Horizon",
+  //   path: "/dashboard/mine-horizon",
+  //   icon: <GraphicEqOutlinedIcon />,
+  //   state: "minehorizon",
+  // },
 ];
 const platformMenu = [
   {
@@ -224,9 +224,7 @@ const platformMenu = [
     icon: <VoiceChatIcon />,
     state: "platform-menu-voicechat",
   },
-  
 ];
-
 
 const menuConfigs = {
   main,

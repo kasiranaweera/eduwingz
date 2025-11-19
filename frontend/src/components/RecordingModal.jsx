@@ -345,6 +345,8 @@ const RecordingModal = ({ open, onClose, onSubmit, isLoading = false }) => {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
+              width:'100%',
+              gap:1
             }}
           >
             {/* Record/Stop button */}
@@ -417,9 +419,9 @@ const RecordingModal = ({ open, onClose, onSubmit, isLoading = false }) => {
             {/* Canvas for waveform visualization */}
             <canvas
               ref={canvasRef}
-              width={"500"}
-              height={50}
               style={{
+                width:'100%',
+                height:'50px',
                 border: `1px solid ${
                   themeMode === themeModes.dark ? "#444" : "#ddd"
                 }`,

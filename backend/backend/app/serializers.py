@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Note, Profile, OtherDetail, Notification
+from .models import Profile, OtherDetail, Notification
 from users.models import User
 from users.serializer import UserSerializer
 
@@ -64,8 +64,3 @@ class NotificationSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'title', 'content', 'notification_type', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
 
-class NoteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Note
-        fields = ['id', 'lesson', 'title', 'content', 'description', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']

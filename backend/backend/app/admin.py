@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Note, Profile, OtherDetail, Notification
+from .models import Profile, OtherDetail, Notification
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
@@ -18,9 +18,3 @@ class NotificationAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'title', 'notification_type', 'created_at')
     search_fields = ('title', 'content', 'user__username')
     list_filter = ('notification_type', 'created_at')
-
-@admin.register(Note)
-class NoteAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'lesson', 'description')
-    list_filter = ('lesson','created_at')
-    search_fields = ('title', 'content', 'description')
