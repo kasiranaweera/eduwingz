@@ -69,11 +69,11 @@ const footMenu = [
     path: "/technology",
     state: "technology",
   },
-  {
-    display: "team",
-    path: "/team",
-    state: "team",
-  },
+  // {
+  //   display: "team",
+  //   path: "/team",
+  //   state: "team",
+  // },
   {
     display: "privacy",
     path: "/privacy",

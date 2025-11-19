@@ -41,13 +41,27 @@ const FeaturesPage = () => {
     <Box sx={{ my: 6 }}>
       <Container>
         {/* Introduction Section */}
-        <Box textAlign="center" mb={5}>
+        <Box textAlign="center" mb={8}>
+          <Typography
+            variant="overline"
+            sx={{
+              color: "primary.main",
+              fontWeight: 600,
+              letterSpacing: 3,
+              display: "block",
+              mb: 1,
+            }}
+          >
+            Discover
+          </Typography>
           <Box
             sx={{
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
               gap: 2,
+              mb: 2,
+              flexWrap: "wrap",
             }}
           >
             <Typography
@@ -78,8 +92,7 @@ const FeaturesPage = () => {
           <Typography
             variant="h6"
             color="text.secondary"
-            maxWidth="md"
-            mx="auto"
+            sx={{ maxWidth: "md", mx: "auto" }}
           >
             EduWingz is revolutionizing education by creating an intelligent AI
             teaching assistant that adapts to your unique learning style. Learn
@@ -88,20 +101,25 @@ const FeaturesPage = () => {
         </Box>
 
         {/* How It Works */}
-        <Grid container spacing={3} mb={10}>
+        <Grid container spacing={3} mb={10} >
           {contentData.objectives.map((item, idx) => (
-            <Grid item xs={12} md={3} key={idx}>
+            <Grid item xs={12} size={3} key={idx}>
               <Card
                 sx={{
                   p: 3,
                   height: "100%",
                   textAlign: "center",
-                  borderRadius: 5,
-                  backgroundColor: "background.default",
-
+                  borderRadius: 3,
+                  border: "1px solid rgba(255, 152, 0, 0.1)",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow: "0 12px 40px rgba(255, 152, 0, 0.15)",
+                    borderColor: "primary.main",
+                  },
                 }}
               >
-                <CardContent>
+                <CardContent sx={{ p: 0 }}>
                   <Typography variant="h6" fontWeight="bold" gutterBottom>
                     {item.title}
                   </Typography>
@@ -113,14 +131,14 @@ const FeaturesPage = () => {
         </Grid>
 
         <Box>
-                    <Stack
-                      direction="row"
-                      spacing={2.5}
-                      sx={{ justifyContent: "center" }}
-                    >
-                      <ObjectCard />
-                    </Stack>
-                  </Box>
+          <Stack
+            direction="row"
+            spacing={2.5}
+            sx={{ justifyContent: "center" }}
+          >
+            <ObjectCard />
+          </Stack>
+        </Box>
 
         {/* Key Features */}
         <Typography
@@ -128,25 +146,30 @@ const FeaturesPage = () => {
           fontWeight="bold"
           gutterBottom
           textAlign="center"
-          mb={4}
-          sx={{mt:10}}
+          mb={5}
+          sx={{ mt: 10 }}
         >
           Key Features
         </Typography>
         <Grid container spacing={3} mb={10}>
           {contentData.features.map((feature, idx) => (
-            <Grid item xs={12} md={3} key={idx}>
+            <Grid item xs={12} size={6} key={idx}>
               <Card
                 sx={{
                   p: 3,
                   height: "100%",
                   textAlign: "center",
-                  borderRadius: 5,
-                  backgroundColor: "background.default",
-
+                  borderRadius: 3,
+                  border: "1px solid rgba(255, 152, 0, 0.1)",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow: "0 12px 40px rgba(255, 152, 0, 0.15)",
+                    borderColor: "primary.main",
+                  },
                 }}
               >
-                <CardContent>
+                <CardContent sx={{ p: 0 }}>
                   <Box mb={2}>{feature.icon}</Box>
                   <Typography variant="h6" fontWeight="bold" gutterBottom>
                     {feature.title}
@@ -170,33 +193,38 @@ const FeaturesPage = () => {
         >
           Benefits
         </Typography>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+        <Grid container spacing={3} mb={10}>
+          <Grid item xs={12} size={6}>
             <Card
-              elevation={2}
               sx={{
                 height: "100%",
-                borderRadius: 5,
-                backgroundColor: "background.default",
+                p: 3,
+                borderRadius: 3,
+                border: "1px solid rgba(255, 152, 0, 0.1)",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  transform: "translateY(-4px)",
+                  boxShadow: "0 12px 40px rgba(255, 152, 0, 0.15)",
+                },
               }}
             >
-              <CardContent>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+              <CardContent sx={{ p: 0 }}>
+                <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
                   <SchoolIcon color="primary" sx={{ fontSize: 30, mr: 2 }} />
                   <Typography
                     variant="h5"
                     component="h2"
-                    sx={{ fontWeight: "500" }}
+                    sx={{ fontWeight: "600" }}
                   >
                     For Students
                   </Typography>
                 </Box>
                 <Divider sx={{ mb: 3 }} />
 
-                <List>
+                <List sx={{ p: 0 }}>
                   {studentBenefits.map((benefit, index) => (
-                    <ListItem key={index}>
-                      <ListItemIcon>
+                    <ListItem key={index} sx={{ pl: 0 }}>
+                      <ListItemIcon sx={{ minWidth: 40 }}>
                         <CheckCircleOutlineIcon
                           sx={{ color: "primary.main" }}
                         />
@@ -208,32 +236,37 @@ const FeaturesPage = () => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} md={6}>
-          <Card
-              elevation={2}
+          <Grid item xs={12} size={6}>
+            <Card
               sx={{
                 height: "100%",
-                borderRadius: 5,
-                backgroundColor: "background.default",
+                p: 3,
+                borderRadius: 3,
+                border: "1px solid rgba(255, 152, 0, 0.1)",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  transform: "translateY(-4px)",
+                  boxShadow: "0 12px 40px rgba(255, 152, 0, 0.15)",
+                },
               }}
             >
-              <CardContent>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+              <CardContent sx={{ p: 0 }}>
+                <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
                   <PersonIcon color="primary" sx={{ fontSize: 36, mr: 2 }} />
                   <Typography
                     variant="h5"
                     component="h2"
-                    sx={{ fontWeight: "500" }}
+                    sx={{ fontWeight: "600" }}
                   >
                     For Teachers
                   </Typography>
                 </Box>
                 <Divider sx={{ mb: 3 }} />
 
-                <List>
+                <List sx={{ p: 0 }}>
                   {teacherBenefits.map((benefit, index) => (
-                    <ListItem key={index}>
-                      <ListItemIcon>
+                    <ListItem key={index} sx={{ pl: 0 }}>
+                      <ListItemIcon sx={{ minWidth: 40 }}>
                         <CheckCircleOutlineIcon
                           sx={{ color: "primary.main" }}
                         />
@@ -248,11 +281,27 @@ const FeaturesPage = () => {
         </Grid>
 
         {/* Call to Action */}
-        <Box textAlign="center" mt={10} mb={10}>
-          <Typography variant="h5" fontWeight="500" gutterBottom>
+        <Box textAlign="center" mt={10} mb={5}>
+          <Typography variant="h5" fontWeight="600" gutterBottom>
             Ready to Experience Personalized Education?
           </Typography>
-          <Button sx={{background: uiConfigs.style.mainGradient.color, color:'secondary.contrastText', borderRadius:100}} variant="contained" size="large" color="primary" href="/main">
+          <Button
+            sx={{
+              background: uiConfigs.style.mainGradient.color,
+              color: "secondary.contrastText",
+              borderRadius: 100,
+              fontWeight: 700,
+              px: 5,
+              py: 1.5,
+              fontSize: "1rem",
+              "&:hover": {
+                opacity: 0.9,
+              },
+            }}
+            variant="contained"
+            size="large"
+            href="/main"
+          >
             Get Started with EduWingz
           </Button>
         </Box>
