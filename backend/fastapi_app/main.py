@@ -17,6 +17,11 @@ from fastapi import Form
 from langchain_core.messages import AIMessage, HumanMessage
 import io
 import base64
+# edu design generator router
+try:
+    from edu_design_generator.router import router as edu_design_router
+except Exception:
+    edu_design_router = None
 
 rag_service = RAGService()
 agent_service = None  # Will be initialized after RAG service
@@ -77,6 +82,10 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Mount edu design generator router when available
+if edu_design_router is not None:
+    app.include_router(edu_design_router, prefix="/api/edu-design")
 
 app.add_middleware(
     CORSMiddleware,

@@ -1,0 +1,8 @@
+requests>=2.28.0
+pillow>=9.0.0
+# For local image generation (works on CPU or GPU)
+diffusers>=0.21.0
+torch>=2.0.0
+transformers>=4.25.0
+# Optional: for faster generation on GPU
+# accelerate>=0.20.0

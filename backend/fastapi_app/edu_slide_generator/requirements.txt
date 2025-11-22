@@ -1,0 +1,7 @@
+gradio>=4.70
+torch
+diffusers[torch]
+transformers
+weasyprint
+edge-tts
+pillow

@@ -103,3 +103,113 @@ class Notification(TimeStampedModel):
 
     def __str__(self):
         return str(self.id)
+
+
+class LearningStyleProfile(TimeStampedModel):
+    """Current learning style for a student and basic confidence score."""
+    class Meta:
+        verbose_name = _("LearningStyleProfile")
+        verbose_name_plural = _("LearningStyleProfiles")
+        ordering = ['-id']
+
+    profile = models.OneToOneField(Profile, on_delete=models.CASCADE, related_name='learning_style')
+    current_style = models.CharField(max_length=100, blank=True)
+    confidence = models.FloatField(default=0.0)
+
+    def __str__(self):
+        return f"{self.profile.profile_id} - {self.current_style}"
+
+
+class LearningStyleHistory(TimeStampedModel):
+    learning_style = models.ForeignKey(LearningStyleProfile, on_delete=models.CASCADE, related_name='history')
+    style = models.CharField(max_length=100)
+    confidence = models.FloatField(default=0.0)
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.learning_style.profile.profile_id} @ {self.recorded_at}: {self.style}"
+
+
+class Competency(TimeStampedModel):
+    """Competency level for a particular topic for a student (0-100)."""
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='competencies')
+    subject = models.CharField(max_length=150)
+    topic = models.CharField(max_length=255)
+    level = models.FloatField(default=0.0)
+
+    class Meta:
+        unique_together = ('profile', 'subject', 'topic')
+
+    def __str__(self):
+        return f"{self.profile.profile_id} - {self.subject}/{self.topic}: {self.level}"
+
+
+class CompetencyHistory(TimeStampedModel):
+    competency = models.ForeignKey(Competency, on_delete=models.CASCADE, related_name='history')
+    level = models.FloatField(default=0.0)
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.competency} @ {self.recorded_at}: {self.level}"
+
+
+class EngagementMetric(TimeStampedModel):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='engagements')
+    session_date = models.DateField()
+    duration_seconds = models.IntegerField(default=0)
+    interactions = models.IntegerField(default=0)
+    interaction_depth = models.FloatField(default=0.0)
+
+    def __str__(self):
+        return f"{self.profile.profile_id} - {self.session_date} ({self.duration_seconds}s)"
+
+
+class PerformanceTrend(TimeStampedModel):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='performance_trends')
+    subject = models.CharField(max_length=150)
+    topic = models.CharField(max_length=255, blank=True)
+    score = models.FloatField(default=0.0)
+    recorded_at = models.DateField()
+
+    def __str__(self):
+        return f"{self.profile.profile_id} - {self.subject} @ {self.recorded_at}: {self.score}"
+
+
+class InterventionFlag(TimeStampedModel):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='interventions')
+    subject = models.CharField(max_length=150)
+    topic = models.CharField(max_length=255, blank=True)
+    reason = models.TextField(blank=True)
+    flagged_at = models.DateTimeField(auto_now_add=True)
+    resolved = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.profile.profile_id} - {self.subject}/{self.topic} - {'resolved' if self.resolved else 'open'}"
+
+
+class ClassAnalyticsSnapshot(TimeStampedModel):
+    """Optional snapshot for aggregated class-level analytics."""
+    class_name = models.CharField(max_length=255)
+    date = models.DateField()
+    avg_score = models.FloatField(default=0.0)
+    distribution = models.JSONField(default=dict, blank=True)
+    common_difficulties = models.JSONField(default=list, blank=True)
+
+    def __str__(self):
+        return f"{self.class_name} @ {self.date}"
+
+
+class SystemMetric(TimeStampedModel):
+    METRIC_CHOICES = [
+        ('response_time', 'Response Time'),
+        ('rag_accuracy', 'RAG Accuracy'),
+        ('user_satisfaction', 'User Satisfaction'),
+        ('feature_usage', 'Feature Usage')
+    ]
+    metric_type = models.CharField(max_length=50, choices=METRIC_CHOICES)
+    value = models.FloatField(default=0.0)
+    metadata = models.JSONField(default=dict, blank=True)
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.metric_type} @ {self.recorded_at}: {self.value}"
