@@ -176,13 +176,13 @@ const dashboardRoutes = [
     state: "platform-lessons",
   },
   {
-    path: "/dashboard/platform/lessons/lessonId",
+    path: "/dashboard/platform/lessons/:lessonId",
     element: (
       <ProtectedPage>
       <PlatformLessonId />
       </ProtectedPage>
     ),
-    state: "platform-lessons",
+    state: "platform-lessons-detail",
   },
 ];
 

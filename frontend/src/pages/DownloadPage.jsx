@@ -120,7 +120,7 @@ const DownloadPage = () => {
         {/* Features Section */}
         <Grid container spacing={3} mb={6}>
           {features.map((feature, index) => (
-            <Grid item xs={12} sm={4} key={index}>
+            <Grid item xs={12} size={4} key={index}>
               <Card
                 sx={{
                   height: "100%",
@@ -161,7 +161,7 @@ const DownloadPage = () => {
 
         <Grid container spacing={3}>
           {downloadOptions.map((option, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
+            <Grid item xs={12} sm={6} size={3} key={index}>
               <Card
                 sx={{
                   height: "100%",

@@ -103,30 +103,3 @@ class Notification(TimeStampedModel):
 
     def __str__(self):
         return str(self.id)
-    
-
-class Lesson(TimeStampedModel):
-    title = models.CharField(max_length=255)
-    
-    class Meta:
-        verbose_name = _("Lesson")
-        verbose_name_plural = _("Lessons")
-        ordering = ['-id']
-    
-    def __str__(self):
-        return self.title
-
-class Note(TimeStampedModel):
-    class Meta:
-        verbose_name = _("Note")
-        verbose_name_plural = _("Notes")
-        ordering = ['-id']
-
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notes')
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='notes')
-    title = models.CharField(max_length=255, blank=True)
-    content = models.TextField(blank=True)
-    description = models.CharField(max_length=1023, blank=True)
-
-    def __str__(self):
-        return self.title or str(self.id)

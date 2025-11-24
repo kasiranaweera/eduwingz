@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import chatApi from "../api/modules/chat.api";
 import ShinyText from "../components/common/ShinyText";
 import TextType from "../components/common/TextType";
+import { LocalLibraryOutlined } from "@mui/icons-material";
 
 const MainBoardPage = () => {
   const { user } = useSelector((state) => state.user);
@@ -245,7 +246,7 @@ const MainBoardPage = () => {
                     borderRadius: 3,
                   }}
                 >
-                  <DashboardIcon
+                  <LocalLibraryOutlined
                     sx={{ color: "graycolor.one", mx: 1 }}
                     fontSize="large"
                   />

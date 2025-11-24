@@ -1,0 +1,8 @@
+torch==2.4.0
+transformers
+diffusers[torch]
+accelerate
+python-pptx
+gradio>=4.100
+requests
+pillow

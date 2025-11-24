@@ -42,6 +42,7 @@ import MuiLink from "@mui/material/Link";
 import uiConfigs from "../configs/ui.config";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import AddModeratorOutlinedIcon from "@mui/icons-material/AddModeratorOutlined";
+import { ChatOutlined, LocalLibraryOutlined } from "@mui/icons-material";
 
 const drawerWidth = (window.innerWidth / 100) * 15;
 
@@ -468,7 +469,7 @@ const DrawerTopBar = ({ special, content }) => {
                     component={Link}
                     to="/dashboard/platform"
                   >
-                    <DashboardIcon />
+                    <LocalLibraryOutlined />
                     <ListItemText
                       sx={{ ml: 2, textAlign: "left", fontWeight: 800 }}
                       disableTypography
@@ -501,7 +502,7 @@ const DrawerTopBar = ({ special, content }) => {
                     component={Link}
                     to="/dashboard/chat/new"
                   >
-                    <DashboardIcon />
+                    <ChatOutlined />
                     <ListItemText
                       sx={{ ml: 2, textAlign: "left", fontWeight: 800 }}
                       disableTypography
@@ -777,7 +778,7 @@ const DrawerTopBar = ({ special, content }) => {
                     }}
                     href="/dashboard/platform"
                   >
-                    <DashboardIcon />
+                    <LocalLibraryOutlined />
                   </IconButton>
                 </Tooltip>
               ) : dashboardType === "Platform" ? (
@@ -798,7 +799,7 @@ const DrawerTopBar = ({ special, content }) => {
                     }}
                     href="/dashboard/chat/new"
                   >
-                    <DashboardIcon />
+                    <ChatOutlined />
                   </IconButton>
                 </Tooltip>
               ) : (
