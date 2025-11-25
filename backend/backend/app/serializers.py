@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Profile, OtherDetail, Notification
+from .models import Profile, OtherDetail, Notification, Achievement
 from .models import (
     LearningStyleProfile,
     LearningStyleHistory,
@@ -19,8 +19,17 @@ class OtherDetailSerializer(serializers.ModelSerializer):
         model = OtherDetail
         fields = ['id', 'subject', 'avg_hours', 'time_period', 'strength', 'style']
 
+
+class AchievementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Achievement
+        fields = ['id', 'title', 'description', 'badge_icon', 'badge_color', 'earned_at', 'points']
+        read_only_fields = ['id', 'earned_at']
+
+
 class ProfileSerializer(serializers.ModelSerializer):
     other = OtherDetailSerializer(read_only=True)
+    achievements = AchievementSerializer(many=True, read_only=True)
 
     class Meta:
         model = Profile
@@ -33,7 +42,11 @@ class ProfileSerializer(serializers.ModelSerializer):
             'tagline',
             'bio',
             'status',
+            'profile_image',
+            'social_links',
+            'learning_styles',
             'other',
+            'achievements',
             'created_at',
             'updated_at'
         ]
@@ -44,7 +57,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ['first_name', 'last_name', 'username', 'bio', 'tagline', 'status', 'other']
+        fields = ['first_name', 'last_name', 'username', 'bio', 'tagline', 'status', 'profile_image', 'social_links', 'learning_styles', 'other']
 
     def validate_username(self, value):
         profile = self.instance

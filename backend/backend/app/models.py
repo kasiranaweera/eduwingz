@@ -35,6 +35,13 @@ class Profile(TimeStampedModel):
     tagline = models.CharField(max_length=100, blank=True)
     bio = models.TextField(blank=True)
     status = models.CharField(max_length=100, blank=True)
+    profile_image = models.ImageField(upload_to='profile_images/', blank=True, null=True)
+    social_links = models.JSONField(default=dict, blank=True)  # {'twitter': '...', 'linkedin': '...', etc}
+    learning_styles = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Learning style dimensions: active_reflective, sensing_intuitive, visual_verbal, sequential_global (-11 to +11)"
+    )
     other = models.ForeignKey(OtherDetail, on_delete=models.SET_NULL, blank=True, null=True)
 
     def __str__(self):
@@ -45,6 +52,14 @@ class Profile(TimeStampedModel):
             self.profile_id = create_profile_id(self.user_id)
         if not self.username and self.user:
             self.username = self.user.username
+        # Initialize learning_styles with default values if empty
+        if not self.learning_styles:
+            self.learning_styles = {
+                'active_reflective': 0,
+                'sensing_intuitive': 0,
+                'visual_verbal': 0,
+                'sequential_global': 0
+            }
         super().save(*args, **kwargs)
 
 @receiver(post_save, sender=User)
@@ -103,6 +118,24 @@ class Notification(TimeStampedModel):
 
     def __str__(self):
         return str(self.id)
+
+
+class Achievement(TimeStampedModel):
+    class Meta:
+        verbose_name = _("Achievement")
+        verbose_name_plural = _("Achievements")
+        ordering = ['-created_at']
+
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='achievements')
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    badge_icon = models.ImageField(upload_to='achievement_badges/', blank=True, null=True)
+    badge_color = models.CharField(max_length=20, default='gold')  # gold, silver, bronze, etc
+    earned_at = models.DateTimeField(auto_now_add=True)
+    points = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.profile.profile_id} - {self.title}"
 
 
 class LearningStyleProfile(TimeStampedModel):
