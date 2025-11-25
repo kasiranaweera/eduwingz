@@ -7,7 +7,8 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.2:1b"
-    LLM_MODEL: str = "Qwen/Qwen2.5-0.5B-Instruct"  # Non-gated reasoning model
+    LLM_MODEL: str = "Qwen/Qwen3-0.6B"  # Non-gated reasoning model
+    # LLM_MODEL: str = "Qwen/Qwen2.5-0.5B-Instruct"  # Non-gated reasoning model
     LLM_BACKEND: str = "huggingface"  # "ollama" or "huggingface"
     EMBEDDING_MODEL: str = "sentence-transformers/all-mpnet-base-v2"
     CHUNK_SIZE: int = 1000
