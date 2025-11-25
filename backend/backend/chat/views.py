@@ -33,15 +33,34 @@ def serialize_document(document, request=None):
             media_url = getattr(settings, 'MEDIA_URL', '/media/')
             file_url = request.build_absolute_uri(f"{media_url}{base_path}")
 
+    # Determine file type from filename
+    file_type = "Document"
+    filename = document.filename or ""
+    if filename.lower().endswith('.pdf'):
+        file_type = "PDF"
+    elif filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
+        file_type = "Image"
+    elif filename.lower().endswith(('.mp4', '.avi', '.mov', '.mkv')):
+        file_type = "Video"
+    elif filename.lower().endswith(('.txt', '.md')):
+        file_type = "Text"
+
     return {
         "id": str(document.id),
+        "title": document.filename,
+        "description": "",
         "filename": document.filename,
+        "file_type": file_type,
+        "doc_type": "Uploaded",
+        "category": "Uploads",
         "processed": document.processed,
-        "uploaded_at": document.uploaded_at,
-        "session_id": str(document.session_id),
+        "created_at": document.uploaded_at.isoformat() if document.uploaded_at else None,
+        "uploaded_at": document.uploaded_at.isoformat() if document.uploaded_at else None,
+        "session_id": str(document.session_id) if document.session_id else None,
         "message_id": str(document.message_id) if document.message_id else None,
         "file_url": file_url
     }
+
 
 class ChatSessionView(APIView):
     authentication_classes = [JWTAuthentication]
@@ -649,18 +668,42 @@ class DocumentListView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        """List all documents for the authenticated user"""
-        documents = Document.objects.filter(user=request.user)
-        session_filter = request.query_params.get("session_id")
-        if session_filter:
-            documents = documents.filter(session_id=session_filter)
+    def get(self, request, user_id=None):
+        """List all documents for the authenticated user or specified user_id"""
+        try:
+            # If user_id is provided in URL, use it; otherwise use request.user
+            if user_id:
+                # Verify user is requesting their own documents or is admin
+                if str(request.user.id) != str(user_id) and not request.user.is_staff:
+                    return APIErrorResponse.forbidden("You don't have permission to access this user's documents")
+                documents = Document.objects.filter(user_id=user_id)
+            else:
+                documents = Document.objects.filter(user=request.user)
+            
+            # Filter by session_id if provided
+            session_filter = request.query_params.get("session_id")
+            if session_filter:
+                documents = documents.filter(session_id=session_filter)
 
-        documents = documents.order_by("-uploaded_at")
-        return Response([
-            serialize_document(doc, request=request)
-            for doc in documents
-        ])
+            # Filter by search query if provided
+            search_query = request.query_params.get("search")
+            if search_query:
+                documents = documents.filter(filename__icontains=search_query)
+
+            # Order by most recent first
+            documents = documents.order_by("-uploaded_at")
+            
+            serialized_docs = [
+                serialize_document(doc, request=request)
+                for doc in documents
+            ]
+            
+            logger.info(f"Retrieved {len(serialized_docs)} documents for user {user_id or request.user.id}")
+            return Response(serialized_docs)
+            
+        except Exception as e:
+            logger.error(f"Error retrieving documents: {str(e)}")
+            return APIErrorResponse.internal_server_error(f"Error retrieving documents: {str(e)}")
 
 class ContinueMessageView(APIView):
     authentication_classes = [JWTAuthentication]
@@ -854,3 +897,87 @@ class BookmarksListView(APIView):
             return Response({"message": "Bookmark deleted successfully"})
         except Bookmark.DoesNotExist:
             return APIErrorResponse.not_found("Bookmark not found")
+
+
+class DocumentListView(APIView):
+    """
+    API endpoint for listing documents filtered by user_id
+    GET /chat/documents/?user_id=<uuid>&search=<query>
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """List all documents for the authenticated user with optional search"""
+        user_id = request.query_params.get('user_id')
+        search_query = request.query_params.get('search', '').strip()
+        
+        # Only allow users to fetch their own documents
+        if user_id and str(request.user.id) != user_id:
+            return APIErrorResponse.unauthorized("Cannot fetch other users' documents")
+        
+        # Filter documents by authenticated user
+        documents = Document.objects.filter(user=request.user).order_by('-uploaded_at')
+        
+        # Apply search filter if provided
+        if search_query:
+            documents = documents.filter(filename__icontains=search_query)
+        
+        serialized_docs = [
+            serialize_document(doc, request=request)
+            for doc in documents
+        ]
+        
+        return Response(serialized_docs)
+
+
+class MessageDocumentView(APIView):
+    """
+    API endpoint for managing documents associated with messages
+    GET /chat/documents/<message_id>/
+    DELETE /chat/documents/<message_id>/
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, message_id):
+        """Get all documents associated with a message"""
+        try:
+            message = Message.objects.get(id=message_id)
+            
+            # Verify the user owns the session
+            if message.session.user != request.user:
+                return APIErrorResponse.unauthorized("Cannot access this message")
+            
+            documents = message.documents.all()
+            serialized_docs = [
+                serialize_document(doc, request=request)
+                for doc in documents
+            ]
+            
+            return Response(serialized_docs)
+        except Message.DoesNotExist:
+            return APIErrorResponse.not_found("Message not found")
+
+    def delete(self, request, message_id):
+        """Delete a document from a message"""
+        try:
+            message = Message.objects.get(id=message_id)
+            
+            # Verify the user owns the session
+            if message.session.user != request.user:
+                return APIErrorResponse.unauthorized("Cannot modify this message")
+            
+            # Get document to delete
+            document_id = request.data.get('document_id')
+            if not document_id:
+                return APIErrorResponse.bad_request("document_id is required")
+            
+            try:
+                document = Document.objects.get(id=document_id, message=message)
+                document.delete()
+                return Response({"message": "Document deleted successfully"})
+            except Document.DoesNotExist:
+                return APIErrorResponse.not_found("Document not found in this message")
+        except Message.DoesNotExist:
+            return APIErrorResponse.not_found("Message not found")
