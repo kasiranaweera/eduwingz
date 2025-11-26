@@ -71,6 +71,7 @@ const PlatformLessonId = () => {
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [editingContent, setEditingContent] = useState("");
   const [editingResources, setEditingResources] = useState("");
+  const [isGeneratingTopicContent, setIsGeneratingTopicContent] = useState(false);
 
   const minWidth = 300;
   const maxWidth = 800;
@@ -142,6 +143,30 @@ const PlatformLessonId = () => {
     setSelectedTopic(topic);
     setEditingContent(topic.content || "");
     setEditingResources(topic.resources || "");
+  };
+
+  const handleGenerateAndSaveContent = async () => {
+    if (!selectedTopic) return;
+    try {
+      setIsGeneratingTopicContent(true);
+      const { response, err } = await lessonsApi.generateTopicContent(selectedTopic.id, true);
+      if (err || !response) {
+        setSnackbar({ open: true, message: 'Failed to generate content', severity: 'error' });
+      } else {
+        const data = response.data || response;
+        const content = data.content || '';
+        // Update selectedTopic and topics list
+        const updated = { ...selectedTopic, content };
+        setSelectedTopic(updated);
+        setTopics(topics.map((t) => (t.id === updated.id ? updated : t)));
+        setSnackbar({ open: true, message: 'Content generated and saved', severity: 'success' });
+      }
+    } catch (e) {
+      console.error('Generate content error', e);
+      setSnackbar({ open: true, message: 'Error generating content', severity: 'error' });
+    } finally {
+      setIsGeneratingTopicContent(false);
+    }
   };
 
   // Handle save topic
@@ -814,12 +839,16 @@ const PlatformLessonId = () => {
                         }}
                         onClick={() => handleSelectTopic(topic)}
                       >
-                        <Typography variant="subtitle2" noWrap>
-                          {index + 1}. {topic.title}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {topic.content?.substring(0, 30)}...
-                        </Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Box sx={{ overflow: 'hidden' }}>
+                            <Typography variant="subtitle2" noWrap>
+                              {index + 1}. {topic.title}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {topic.content?.substring(0, 30)}...
+                            </Typography>
+                          </Box>
+                        </Box>
                       </Paper>
                     ))}
                   </Box>
@@ -860,26 +889,26 @@ const PlatformLessonId = () => {
                   </Typography>
                 </Paper>
 
-                {/* Resources Section */}
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 3,
-                    border: 1,
-                    borderColor: "graycolor.two",
-                    borderRadius: 3,
-                  }}
-                >
-                  <Typography variant="h6">Resources</Typography>
-                  <Divider
-                    sx={{ mt: 1, mb: 2 }}
-                    orientation="horizontal"
-                    flexItem
-                  />
-                  <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-                    {selectedTopic.resources || "No resources provided"}
-                  </Typography>
-                </Paper>
+                {/* If no content, show generate button */}
+                {!selectedTopic.content && (
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      border: 1,
+                      borderColor: "graycolor.two",
+                      borderRadius: 3,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
+                    }}
+                  >
+                    <Typography variant="body2" color="text.secondary">No content yet for this topic.</Typography>
+                    <Button variant="contained" onClick={handleGenerateAndSaveContent} disabled={isGeneratingTopicContent}>
+                      {isGeneratingTopicContent ? (<CircularProgress size={20} color="inherit" />) : 'Generate content'}
+                    </Button>
+                  </Paper>
+                )}
               </>
             ) : (
               <Paper
@@ -957,6 +986,8 @@ const PlatformLessonId = () => {
           ))}
         </Box>
       </Box>
+
+      {/* Snackbar for notifications */}
 
       {/* Snackbar for notifications */}
       <Snackbar

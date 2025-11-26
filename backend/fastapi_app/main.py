@@ -12,6 +12,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from services.rag_service import RAGService
 from services.agent_service import ReasoningAgent
+from services.lesson_generator_service import LessonGeneratorService
 from config import settings
 from fastapi import Form
 from langchain_core.messages import AIMessage, HumanMessage
@@ -25,10 +26,11 @@ except Exception:
 
 rag_service = RAGService()
 agent_service = None  # Will be initialized after RAG service
+lesson_generator_service = None  # Will be initialized after RAG service
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global agent_service
+    global agent_service, lesson_generator_service
     print("🚀 Starting RAG Chat API...")
     await rag_service.initialize()
     # Initialize agent service with RAG service's LLM
@@ -36,7 +38,9 @@ async def lifespan(app: FastAPI):
         llm_client=rag_service.llm,
         embedding_model=rag_service.embedding_model
     )
-    # Initialize TTS engine
+    # Initialize lesson generator service with RAG service's LLM
+    lesson_generator_service = LessonGeneratorService(llm_client=rag_service.llm)
+    # TTS engine
     try:
         import sys
         import os
@@ -217,6 +221,114 @@ async def health_check():
         "timestamp": datetime.utcnow(),
         "version": "1.0.0"
     }
+
+# ==================== LESSON GENERATION ENDPOINT ====================
+
+class GenerateLessonRequest(BaseModel):
+    grade: str
+    subject: str
+    topic: str
+    attachments: Optional[List[dict]] = None
+
+
+class TopicContentRequest(BaseModel):
+    grade: str
+    subject: str
+    topic_title: str
+    session_id: Optional[str] = None  # For learner profile lookup
+    attachments: Optional[List[dict]] = None
+
+@app.post("/api/lessons/generate")
+async def generate_lesson(request: GenerateLessonRequest):
+    """
+    Generate lesson topics using Qwen LLM
+    
+    This endpoint runs the LLM on FastAPI server, not in Django!
+    
+    Args:
+        grade: Grade level (e.g., "10", "11", "12")
+        subject: Subject name (e.g., "Biology", "Mathematics")
+        topic: Topic name (e.g., "Chemical Basis of Life")
+        attachments: Optional list of educational materials
+        
+    Returns:
+        Generated topics in JSON format
+    """
+    try:
+        print(f"📚 [API] Received lesson generation request:")
+        print(f"   Grade: {request.grade}")
+        print(f"   Subject: {request.subject}")
+        print(f"   Topic: {request.topic}")
+        
+        # Call lesson generator service
+        result = lesson_generator_service.generate_topics(
+            grade=request.grade,
+            subject=request.subject,
+            topic=request.topic,
+            attachments=request.attachments
+        )
+        
+        if result['success']:
+            print(f"✅ [API] Generated {len(result['topics'])} topics")
+            return {
+                "success": True,
+                "topics": result['topics'],
+                "message": result['message']
+            }
+        else:
+            print(f"❌ [API] Failed to generate topics: {result['message']}")
+            raise HTTPException(
+                status_code=500,
+                detail=result['message']
+            )
+            
+    except Exception as e:
+        print(f"❌ [API] Error in generate_lesson endpoint: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating lesson: {str(e)}"
+        )
+
+
+@app.post("/api/lessons/generate_content")
+async def generate_topic_content(request: TopicContentRequest):
+    """Generate adaptive content for a single topic using ILS learning profile."""
+    try:
+        print(f"📚 [API] Received topic content request: {request.topic_title} (Grade {request.grade} - {request.subject})")
+        
+        # Get learning profile if session_id provided
+        learning_profile = None
+        if request.session_id:
+            learning_profile = rag_service.get_or_create_learning_profile(request.session_id)
+            print(f"   👤 Using learning profile for session: {request.session_id}")
+        
+        # Generate content with optional ILS adaptation
+        result = lesson_generator_service.generate_content_for_topic(
+            grade=request.grade,
+            subject=request.subject,
+            topic_title=request.topic_title,
+            attachments=request.attachments,
+            learning_profile=learning_profile
+        )
+
+        if result.get('success'):
+            return {
+                'success': True,
+                'content': result.get('content', ''),
+                'message': result.get('message', '')
+            }
+        else:
+            raise HTTPException(status_code=500, detail=result.get('message', 'Failed to generate content'))
+
+    except Exception as e:
+        print(f"❌ [API] Error in generate_topic_content endpoint: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ========================================================================
 
 class QuestionnaireSubmit(BaseModel):
     session_id: str
