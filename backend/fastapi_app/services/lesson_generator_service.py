@@ -166,6 +166,7 @@ Format: JSON only, no markdown. Topics: 1.Intro 2.Concepts 3.Applications 4.Summ
 
     def generate_content_for_topic(self, grade: str, subject: str, topic_title: str, attachments: Optional[List[Dict]] = None, learning_profile=None) -> Dict:
         """Generate adaptive educational note for a single topic using ILS learning profile.
+        Implements iterative generation for comprehensive notes covering all aspects.
 
         Args:
             grade: Grade level
@@ -200,10 +201,12 @@ Format: JSON only, no markdown. Topics: 1.Intro 2.Concepts 3.Applications 4.Summ
             else:
                 system_prompt = self._get_default_system_prompt()
 
-            # Create user prompt
+            # First iteration: Generate initial comprehensive content
             user_message = (
                 f"Grade {grade} {subject} - Topic: {topic_title}. {attachment_context}"
-                "\nProduce 1-3 concise paragraphs (clear, student-facing), no JSON, no markdown."
+                "\nGenerate a COMPREHENSIVE educational note covering ALL key aspects of this topic. "
+                "\nProduce 2-4 detailed paragraphs (clear, student-facing), no JSON, no markdown. "
+                "\nCover: definitions, key concepts, examples, and practical applications."
             )
 
             messages = [
@@ -211,22 +214,75 @@ Format: JSON only, no markdown. Topics: 1.Intro 2.Concepts 3.Applications 4.Summ
                 HumanMessage(content=user_message)
             ]
 
-            print(f"🤖 [LessonGenerator] Generating content for topic: {topic_title}")
+            print(f"🤖 [LessonGenerator] Generating comprehensive content for topic: {topic_title}")
             response = self.llm_client.invoke(messages)
             response_text = response.content.strip() if hasattr(response, 'content') else str(response).strip()
+            
+            # Strip think tags from response
+            content = self._strip_think_tags(response_text)
+            
+            # Check if content seems incomplete (ends with common truncation patterns)
+            # If incomplete, continue generation
+            if self._is_incomplete(content):
+                print(f"📝 [LessonGenerator] Content appears incomplete, generating continuation...")
+                continuation_message = (
+                    f"Continue and complete the comprehensive note for '{topic_title}'. "
+                    f"Build on what was covered, add more examples, details, or practical applications. "
+                    f"Make the note complete and self-contained. No markdown or JSON."
+                )
+                
+                messages.append(HumanMessage(content=continuation_message))
+                continuation_response = self.llm_client.invoke(messages)
+                continuation_text = continuation_response.content.strip() if hasattr(continuation_response, 'content') else str(continuation_response).strip()
+                
+                # Strip think tags from continuation
+                continuation_text = self._strip_think_tags(continuation_text)
+                
+                # Combine with initial content
+                content = content + "\n\n" + continuation_text
+                print(f"✅ [LessonGenerator] Content completed with continuation")
 
             return {
                 'success': True,
-                'content': response_text,
-                'message': 'Content generated'
+                'content': content,
+                'message': 'Content generated successfully'
             }
         except Exception as e:
             print(f"❌ [LessonGenerator] Error generating content for topic '{topic_title}': {e}")
+            import traceback
+            traceback.print_exc()
             return {
                 'success': False,
                 'content': '',
                 'message': str(e)
             }
+
+    def _is_incomplete(self, text: str) -> bool:
+        """Check if generated content appears incomplete or truncated.
+        
+        Args:
+            text: The generated content
+            
+        Returns:
+            True if content appears incomplete, False otherwise
+        """
+        if not text or len(text.strip()) < 100:
+            return True
+        
+        # Check for truncation patterns
+        truncation_indicators = [
+            text.rstrip().endswith(','),  # Ends with comma
+            text.rstrip().endswith('-'),  # Ends with dash
+            text.rstrip().endswith('and'),  # Ends with 'and'
+            text.rstrip().endswith('is'),  # Ends with incomplete verb
+            'etc.' in text[-50:] and not text.rstrip().endswith('.'),  # etc without period
+            text.count('\n') < 2 and len(text) > 500,  # Long text without paragraph breaks
+        ]
+        
+        is_truncated = any(truncation_indicators)
+        if is_truncated:
+            print(f"   ⚠️ Content may be incomplete: {truncation_indicators}")
+        return is_truncated
 
     def _get_default_system_prompt(self) -> str:
         """Get default system prompt for educational notes (when no learning profile)."""
@@ -235,3 +291,19 @@ Format: JSON only, no markdown. Topics: 1.Intro 2.Concepts 3.Applications 4.Summ
             "Do NOT produce a lesson plan or teacher guide. Adapt the wording for different learning styles when appropriate (visual, auditory, kinesthetic, reading/writing). "
             "Reply with plain text only."
         )
+
+    def _strip_think_tags(self, text: str) -> str:
+        """Remove <think>...</think> tags from content (e.g., from Claude thinking).
+        
+        Args:
+            text: Text that may contain <think> tags
+            
+        Returns:
+            Text with <think> tags and their contents removed
+        """
+        import re
+        # Remove <think>...</think> tags (case-insensitive, including nested content)
+        cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL | re.IGNORECASE)
+        # Remove any leftover opening/closing think tags
+        cleaned = re.sub(r'</?think>', '', cleaned, flags=re.IGNORECASE)
+        return cleaned.strip()

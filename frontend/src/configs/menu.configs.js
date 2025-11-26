@@ -69,11 +69,11 @@ const footMenu = [
     path: "/technology",
     state: "technology",
   },
-  {
-    display: "team",
-    path: "/team",
-    state: "team",
-  },
+  // {
+  //   display: "team",
+  //   path: "/team",
+  //   state: "team",
+  // },
   {
     display: "privacy",
     path: "/privacy",
@@ -140,7 +140,7 @@ const dashboardPlatform = [
   },
   {
     display: "Quizzes",
-    path: "/dashboard/quizzes",
+    path: "/dashboard/platform/quizzes",
     icon: <QuizIcon />,
     state: "quizzes",
   },
@@ -180,12 +180,12 @@ const dashboardCommon = [
     icon: <InsightsIcon />,
     state: "analytics",
   },
-  {
-    display: "Community",
-    path: "/dashboard/platform/community",
-    icon: <PeopleOutlinedIcon />,
-    state: "platform-community",
-  },
+  // {
+  //   display: "Community",
+  //   path: "/dashboard/community",
+  //   icon: <PeopleOutlinedIcon />,
+  //   state: "platform-community",
+  // },
   // {
   //   display: "Mine Horizon",
   //   path: "/dashboard/mine-horizon",
