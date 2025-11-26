@@ -14,7 +14,9 @@ const lessonEndpoints = {
   topics: (lessonId) => `lessons/lessons/${lessonId}/topics/`,
   addTopic: (lessonId) => `lessons/lessons/${lessonId}/add_topic/`,
   topic: (topicId) => `lessons/topics/${topicId}/`,
+  topicGenerateContent: (topicId) => `lessons/topics/${topicId}/generate_content/`,
   createSession: "lessons/lessons/create_session/",
+  generateLesson: "lessons/lessons/generate_lesson/",
   allLessons: "lessons/lessons/",
 };
 
@@ -89,6 +91,27 @@ const lessonsApi = {
         description: data.description || "",
       };
       const response = await privateClient.post(lessonEndpoints.createSession, payload);
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+
+  /**
+   * Generate lesson content using LLM
+   * @param {Object} data - { grade, subject, topic, lesson_id, lesson_type }
+   * @returns {Promise}
+   */
+  generateLesson: async (data = {}) => {
+    try {
+      const payload = {
+        grade: data.grade,
+        subject: data.subject,
+        topic: data.topic,
+        lesson_id: data.lesson_id,
+        lesson_type: data.lesson_type || "default",
+      };
+      const response = await privateClient.post(lessonEndpoints.generateLesson, payload);
       return { response };
     } catch (err) {
       return { err };
@@ -242,6 +265,21 @@ const lessonsApi = {
   deleteTopic: async (topicId) => {
     try {
       const response = await privateClient.delete(lessonEndpoints.topic(topicId));
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+
+  /**
+   * Generate (preview) content for a single topic via backend
+   * @param {string} topicId - UUID of the topic
+   * @param {boolean} save - whether to save the generated content to the topic (default false)
+   */
+  generateTopicContent: async (topicId, save = false) => {
+    try {
+      const payload = { save };
+      const response = await privateClient.post(lessonEndpoints.topicGenerateContent(topicId), payload);
       return { response };
     } catch (err) {
       return { err };

@@ -1,0 +1,223 @@
+{
+  "todayGoals": [
+    {
+      "id": 1,
+      "title": "Complete any 3 learning items",
+      "target": 3,
+      "current": 0,
+      "icon": "BookIcon"
+    },
+    {
+      "id": 2,
+      "title": "Complete a practice item",
+      "target": 1,
+      "current": 0,
+      "icon": "PracticeIcon"
+    },
+    {
+      "id": 3,
+      "title": "Score 80% on an assignment",
+      "target": 80,
+      "current": 0,
+      "icon": "AssignmentIcon"
+    }
+  ],
+  "grades": [
+    {
+      "value": "10",
+      "label": "Grade 10",
+      "subjects": [
+        {
+          "value": "Mathematics",
+          "label": "Mathematics",
+          "topics": [
+            {
+              "value": "Algebra",
+              "label": "Algebra"
+            },
+            {
+              "value": "Geometry",
+              "label": "Geometry"
+            },
+            {
+              "value": "Calculus",
+              "label": "Calculus"
+            },
+            {
+              "value": "Trigonometry",
+              "label": "Trigonometry"
+            }
+          ]
+        },
+        {
+          "value": "Science",
+          "label": "Science",
+          "topics": [
+            {
+              "value": "Chemical Basis of Life",
+              "label": "Chemical Basis of Life"
+            },
+            {
+              "value": "Chemistry",
+              "label": "Chemistry"
+            },
+            {
+              "value": "Biology",
+              "label": "Biology"
+            }
+          ]
+        },
+        {
+          "value": "English",
+          "label": "English",
+          "topics": [
+            {
+              "value": "Grammar",
+              "label": "Grammar"
+            },
+            {
+              "value": "Literature",
+              "label": "Literature"
+            },
+            {
+              "value": "Comprehension",
+              "label": "Comprehension"
+            },
+            {
+              "value": "Writing",
+              "label": "Writing"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "value": "11",
+      "label": "Grade 11",
+      "subjects": [
+        {
+          "value": "Mathematics",
+          "label": "Mathematics",
+          "topics": [
+            {
+              "value": "Algebra",
+              "label": "Algebra"
+            },
+            {
+              "value": "Geometry",
+              "label": "Geometry"
+            },
+            {
+              "value": "Calculus",
+              "label": "Calculus"
+            },
+            {
+              "value": "Statistics",
+              "label": "Statistics"
+            }
+          ]
+        },
+        {
+          "value": "Science",
+          "label": "Science",
+          "topics": [
+            {
+              "value": "Physics",
+              "label": "Physics"
+            },
+            {
+              "value": "Chemistry",
+              "label": "Chemistry"
+            },
+            {
+              "value": "Biology",
+              "label": "Biology"
+            }
+          ]
+        },
+        {
+          "value": "English",
+          "label": "English",
+          "topics": [
+            {
+              "value": "Grammar",
+              "label": "Grammar"
+            },
+            {
+              "value": "Literature",
+              "label": "Literature"
+            },
+            {
+              "value": "Essay Writing",
+              "label": "Essay Writing"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "value": "12",
+      "label": "Grade 12",
+      "subjects": [
+        {
+          "value": "Mathematics",
+          "label": "Mathematics",
+          "topics": [
+            {
+              "value": "Algebra",
+              "label": "Algebra"
+            },
+            {
+              "value": "Geometry",
+              "label": "Geometry"
+            },
+            {
+              "value": "Calculus",
+              "label": "Calculus"
+            },
+            {
+              "value": "Linear Algebra",
+              "label": "Linear Algebra"
+            }
+          ]
+        },
+        {
+          "value": "Science",
+          "label": "Science",
+          "topics": [
+            {
+              "value": "Physics",
+              "label": "Physics"
+            },
+            {
+              "value": "Chemistry",
+              "label": "Chemistry"
+            },
+            {
+              "value": "Biology",
+              "label": "Biology"
+            }
+          ]
+        },
+        {
+          "value": "English",
+          "label": "English",
+          "topics": [
+            {
+              "value": "Literature",
+              "label": "Literature"
+            },
+            {
+              "value": "Advanced Grammar",
+              "label": "Advanced Grammar"
+            },
+            {
+              "value": "Research Writing",
+              "label": "Research Writing"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
