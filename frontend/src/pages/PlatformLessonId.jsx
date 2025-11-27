@@ -885,11 +885,9 @@ const PlatformLessonId = () => {
                     flexItem
                   />
                   <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-                    {selectedTopic.content || "No content provided"}
+                    {selectedTopic.content}
                   </Typography>
-                </Paper>
-
-                {/* If no content, show generate button */}
+                  {/* If no content, show generate button */}
                 {!selectedTopic.content && (
                   <Paper
                     elevation={0}
@@ -909,6 +907,9 @@ const PlatformLessonId = () => {
                     </Button>
                   </Paper>
                 )}
+                </Paper>
+
+                
               </>
             ) : (
               <Paper

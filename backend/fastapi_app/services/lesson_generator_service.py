@@ -13,19 +13,22 @@ from config import settings
 class LessonGeneratorService:
     """Service to generate lesson topics using Qwen LLM"""
     
-    def __init__(self, llm_client=None):
+    def __init__(self, llm_client=None, rag_service=None):
         """
         Initialize the lesson generator service.
         
         Args:
             llm_client: Optional pre-initialized LLM client. If not provided,
                        creates a new LLM_Model instance (for backwards compatibility).
+            rag_service: Optional RAG service for retrieving content from PDFs
         """
         if llm_client is not None:
             self.llm_client = llm_client
         else:
             self.llm_model = LLM_Model()
             self.llm_client = self.llm_model.get_client()
+        
+        self.rag_service = rag_service
     
     def generate_topics(
         self,
@@ -35,7 +38,7 @@ class LessonGeneratorService:
         attachments: Optional[List[Dict]] = None
     ) -> Dict:
         """
-        Generate lesson topics using Qwen LLM
+        Generate lesson topics using Qwen LLM based on PDF content
         
         Args:
             grade: Grade level (e.g., "10", "11", "12")
@@ -50,6 +53,13 @@ class LessonGeneratorService:
             - message: Status message
         """
         try:
+            # Extract content from PDF if RAG service is available
+            pdf_content = ""
+            if self.rag_service:
+                pdf_content = self._extract_pdf_content(grade, subject, topic)
+                if pdf_content:
+                    print(f"📚 [LessonGenerator] Extracted {len(pdf_content)} chars from PDF")
+            
             # Build attachment context
             attachment_context = ""
             if attachments:
@@ -57,14 +67,28 @@ class LessonGeneratorService:
                 for attachment in attachments:
                     attachment_context += f"- {attachment.get('name', attachment.get('type'))}\n"
             
-            # Create system prompt
-            system_prompt = """Create educational content as JSON. Response format:
-{"topics": [{"title": "Title", "content": "Content", "order": 1}]}"""
+            # Create system prompt with explicit instruction to use PDF content
+            system_prompt = """Create educational content as JSON based on the provided textbook material. 
+Response format: {"topics": [{"title": "Title", "content": "Content summary", "order": 1}]}
+Requirements:
+- Extract topics DIRECTLY from the provided textbook content
+- Ensure each topic is based on actual material from the textbook
+- Do NOT invent topics not in the material
+- Return ONLY valid JSON, no markdown or code blocks"""
 
-            # Create user prompt
-            user_message = f"""Generate 4 topics for Grade {grade} {subject}: {topic}{attachment_context}
+            # Create user prompt with PDF content
+            pdf_instruction = ""
+            if pdf_content:
+                pdf_instruction = f"\n\nBased on the following textbook material:\n\n{pdf_content}\n\n"
+            
+            user_message = f"""Generate 4 focused topics for Grade {grade} {subject} - Topic: '{topic}'{attachment_context}{pdf_instruction}Create exactly 4 topics:
+1. Introduction/Overview
+2. Key Concepts and Definitions  
+3. Detailed Explanations and Examples
+4. Summary and Applications
 
-Format: JSON only, no markdown. Topics: 1.Intro 2.Concepts 3.Applications 4.Summary"""
+Each topic title and content must be extracted from or directly based on the provided textbook material.
+Return ONLY JSON, no markdown or additional text."""
 
             messages = [
                 SystemMessage(content=system_prompt),
@@ -108,6 +132,45 @@ Format: JSON only, no markdown. Topics: 1.Intro 2.Concepts 3.Applications 4.Summ
                 "message": f"Error generating topics: {str(e)}"
             }
     
+    def _extract_pdf_content(self, grade: str, subject: str, topic: str) -> str:
+        """
+        Extract relevant content from PDF textbooks using RAG service
+        
+        Args:
+            grade: Grade level (e.g., "10", "11", "12")
+            subject: Subject name (e.g., "Science", "Mathematics")
+            topic: Topic to search for in PDF
+            
+        Returns:
+            Extracted PDF content relevant to the topic
+        """
+        try:
+            if not self.rag_service or not self.rag_service.vectorstore:
+                print(f"⚠️ [LessonGenerator] RAG service not available, generating without PDF content")
+                return ""
+            
+            # Search for content related to the topic in the vectorstore
+            search_query = f"{topic} {subject} grade {grade}"
+            results = self.rag_service.vectorstore.similarity_search(search_query, k=10)
+            
+            if not results:
+                print(f"⚠️ [LessonGenerator] No PDF content found for '{topic}'")
+                return ""
+            
+            # Combine search results
+            pdf_content = "\n".join([doc.page_content for doc in results])
+            
+            # Limit to reasonable size to avoid token overflow
+            max_chars = 3000
+            if len(pdf_content) > max_chars:
+                pdf_content = pdf_content[:max_chars] + "..."
+            
+            return pdf_content
+            
+        except Exception as e:
+            print(f"⚠️ [LessonGenerator] Error extracting PDF content: {str(e)}")
+            return ""
+    
     def _parse_json_response(self, response_text: str) -> List[Dict]:
         """
         Parse JSON from LLM response with multiple fallback strategies
@@ -118,32 +181,35 @@ Format: JSON only, no markdown. Topics: 1.Intro 2.Concepts 3.Applications 4.Summ
         Returns:
             List of topic dictionaries
         """
+        # First, strip any <think>...</think> tags from the response
+        cleaned_text = self._strip_think_tags(response_text)
+        
         # Strategy 1: Direct JSON parsing
         try:
-            data = json.loads(response_text)
+            data = json.loads(cleaned_text)
             return data.get('topics', [])
         except json.JSONDecodeError:
             pass
         
         # Strategy 2: JSON in ```json ... ``` block
-        if "```json" in response_text:
+        if "```json" in cleaned_text:
             try:
-                start = response_text.find("```json") + 7
-                end = response_text.find("```", start)
+                start = cleaned_text.find("```json") + 7
+                end = cleaned_text.find("```", start)
                 if end > start:
-                    json_str = response_text[start:end].strip()
+                    json_str = cleaned_text[start:end].strip()
                     data = json.loads(json_str)
                     return data.get('topics', [])
             except:
                 pass
         
         # Strategy 3: JSON in generic ``` ... ``` block
-        if "```" in response_text:
+        if "```" in cleaned_text:
             try:
-                start = response_text.find("```") + 3
-                end = response_text.find("```", start)
+                start = cleaned_text.find("```") + 3
+                end = cleaned_text.find("```", start)
                 if end > start:
-                    json_str = response_text[start:end].strip()
+                    json_str = cleaned_text[start:end].strip()
                     data = json.loads(json_str)
                     return data.get('topics', [])
             except:
@@ -151,16 +217,16 @@ Format: JSON only, no markdown. Topics: 1.Intro 2.Concepts 3.Applications 4.Summ
         
         # Strategy 4: Find JSON object in text
         try:
-            start = response_text.find('{')
-            end = response_text.rfind('}') + 1
+            start = cleaned_text.find('{')
+            end = cleaned_text.rfind('}') + 1
             if start != -1 and end > start:
-                json_str = response_text[start:end]
+                json_str = cleaned_text[start:end]
                 data = json.loads(json_str)
                 return data.get('topics', [])
         except:
             pass
         
-        print(f"⚠️ [LessonGenerator] Could not parse JSON from response:\n{response_text[:500]}")
+        print(f"⚠️ [LessonGenerator] Could not parse JSON from response:\n{cleaned_text[:500]}")
         return []
 
 
