@@ -63,6 +63,7 @@ const PlatformLessonId = () => {
   // Drawer states
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
   const [notesDrawerOpen, setNotesDrawerOpen] = useState(false);
+  const [resourcesDrawerOpen, setResourcesDrawerOpen] = useState(false);
   const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
   const [drawerWidth, setDrawerWidth] = useState(500);
   const [isResizing, setIsResizing] = useState(false);
@@ -72,6 +73,11 @@ const PlatformLessonId = () => {
   const [editingContent, setEditingContent] = useState("");
   const [editingResources, setEditingResources] = useState("");
   const [isGeneratingTopicContent, setIsGeneratingTopicContent] = useState(false);
+
+  // Note creation state
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [newNoteTitle, setNewNoteTitle] = useState("");
+  const [newNoteContent, setNewNoteContent] = useState("");
 
   const minWidth = 300;
   const maxWidth = 800;
@@ -275,6 +281,28 @@ const PlatformLessonId = () => {
     }
   };
 
+  // Handle create and save new note
+  const handleCreateNote = async () => {
+    if (!newNoteTitle.trim() || !newNoteContent.trim()) {
+      setSnackbar({
+        open: true,
+        message: "Please fill in both title and content",
+        severity: "warning",
+      });
+      return;
+    }
+
+    await handleAddNote({
+      title: newNoteTitle,
+      content: newNoteContent,
+    });
+
+    // Reset form
+    setNewNoteTitle("");
+    setNewNoteContent("");
+    setNoteDialogOpen(false);
+  };
+
   // Handle delete note
   const handleDeleteNote = async (noteId) => {
     try {
@@ -372,6 +400,8 @@ const PlatformLessonId = () => {
       setEditDrawerOpen((prev) => !prev);
     } else if (index === 2) {
       setNotesDrawerOpen((prev) => !prev);
+    } else if (index === 3) {
+      setResourcesDrawerOpen((prev) => !prev);
     } else if (index === 4) {
       setChatDrawerOpen((prev) => !prev);
     }
@@ -382,12 +412,11 @@ const PlatformLessonId = () => {
       {/* Edit Drawer */}
       <Drawer
         sx={{
-          backgroundColor: "background.default",
           width: editDrawerOpen ? drawerWidth : 0,
           flexShrink: 0,
           "& .MuiDrawer-paper": {
             width: drawerWidth,
-            backgroundColor: "background.default",
+            backgroundColor: "background.paper",
             boxSizing: "border-box",
             transition: isResizing ? "none" : "width 0.3s ease",
           },
@@ -431,12 +460,13 @@ const PlatformLessonId = () => {
         ></Box>
 
         {/* Drawer Content */}
-        <Box sx={{ p: 3, mt: 8, overflowY: "auto", height: "100%" }}>
+        <Box sx={{ p: 3, mt: 8, overflowY: "auto", height: "100%", display: "flex", flexDirection: "column" }}>
           <Box
             sx={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
+              mb: 3,
             }}
           >
             <Typography variant="h6">Edit Content</Typography>
@@ -444,84 +474,82 @@ const PlatformLessonId = () => {
               <CloseIcon />
             </IconButton>
           </Box>
-          <Divider sx={{ mt: 1, mb: 3 }} />
+          <Divider sx={{ mb: 3 }} />
 
           {selectedTopic ? (
-            <Box>
-              <Typography variant="subtitle2" sx={{ mb: 2 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3, flex: 1 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                 Topic: {selectedTopic.title}
               </Typography>
 
               {/* Formatting Toolbar */}
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: 1,
-                  mb: 2,
-                  p: 1,
-                  bgcolor: "grey.100",
-                  borderRadius: 1,
-                }}
-              >
-                <Tooltip title="Bold">
-                  <IconButton size="small" onClick={() => wrapText("**", "**")}>
-                    <FormatBoldIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Italic">
-                  <IconButton size="small" onClick={() => wrapText("*", "*")}>
-                    <FormatItalicIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Underline">
-                  <IconButton
-                    size="small"
-                    onClick={() => wrapText("<u>", "</u>")}
-                  >
-                    <FormatUnderlinedIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Highlight">
-                  <IconButton
-                    size="small"
-                    onClick={() => wrapText("<mark>", "</mark>")}
-                  >
-                    <HighlightIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
+              <Box>
+                <Typography variant="body2" sx={{ mb: 2, fontWeight: 600 }}>
+                  Formatting Tools
+                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 1,
+                    p: 1,
+                    borderRadius: 1,
+                    border:1,
+                    borderColor: "divider",
+                  }}
+                >
+                  <Tooltip title="Bold">
+                    <IconButton size="small" onClick={() => wrapText("**", "**")}>
+                      <FormatBoldIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Italic">
+                    <IconButton size="small" onClick={() => wrapText("*", "*")}>
+                      <FormatItalicIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Underline">
+                    <IconButton
+                      size="small"
+                      onClick={() => wrapText("<u>", "</u>")}
+                    >
+                      <FormatUnderlinedIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Highlight">
+                    <IconButton
+                      size="small"
+                      onClick={() => wrapText("<mark>", "</mark>")}
+                    >
+                      <HighlightIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
               </Box>
 
               {/* Content Editor */}
-              <Typography variant="body2" sx={{ mb: 1, fontWeight: 600 }}>
-                Content
-              </Typography>
-              <TextField
-                name="content"
-                fullWidth
-                multiline
-                rows={6}
-                value={editingContent}
-                onChange={(e) => setEditingContent(e.target.value)}
-                variant="outlined"
-                size="small"
-                sx={{ mb: 3 }}
-              />
+              <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                <Typography variant="body2" sx={{ mb: 2, fontWeight: 600 }}>
+                  Content
+                </Typography>
+                <TextField
+                  name="content"
+                  fullWidth
+                  multiline
+                  rows={10}
+                  value={editingContent}
+                  onChange={(e) => setEditingContent(e.target.value)}
+                  variant="outlined"
+                  size="small"
+                  placeholder="Enter topic content here..."
+                  sx={{ 
+                    mb: 3,
+                    "& .MuiOutlinedInput-root": {
+                      backgroundColor: "background.default",
+                    }
+                  }}
+                />
+              </Box>
 
-              {/* Resources Editor */}
-              <Typography variant="body2" sx={{ mb: 1, fontWeight: 600 }}>
-                Resources
-              </Typography>
-              <TextField
-                name="resources"
-                fullWidth
-                multiline
-                rows={6}
-                value={editingResources}
-                onChange={(e) => setEditingResources(e.target.value)}
-                variant="outlined"
-                size="small"
-                sx={{ mb: 3 }}
-              />
 
               {/* Save Button */}
               <Button
@@ -529,6 +557,7 @@ const PlatformLessonId = () => {
                 fullWidth
                 startIcon={<SaveIcon />}
                 onClick={handleSaveTopic}
+                sx={{ mt: "auto" }}
               >
                 Save Changes
               </Button>
@@ -544,12 +573,11 @@ const PlatformLessonId = () => {
       {/* Notes Drawer */}
       <Drawer
         sx={{
-          backgroundColor: "background.default",
           width: notesDrawerOpen ? drawerWidth : 0,
           flexShrink: 0,
           "& .MuiDrawer-paper": {
             width: drawerWidth,
-            backgroundColor: "background.default",
+            backgroundColor: "background.paper",
             boxSizing: "border-box",
             transition: isResizing ? "none" : "width 0.3s ease",
           },
@@ -593,12 +621,13 @@ const PlatformLessonId = () => {
         ></Box>
 
         {/* Drawer Content */}
-        <Box sx={{ p: 3, mt: 8, overflowY: "auto", height: "100%" }}>
+        <Box sx={{ p: 3, mt: 8, overflowY: "auto", height: "100%", display: "flex", flexDirection: "column" }}>
           <Box
             sx={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
+              mb: 2,
             }}
           >
             <Typography variant="h6">Notes ({notes.length})</Typography>
@@ -606,14 +635,24 @@ const PlatformLessonId = () => {
               <CloseIcon />
             </IconButton>
           </Box>
-          <Divider sx={{ mt: 1, mb: 3 }} />
+          <Divider sx={{ mb: 3 }} />
+
+          {/* Create Note Button */}
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={() => setNoteDialogOpen(true)}
+            sx={{ mb: 3 }}
+          >
+            + New Note
+          </Button>
 
           {notes.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
-              No notes yet. Add one to get started!
+              No notes yet. Create one to get started!
             </Typography>
           ) : (
-            <Box>
+            <Box sx={{ flex: 1, overflowY: "auto" }}>
               {notes.map((note, index) => (
                 <Accordion key={note.id} defaultExpanded={index === 0}>
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -656,12 +695,11 @@ const PlatformLessonId = () => {
       {/* Chat Drawer */}
       <Drawer
         sx={{
-          backgroundColor: "background.default",
           width: chatDrawerOpen ? drawerWidth : 0,
           flexShrink: 0,
           "& .MuiDrawer-paper": {
             width: drawerWidth,
-            backgroundColor: "background.default",
+            backgroundColor: "background.paper",
             boxSizing: "border-box",
             transition: isResizing ? "none" : "width 0.3s ease",
           },
@@ -719,9 +757,9 @@ const PlatformLessonId = () => {
             </IconButton>
           </Box>
           <Divider sx={{ mt: 1, mb: 3 }} orientation="horizontal" flexItem />
-          <Typography>Kasi - Your learning assistant</Typography>
+          <Typography>{user.username} - Your learning assistant</Typography>
 
-          <Box sx={{ mt: 3, p: 2, bgcolor: "grey.100", borderRadius: 2 }}>
+          <Box sx={{ mt: 3, p: 2, borderRadius: 2, border:1, borderColor: "divider" }}>
             <Typography variant="body2" color="text.secondary">
               💡 Drag the left edge to resize this panel
             </Typography>
@@ -730,11 +768,114 @@ const PlatformLessonId = () => {
         </Box>
       </Drawer>
 
+      {/* Resources Drawer */}
+      <Drawer
+        sx={{
+          width: resourcesDrawerOpen ? drawerWidth : 0,
+          flexShrink: 0,
+          "& .MuiDrawer-paper": {
+            width: drawerWidth,
+            backgroundColor: "background.paper",
+            boxSizing: "border-box",
+            transition: isResizing ? "none" : "width 0.3s ease",
+          },
+        }}
+        variant="persistent"
+        anchor="right"
+        open={resourcesDrawerOpen}
+      >
+        {/* Resize Handle */}
+        <Box
+          onMouseDown={handleMouseDown}
+          sx={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: "20px",
+            cursor: "ew-resize",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1300,
+            "&:hover": {
+              "&::before": {
+                bgcolor: "primary.main",
+                opacity: 0.5,
+              },
+            },
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              left: "0px",
+              top: 0,
+              bottom: 0,
+              width: "1px",
+              bgcolor: isResizing ? "primary.main" : "divider",
+              borderRadius: 1,
+              transition: "background-color 0.2s",
+            },
+          }}
+        ></Box>
+
+        {/* Drawer Content */}
+        <Box sx={{ p: 3, mt: 8, overflowY: "auto", height: "100%" }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="h6">Resources</Typography>
+            <IconButton onClick={() => setResourcesDrawerOpen(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <Divider sx={{ mt: 1, mb: 3 }} />
+
+          {selectedTopic ? (
+            <>
+              <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 700 }}>
+                {selectedTopic.title}
+              </Typography>
+
+              {selectedTopic.resources ? (
+                <Box>
+                  <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
+                    {selectedTopic.resources}
+                  </Typography>
+                </Box>
+              ) : (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    border:1,
+                    borderColor: "divider",
+                    textAlign: "center",
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    No resources available for this topic yet.
+                  </Typography>
+                </Paper>
+              )}
+            </>
+          ) : (
+            <Typography color="text.secondary">
+              Select a topic from the left sidebar to view its resources.
+            </Typography>
+          )}
+        </Box>
+      </Drawer>
+
       {/* Main Content */}
       <Box
         sx={{
           width:
-            editDrawerOpen || notesDrawerOpen || chatDrawerOpen
+            editDrawerOpen || notesDrawerOpen || resourcesDrawerOpen || chatDrawerOpen
               ? `calc(100% - ${drawerWidth}px)`
               : "100%",
           transition: isResizing ? "none" : "width 0.3s ease",
@@ -761,6 +902,7 @@ const PlatformLessonId = () => {
           <Box sx={{ display: "flex", gap:1 }}>
             {editDrawerOpen ||
               notesDrawerOpen ||
+              resourcesDrawerOpen ||
               (chatDrawerOpen && (
                 <Button
                   sx={{
@@ -786,7 +928,7 @@ const PlatformLessonId = () => {
 
         <Grid sx={{ mt: 2 }} container spacing={3}>
           {/* Sidebar - Topics */}
-          {editDrawerOpen || notesDrawerOpen || chatDrawerOpen ? null : (
+          {editDrawerOpen || notesDrawerOpen || resourcesDrawerOpen || chatDrawerOpen ? null : (
             <Grid item xs={12} size={3}>
               <Paper
                 elevation={0}
@@ -861,7 +1003,7 @@ const PlatformLessonId = () => {
           <Grid
             item
             xs={12}
-            size={editDrawerOpen || notesDrawerOpen || chatDrawerOpen ? 12 : 9}
+            size={editDrawerOpen || notesDrawerOpen || resourcesDrawerOpen || chatDrawerOpen ? 12 : 9}
             container
             direction="column"
             spacing={3}
@@ -998,6 +1140,41 @@ const PlatformLessonId = () => {
       >
         <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
       </Snackbar>
+
+      {/* Create Note Dialog */}
+      <Dialog open={noteDialogOpen} onClose={() => setNoteDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Create New Note</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <TextField
+              autoFocus
+              label="Note Title"
+              fullWidth
+              value={newNoteTitle}
+              onChange={(e) => setNewNoteTitle(e.target.value)}
+              placeholder="Enter note title..."
+            />
+            <TextField
+              label="Note Content"
+              fullWidth
+              multiline
+              rows={6}
+              value={newNoteContent}
+              onChange={(e) => setNewNoteContent(e.target.value)}
+              placeholder="Enter note content..."
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setNoteDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleCreateNote}
+            variant="contained"
+          >
+            Create Note
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
