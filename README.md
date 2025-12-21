@@ -1,6 +1,6 @@
 # Eduwingz
 
-**Eduwingz** is an **AI-powered teaching assistant web application** designed to enhance modern education through intelligent interaction and automation. Built with a **React (Material UI)** frontend and a **Django** backend, Eduwingz integrates artificial intelligence to support teachers and learners with personalized educational insights and seamless classroom management.
+**Eduwingz** is an **AI-powered teaching assistant web application** designed to enhance modern education through intelligent interaction and automation. Built with a **React (Material UI)** frontend and a **Django** backend, Eduwingz integrates artificial intelligence to support teachers and learners with personalized educational insights and seamless classroom management. 
 
 ---
 
