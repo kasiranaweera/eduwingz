@@ -1,4 +1,5 @@
-# Core Build
+# Core Build - MUST be first to ensure available for other package builds
+pip>=24.0
 setuptools>=75.0
 wheel>=0.40
 
@@ -26,7 +27,7 @@ python-jose[cryptography]==3.3.0
 cryptography>=43.0.0
 
 # Image Processing
-pillow==11.0.0
+pillow>=10.0.0
 
 # HTTP & Web Requests
 requests==2.31.0
@@ -42,29 +43,29 @@ langchain-community==0.0.10
 langchain-ollama==0.1.0
 
 # Embeddings & Vector DB
-sentence-transformers==2.7.0
-faiss-cpu==1.13.2
+sentence-transformers>=2.7.0
+faiss-cpu>=1.7.4
 
 # LLM & ML Models
-torch==2.10.0
-transformers==4.36.0
+torch>=2.0.0
+transformers>=4.36.0
 
 # Data Processing
-numpy==1.24.3
-pypdf==3.17.0
+numpy>=1.24.3
+pypdf>=3.17.0
 
 # Web Scraping & Browsing
-playwright==1.40.0
-beautifulsoup4==4.13.3
+playwright>=1.40.0
+beautifulsoup4>=4.13.3
 
 # Search & Knowledge Tools
-duckduckgo-search==3.9.10
-wikipedia==1.4.0
-arxiv==1.4.7
+duckduckgo-search>=3.9.10
+wikipedia>=1.4.0
+arxiv>=1.4.7
 
 # Speech Processing
-edge-tts==6.1.10
-soundfile==0.12.1
+edge-tts>=6.1.10
+soundfile>=0.12.1
 
 # Utilities
 certifi>=2024.0.0

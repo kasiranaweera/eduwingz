@@ -13,8 +13,6 @@ const DashboardMainPage = () => {
     const { user } = useSelector((state) => state.user);
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
-    const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
-    const [autoMessage, setAutoMessage] = useState("");
 
     const loadingMessages = [
         "Thinking...",
@@ -33,19 +31,18 @@ const DashboardMainPage = () => {
             return;
         }
 
-        const interval = setInterval(() => {
-            setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
-        }, 2000);
+    const interval = setInterval(() => {
+      setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+    }, 2000);
 
-        return () => clearInterval(interval);
-    }, [isLoading, loadingMessages.length]);
+    return () => clearInterval(interval);
+  }, [isLoading]);
 
-    useEffect(() => {
-        // Set a welcome message when component mounts
-        const welcomeMessage = `Welcome back, ${user.username}! How can I assist you with your learning today?`;
-        setAutoMessage(welcomeMessage);
-        
-        // You could also fetch some initial data here if needed
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    // Set a welcome message when component mounts
+    const welcomeMessage = `Welcome back, ${user.username}! How can I assist you with your learning today?`;
+    setAutoMessage(welcomeMessage);        // You could also fetch some initial data here if needed
         // fetchInitialData().then(data => setAutoMessage(data.message));
     }, [user.username]);
 

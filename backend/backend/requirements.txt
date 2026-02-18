@@ -1,4 +1,8 @@
+# Core Build - MUST be first to ensure available for other package builds
+pip>=24.0
 setuptools>=75.0
+wheel>=0.40
+
 django==4.2.7
 djangorestframework==3.14.0
 djangorestframework-simplejwt>=5.4.0

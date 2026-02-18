@@ -115,7 +115,6 @@ const DashboardDocumentPage = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedType, setSelectedType] = useState("All");
   const [sortOrder, setSortOrder] = useState("Newest First");
-  const [isAscending, setIsAscending] = useState(false);
 
   // UI State
   const [categoryAnchorEl, setCategoryAnchorEl] = useState(null);
@@ -145,6 +144,7 @@ const DashboardDocumentPage = () => {
   // Apply filters and sorting
   useEffect(() => {
     applyFiltersAndSort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documents, searchQuery, selectedCategory, selectedType, sortOrder]);
 
   const fetchDocuments = async () => {

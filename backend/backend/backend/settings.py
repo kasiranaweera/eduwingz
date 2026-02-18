@@ -134,7 +134,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-FASTAPI_URL = os.getenv('FASTAPI_URL', 'http://localhost:8001') or 'https://eduwingz-fastapi.onrender.com'
+FASTAPI_URL = os.getenv('FASTAPI_URL', 'http://localhost:8000') or 'https://eduwingz-fastapi.onrender.com'
 
 # Email settings - during development use console backend so mails appear in server logs.
 # In production, override these via environment variables in .env

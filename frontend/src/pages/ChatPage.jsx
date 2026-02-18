@@ -26,7 +26,6 @@ import logoicon from "../assets/logo/eduwingz_logo.png";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
 import chatApi from "../api/modules/chat.api";
 import notificationApi from "../api/modules/notification.api";
-import { useSelector } from "react-redux";
 
 import { AccountCircle } from "@mui/icons-material";
 
@@ -84,7 +83,6 @@ const ChatPage = () => {
 
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const messagesEndRef = useRef(null);
   const [animatedMessages, setAnimatedMessages] = useState(new Set());
   const [animatedTexts, setAnimatedTexts] = useState({});

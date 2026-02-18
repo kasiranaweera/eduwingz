@@ -45,25 +45,6 @@ const HomePage = () => {
   const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
   const [value, setValue] = useState(0);
 
-  const sliderSettings = {
-    dots: true,
-    infinite: true,
-    speed: 600,
-    slidesToShow: 2,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 3000,
-    arrows: true,
-    responsive: [
-      {
-        breakpoint: 900,
-        settings: {
-          slidesToShow: 1,
-        },
-      },
-    ],
-  };
-
   const steps = [
     {
       icon: MenuBookIcon,
