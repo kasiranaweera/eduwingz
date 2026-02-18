@@ -14,12 +14,8 @@ const DashboardMainPage = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
-    // Dummy use to avoid eslint warning
-    void setLoadingMessageIndex;
-    // eslint-disable-next-line no-unused-vars
-    const [autoMessage, setAutoMessage] = useState("");
-    // Dummy use to avoid eslint warning
-    void setAutoMessage;
+
+    console.log(loadingMessageIndex);
 
     const loadingMessages = [
         "Thinking...",

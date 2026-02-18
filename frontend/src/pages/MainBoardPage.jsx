@@ -24,7 +24,7 @@ const MainBoardPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   // Dummy use to avoid eslint warning
-  void setLoadingMessageIndex;
+  console.log(loadingMessageIndex);
 
   const loadingMessages = [
     "Thinking...",
