@@ -1,3 +1,6 @@
+setuptools>=65.0.0
+wheel>=0.40.0
+
 torch==2.10.0
 transformers>=4.45.0
 datasets>=2.21.0
