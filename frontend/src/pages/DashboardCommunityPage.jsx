@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -14,7 +14,6 @@ import {
   InputAdornment,
   Chip,
   Avatar,
-  AvatarGroup,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -37,6 +36,66 @@ import FavoriteIcon from "@mui/icons-material/Favorite";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import AddIcon from "@mui/icons-material/Add";
 
+// Mock data for community posts
+const MOCK_POSTS = [
+  {
+    id: 1,
+    title: "How to solve quadratic equations efficiently?",
+    content: "I'm struggling with the factorization method for quadratic equations. Can anyone explain step by step?",
+    category: "question",
+    author: "John Doe",
+    avatar: "JD",
+    timestamp: "2 hours ago",
+    views: 156,
+    likes: 24,
+    comments: 8,
+    liked: false,
+    tags: ["mathematics", "algebra"],
+  },
+  {
+    id: 2,
+    title: "Great resource for learning Python",
+    content: "Found this amazing tutorial that helped me understand OOP concepts better.",
+    category: "resource",
+    author: "Jane Smith",
+    avatar: "JS",
+    timestamp: "4 hours ago",
+    views: 342,
+    likes: 87,
+    comments: 15,
+    liked: true,
+    tags: ["programming", "python"],
+  },
+  {
+    id: 3,
+    title: "Physics Midterm Exam Tips",
+    content: "Let's discuss strategies for the upcoming physics midterm. What topics are you finding most challenging?",
+    category: "discussion",
+    author: "Mike Johnson",
+    avatar: "MJ",
+    timestamp: "6 hours ago",
+    views: 89,
+    likes: 12,
+    comments: 5,
+    liked: false,
+    tags: ["physics", "exam"],
+  },
+  {
+    id: 4,
+    title: "New Chemistry Lab Session Announced",
+    content: "The advanced chemistry lab session will start next week. All interested students should register by Friday.",
+    category: "announcement",
+    author: "Admin",
+    avatar: "AD",
+    timestamp: "1 day ago",
+    views: 523,
+    likes: 45,
+    comments: 22,
+    liked: false,
+    tags: ["chemistry", "announcement"],
+  },
+];
+
 const PlatformCommunity = () => {
   const [posts, setPosts] = useState([]);
   const [filteredPosts, setFilteredPosts] = useState([]);
@@ -58,72 +117,12 @@ const PlatformCommunity = () => {
     { id: "announcement", label: "Announcement", color: "warning" },
   ];
 
-  // Mock data for community posts
-  const mockPosts = [
-    {
-      id: 1,
-      title: "How to solve quadratic equations efficiently?",
-      content: "I'm struggling with the factorization method for quadratic equations. Can anyone explain step by step?",
-      category: "question",
-      author: "John Doe",
-      avatar: "JD",
-      timestamp: "2 hours ago",
-      views: 156,
-      likes: 24,
-      comments: 8,
-      liked: false,
-      tags: ["mathematics", "algebra"],
-    },
-    {
-      id: 2,
-      title: "Great resource for learning Python",
-      content: "Found this amazing tutorial that helped me understand OOP concepts better.",
-      category: "resource",
-      author: "Jane Smith",
-      avatar: "JS",
-      timestamp: "4 hours ago",
-      views: 342,
-      likes: 87,
-      comments: 15,
-      liked: true,
-      tags: ["programming", "python"],
-    },
-    {
-      id: 3,
-      title: "Physics Midterm Exam Tips",
-      content: "Let's discuss strategies for the upcoming physics midterm. What topics are you finding most challenging?",
-      category: "discussion",
-      author: "Mike Johnson",
-      avatar: "MJ",
-      timestamp: "6 hours ago",
-      views: 89,
-      likes: 12,
-      comments: 5,
-      liked: false,
-      tags: ["physics", "exam"],
-    },
-    {
-      id: 4,
-      title: "New Chemistry Lab Session Announced",
-      content: "The advanced chemistry lab session will start next week. All interested students should register by Friday.",
-      category: "announcement",
-      author: "Admin",
-      avatar: "AD",
-      timestamp: "1 day ago",
-      views: 523,
-      likes: 45,
-      comments: 22,
-      liked: false,
-      tags: ["chemistry", "announcement"],
-    },
-  ];
-
   useEffect(() => {
     setLoading(true);
     // Simulate API call
     setTimeout(() => {
-      setPosts(mockPosts);
-      setFilteredPosts(mockPosts);
+      setPosts(MOCK_POSTS);
+      setFilteredPosts(MOCK_POSTS);
       setLoading(false);
     }, 500);
   }, []);

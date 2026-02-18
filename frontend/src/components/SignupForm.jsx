@@ -15,6 +15,7 @@ import userApi from "../api/modules/user.api";
 import { setAuthModalOpen } from "../redux/features/authModalSlice";
 import { setUser } from "../redux/features/userSlice";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { themeModes } from "../configs/theme.config";
 import uiConfigs from "../configs/ui.config";
 
@@ -23,6 +24,7 @@ import uiConfigs from "../configs/ui.config";
 const SignupForm = ({ switchAuthState, profileSetupState }) => {
   const { themeMode } = useSelector((state) => state.themeMode);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [isLoginRequest, setIsLoginRequest] = useState(false);
   const [errorMessage, setErrorMessage] = useState();

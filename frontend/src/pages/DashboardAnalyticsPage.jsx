@@ -76,7 +76,7 @@ const DashboardAnalyticsPage = () => {
     const load = async () => {
       try {
         setLoading(true)
-        const { response, err } = await analyticsApi.getOverview()
+        const { response } = await analyticsApi.getOverview()
         let data = response || {}
 
         // Merge with sample data if any required field is missing
@@ -109,8 +109,6 @@ const DashboardAnalyticsPage = () => {
     }
     load()
   }, [selectedSubject, selectedTimePeriod, assessmentType])
-
-  const subjectList = (overview?.competency_averages || []).map(s => s.subject)
 
   // Get quiz performance data for selected subject and time period
   const getQuizData = () => {

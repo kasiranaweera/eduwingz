@@ -39,7 +39,6 @@ import TrackChangesIcon from "@mui/icons-material/TrackChanges"; // for Adaptive
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents"; // for Progress Tracking
 import LightbulbIcon from "@mui/icons-material/Lightbulb"; // for Interactive Lessons
 import GroupIcon from "@mui/icons-material/Group";
-import { useSelector } from "react-redux";
 
 const HomePage = () => {
   const { themeMode } = useSelector((state) => state.themeMode);

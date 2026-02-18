@@ -1,7 +1,6 @@
 import { Box, Stack } from "@mui/system";
 import React, { useEffect, useState } from "react";
 import Logo from "./common/Logo";
-import UserMenu from "./UserMenu";
 import {
   AppBar,
   Avatar,
@@ -32,12 +31,9 @@ import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
 import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import SearchIcon from "@mui/icons-material/Search";
-import AddCommentOutlinedIcon from "@mui/icons-material/AddCommentOutlined";
-import PortraitIcon from "@mui/icons-material/Portrait";
-import uiConfigs from "../configs/ui.config";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import AddModeratorOutlinedIcon from "@mui/icons-material/AddModeratorOutlined";
-import { ChatOutlined, LocalLibraryOutlined } from "@mui/icons-material";
+import { ChatOutlined, LocalLibraryOutlined, Dashboard as DashboardIcon } from "@mui/icons-material";
 
 const drawerWidth = (window.innerWidth / 100) * 15;
 

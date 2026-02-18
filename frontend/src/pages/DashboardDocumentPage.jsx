@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
 import {
   Box,
   Button,
@@ -38,8 +37,6 @@ import {
   PictureAsPdf as PdfIcon,
   VideoLibrary as VideoIcon,
   TextFields as TextIcon,
-  Archive as ArchiveIcon,
-  Unarchive as UnarchiveIcon,
 } from "@mui/icons-material";
 import documentApi from "../api/modules/document.api";
 import DocumentPreviewModal from "../components/DocumentPreviewModal";
@@ -112,10 +109,6 @@ const getFileIcon = (fileType) => {
 };
 
 const DashboardDocumentPage = () => {
-  // Redux
-  const { user } = useSelector((state) => state.user);
-  const userId = user?.id;
-
   // State management
   const [documents, setDocuments] = useState([]);
   const [filteredDocuments, setFilteredDocuments] = useState([]);

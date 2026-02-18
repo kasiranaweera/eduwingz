@@ -8,9 +8,8 @@ import {
   useScrollTrigger,
 } from "@mui/material";
 import React, { cloneElement, useState } from "react";
-import Logo from "./common/Logo";
+import { Link, useNavigate } from "react-router-dom";
 import menuConfigs from "../configs/menu.configs";
-import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";

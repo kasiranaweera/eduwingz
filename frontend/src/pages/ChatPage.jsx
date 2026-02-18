@@ -8,7 +8,6 @@ import {
   ListItemText,
   Paper,
   CircularProgress,
-  useTheme,
   useMediaQuery,
   IconButton,
   Button,
@@ -21,8 +20,8 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Container,
 } from "@mui/material";
-import { Container, display } from "@mui/system";
 import ChatSection from "../components/ChatSection";
 import logoicon from "../assets/logo/eduwingz_logo.png";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
