@@ -11,6 +11,8 @@ services:
       - key: SECRET_KEY
         sync: false
       - key: ALLOWED_HOSTS
-        value: "*.onrender.com,localhost"
+        value: "eduwingz-backend.onrender.com, localhost"
       - key: CORS_ALLOWED_ORIGINS
-        value: "https://eduwingz.vercel.app,http://localhost:3000"
+        value: "https://eduwingz.vercel.app, http://localhost:3000"
+      - key: CSRF_TRUSTED_ORIGINS
+        value: "https://eduwingz.vercel.app, https://eduwingz-backend.onrender.com"
