@@ -41,33 +41,8 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import TimerIcon from "@mui/icons-material/Timer";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 
-const PlatformQuizzesPage = () => {
-  const [quizzes, setQuizzes] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all"); // all, completed, pending
-  const [openNewQuiz, setOpenNewQuiz] = useState(false);
-  const [openTakeQuiz, setOpenTakeQuiz] = useState(false);
-  const [openQuizResults, setOpenQuizResults] = useState(false);
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedQuizId, setSelectedQuizId] = useState(null);
-  const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState({});
-  const [quizResults, setQuizResults] = useState(null);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "info",
-  });
-  const [newQuizData, setNewQuizData] = useState({
-    title: "",
-    description: "",
-    category: "general",
-    timeLimit: 30,
-  });
-
-  // Mock quiz data
-  const mockQuizzes = [
+// Mock quiz data
+const MOCK_QUIZZES = [
     {
       id: 1,
       title: "Algebra Fundamentals",
@@ -195,10 +170,35 @@ const PlatformQuizzesPage = () => {
     },
   ];
 
+const PlatformQuizzesPage = () => {
+  const [quizzes, setQuizzes] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all"); // all, completed, pending
+  const [openNewQuiz, setOpenNewQuiz] = useState(false);
+  const [openTakeQuiz, setOpenTakeQuiz] = useState(false);
+  const [openQuizResults, setOpenQuizResults] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedQuizId, setSelectedQuizId] = useState(null);
+  const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
+  const [userAnswers, setUserAnswers] = useState({});
+  const [quizResults, setQuizResults] = useState(null);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "info",
+  });
+  const [newQuizData, setNewQuizData] = useState({
+    title: "",
+    description: "",
+    category: "general",
+    timeLimit: 30,
+  });
+
   useEffect(() => {
     setLoading(true);
     setTimeout(() => {
-      setQuizzes(mockQuizzes);
+      setQuizzes(MOCK_QUIZZES);
       setLoading(false);
     }, 500);
   }, []);

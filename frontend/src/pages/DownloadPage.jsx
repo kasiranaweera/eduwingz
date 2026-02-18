@@ -9,14 +9,12 @@ import {
   CardContent,
   Divider,
   useTheme,
-  useMediaQuery,
 } from "@mui/material";
 import { CloudDownload, Devices, School, Security } from "@mui/icons-material";
 import uiConfigs from "../configs/ui.config";
 
 const DownloadPage = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const downloadOptions = [
     {

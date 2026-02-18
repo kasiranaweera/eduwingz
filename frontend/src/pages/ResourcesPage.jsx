@@ -13,7 +13,6 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
-  Link,
 } from "@mui/material";
 import {
   DescriptionOutlined,
@@ -24,7 +23,6 @@ import {
   DownloadOutlined,
   LinkOutlined,
   CheckCircleOutlined,
-  InfoOutlined,
   GetAppOutlined,
 } from "@mui/icons-material";
 import uiConfigs from "../configs/ui.config";
