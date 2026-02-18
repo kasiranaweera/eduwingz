@@ -803,7 +803,28 @@ const DrawerTopBar = ({ special, content }) => {
                   </IconButton>
                 </Tooltip>
               ) : (
-                <Tooltip title="Main Dashboard" placement="right" arrow>
+                <>
+                <Tooltip title="Edu - Chat" placement="right" arrow>
+                  <IconButton
+                    sx={{
+                      color: appState.includes("eduplatform")
+                        ? "primary.contrastText"
+                        : "primary.contrastText",
+                      "&:hover": {
+                        color: appState.includes("eduplatform")
+                          ? "primary.main"
+                          : "primary.main",
+                      },
+                      background: appState.includes("eduplatform")
+                        ? "transparent"
+                        : "none",
+                    }}
+                    href="/dashboard/chat/new"
+                  >
+                    <ChatOutlined />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Edu - Platform" placement="right" arrow>
                   <IconButton
                     sx={{
                       color: appState.includes("eduplatform")
@@ -818,11 +839,13 @@ const DrawerTopBar = ({ special, content }) => {
                         ? uiConfigs.style.mainGradient.color
                         : "none",
                     }}
-                    href="/main"
+                    href="/dashboard/platform"
                   >
-                    <DashboardIcon />
+                    <LocalLibraryOutlined />
                   </IconButton>
                 </Tooltip>
+                
+                </>
               )}
             </Stack>
 

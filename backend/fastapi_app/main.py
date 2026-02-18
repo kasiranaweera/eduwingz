@@ -38,8 +38,8 @@ async def lifespan(app: FastAPI):
         llm_client=rag_service.llm,
         embedding_model=rag_service.embedding_model
     )
-    # Initialize lesson generator service with RAG service's LLM
-    lesson_generator_service = LessonGeneratorService(llm_client=rag_service.llm)
+    # Initialize lesson generator service with RAG service's LLM and RAG service
+    lesson_generator_service = LessonGeneratorService(llm_client=rag_service.llm, rag_service=rag_service)
     # TTS engine
     try:
         import sys

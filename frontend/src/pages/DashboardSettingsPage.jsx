@@ -45,6 +45,7 @@ import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import uiConfigs from "../configs/ui.config";
 import profileApi from "../api/modules/profile.api";
+import learningApi from "../api/modules/learning.api";
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -89,6 +90,16 @@ const DashboardSettingsPage = () => {
     allowMessages: true,
   });
 
+  const [learningStyleAdjustments, setLearningStyleAdjustments] = useState({
+    active_reflective: 0,
+    sensing_intuitive: 0,
+    visual_verbal: 0,
+    sequential_global: 0,
+  });
+
+  const [isEditingLearningStyle, setIsEditingLearningStyle] = useState(false);
+  const [learningStyleSource, setLearningStyleSource] = useState("interactions"); // "questionnaire", "manual", or "interactions"
+
   const [issueReport, setIssueReport] = useState({
     title: "",
     description: "",
@@ -110,6 +121,16 @@ const DashboardSettingsPage = () => {
       }
       setProfile(response);
       setEditData(response);
+      
+      // Load manual adjustments if they exist
+      if (response.manual_adjustments && response.manual_adjustments_completed) {
+        setLearningStyleAdjustments(response.manual_adjustments);
+        setLearningStyleSource("manual");
+      } else if (response.questionnaire_completed) {
+        setLearningStyleSource("questionnaire");
+      } else {
+        setLearningStyleSource("interactions");
+      }
     } catch (error) {
       toast.error("Error loading profile");
     } finally {
@@ -207,6 +228,62 @@ const DashboardSettingsPage = () => {
   const handleSettingsChange = (setting) => {
     setSettings((prev) => ({ ...prev, [setting]: !prev[setting] }));
     toast.success("Settings updated");
+  };
+
+  const handleLearningStyleChange = (dimension, value) => {
+    setLearningStyleAdjustments((prev) => ({
+      ...prev,
+      [dimension]: Math.max(-11, Math.min(11, value)),
+    }));
+  };
+
+  const handleSaveLearningStyleAdjustments = async () => {
+    setIsSubmitting(true);
+    try {
+      // First, call Django API to update the profile with manual adjustments
+      const { response, err } = await profileApi.updateLearningStyleAdjustments(userId, learningStyleAdjustments);
+      if (err) {
+        toast.error("Failed to update learning style adjustments in profile");
+        return;
+      }
+      
+      // Update profile state with the response
+      setProfile(response);
+      setEditData(response);
+      
+      // Second, call FastAPI learning endpoint to update the ILS learning profile
+      // Use userId as session_id for the learning profile
+      const { response: learningResponse, err: learningErr } = await learningApi.submitManualAdjustments(
+        String(userId),
+        learningStyleAdjustments
+      );
+      
+      if (learningErr) {
+        console.warn("Warning: Could not sync manual adjustments to learning profile:", learningErr);
+        // Don't fail the user experience, but log the warning
+      } else {
+        console.log("✅ Manual adjustments synced to ILS learning profile", learningResponse);
+      }
+      
+      setIsEditingLearningStyle(false);
+      setLearningStyleSource("manual");
+      toast.success("Learning style adjustments saved successfully! Adaptive learning mode activated.");
+    } catch (error) {
+      console.error("Error updating learning style adjustments:", error);
+      toast.error("Error updating learning style adjustments");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResetLearningStyleAdjustments = () => {
+    setLearningStyleAdjustments({
+      active_reflective: 0,
+      sensing_intuitive: 0,
+      visual_verbal: 0,
+      sequential_global: 0,
+    });
+    setIsEditingLearningStyle(false);
   };
 
   if (loading) {
@@ -336,24 +413,192 @@ const DashboardSettingsPage = () => {
               </Paper>
               <Divider sx={{ my: 3 }} />
               <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Your Learning Styles</Typography>
-              {profile.learning_styles && (
+              {(profile.learning_styles || learningStyleAdjustments) && (
                 <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2, mb: 3 }}>
+                  <Box sx={{ mb: 2, pb: 1.5, borderBottom: 1, borderColor: "graycolor.two" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <CheckCircle sx={{ fontSize: 16, color: "success.main" }} />
+                      <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+                        Source: {learningStyleSource === "manual" ? "📝 Manual Adjustments (from Settings)" : learningStyleSource === "questionnaire" ? "📋 Questionnaire-based" : "🔍 Interaction-based"}
+                      </Typography>
+                    </Box>
+                  </Box>
                   <Stack spacing={2}>
                     <Box>
                       <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Active vs Reflective</Typography>
-                      <LinearProgress variant="determinate" value={((profile.learning_styles.active_reflective + 11) / 22) * 100} sx={{ height: 6, borderRadius: 3, "& .MuiLinearProgress-bar": { background: uiConfigs.style.mainGradient.color } }} />
+                      <LinearProgress 
+                        variant="determinate" 
+                        value={((
+                          (learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.active_reflective || 0
+                        ) + 11) / 22 * 100} 
+                        sx={{ height: 6, borderRadius: 3, "& .MuiLinearProgress-bar": { background: uiConfigs.style.mainGradient.color } }} 
+                      />
+                      <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem", mt: 0.5, display: "block" }}>
+                        Value: {(learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.active_reflective || 0}
+                      </Typography>
                     </Box>
                     <Box>
                       <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Sensing vs Intuitive</Typography>
-                      <LinearProgress variant="determinate" value={((profile.learning_styles.sensing_intuitive + 11) / 22) * 100} sx={{ height: 6, borderRadius: 3, "& .MuiLinearProgress-bar": { background: uiConfigs.style.mainGradient.color } }} />
+                      <LinearProgress 
+                        variant="determinate" 
+                        value={((
+                          (learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.sensing_intuitive || 0
+                        ) + 11) / 22 * 100} 
+                        sx={{ height: 6, borderRadius: 3, "& .MuiLinearProgress-bar": { background: uiConfigs.style.mainGradient.color } }} 
+                      />
+                      <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem", mt: 0.5, display: "block" }}>
+                        Value: {(learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.sensing_intuitive || 0}
+                      </Typography>
                     </Box>
                     <Box>
                       <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Visual vs Verbal</Typography>
-                      <LinearProgress variant="determinate" value={((profile.learning_styles.visual_verbal + 11) / 22) * 100} sx={{ height: 6, borderRadius: 3, "& .MuiLinearProgress-bar": { background: uiConfigs.style.mainGradient.color } }} />
+                      <LinearProgress 
+                        variant="determinate" 
+                        value={((
+                          (learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.visual_verbal || 0
+                        ) + 11) / 22 * 100} 
+                        sx={{ height: 6, borderRadius: 3, "& .MuiLinearProgress-bar": { background: uiConfigs.style.mainGradient.color } }} 
+                      />
+                      <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem", mt: 0.5, display: "block" }}>
+                        Value: {(learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.visual_verbal || 0}
+                      </Typography>
                     </Box>
                     <Box>
                       <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Sequential vs Global</Typography>
-                      <LinearProgress variant="determinate" value={((profile.learning_styles.sequential_global + 11) / 22) * 100} sx={{ height: 6, borderRadius: 3, "& .MuiLinearProgress-bar": { background: uiConfigs.style.mainGradient.color } }} />
+                      <LinearProgress 
+                        variant="determinate" 
+                        value={((
+                          (learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.sequential_global || 0
+                        ) + 11) / 22 * 100} 
+                        sx={{ height: 6, borderRadius: 3, "& .MuiLinearProgress-bar": { background: uiConfigs.style.mainGradient.color } }} 
+                      />
+                      <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem", mt: 0.5, display: "block" }}>
+                        Value: {(learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.sequential_global || 0}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Paper>
+              )}
+              <Divider sx={{ my: 3 }} />
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>⚙️ Adjust Learning Style Preferences</Typography>
+              <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 2 }}>Manually customize your learning style preferences from the settings page. These adjustments will be prioritized over questionnaire and interaction-based learning styles.</Typography>
+              
+              {!isEditingLearningStyle ? (
+                <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2 }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                    <Box>
+                      <Typography variant="body2" sx={{ color: "text.secondary" }}>Current source of learning style:</Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
+                        <CheckCircle sx={{ fontSize: 18, color: "success.main" }} />
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                          {learningStyleSource === "manual" ? "📝 Manual Adjustments (from Settings)" : learningStyleSource === "questionnaire" ? "📋 Questionnaire-based" : "🔍 Interaction-based"}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                  <Button 
+                    startIcon={<Edit />} 
+                    onClick={() => setIsEditingLearningStyle(true)} 
+                    variant="outlined" 
+                    sx={{ borderColor: "graycolor.two", color: "primary.main" }}
+                  >
+                    Customize Learning Style
+                  </Button>
+                </Paper>
+              ) : (
+                <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2 }}>
+                  <Stack spacing={3}>
+                    <Alert severity="info">
+                      Use the sliders below to adjust your learning style preferences. Values range from -11 to +11. These custom adjustments will be your primary learning style profile.
+                    </Alert>
+                    
+                    {/* Active vs Reflective */}
+                    <Box>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>Active Learning ←→ Reflective Learning</Typography>
+                        <Typography variant="body2" sx={{ color: "primary.main", fontWeight: 600 }}>{learningStyleAdjustments.active_reflective}</Typography>
+                      </Box>
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>Negative = Active (do-ers), Positive = Reflective (thinkers)</Typography>
+                      <input 
+                        type="range" 
+                        min="-11" 
+                        max="11" 
+                        value={learningStyleAdjustments.active_reflective}
+                        onChange={(e) => handleLearningStyleChange("active_reflective", parseInt(e.target.value))}
+                        style={{ width: "100%", marginTop: 8 }}
+                      />
+                    </Box>
+
+                    {/* Sensing vs Intuitive */}
+                    <Box>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>Sensing (Practical) ←→ Intuitive (Conceptual)</Typography>
+                        <Typography variant="body2" sx={{ color: "primary.main", fontWeight: 600 }}>{learningStyleAdjustments.sensing_intuitive}</Typography>
+                      </Box>
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>Negative = Sensing (facts, examples), Positive = Intuitive (theories, concepts)</Typography>
+                      <input 
+                        type="range" 
+                        min="-11" 
+                        max="11" 
+                        value={learningStyleAdjustments.sensing_intuitive}
+                        onChange={(e) => handleLearningStyleChange("sensing_intuitive", parseInt(e.target.value))}
+                        style={{ width: "100%", marginTop: 8 }}
+                      />
+                    </Box>
+
+                    {/* Visual vs Verbal */}
+                    <Box>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>Visual (Diagrams) ←→ Verbal (Words)</Typography>
+                        <Typography variant="body2" sx={{ color: "primary.main", fontWeight: 600 }}>{learningStyleAdjustments.visual_verbal}</Typography>
+                      </Box>
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>Negative = Visual (pictures, diagrams), Positive = Verbal (text, explanations)</Typography>
+                      <input 
+                        type="range" 
+                        min="-11" 
+                        max="11" 
+                        value={learningStyleAdjustments.visual_verbal}
+                        onChange={(e) => handleLearningStyleChange("visual_verbal", parseInt(e.target.value))}
+                        style={{ width: "100%", marginTop: 8 }}
+                      />
+                    </Box>
+
+                    {/* Sequential vs Global */}
+                    <Box>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>Sequential (Step-by-step) ←→ Global (Big Picture)</Typography>
+                        <Typography variant="body2" sx={{ color: "primary.main", fontWeight: 600 }}>{learningStyleAdjustments.sequential_global}</Typography>
+                      </Box>
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>Negative = Sequential (linear progression), Positive = Global (overview first)</Typography>
+                      <input 
+                        type="range" 
+                        min="-11" 
+                        max="11" 
+                        value={learningStyleAdjustments.sequential_global}
+                        onChange={(e) => handleLearningStyleChange("sequential_global", parseInt(e.target.value))}
+                        style={{ width: "100%", marginTop: 8 }}
+                      />
+                    </Box>
+
+                    {/* Action Buttons */}
+                    <Box sx={{ display: "flex", gap: 2, pt: 2 }}>
+                      <LoadingButton 
+                        variant="contained" 
+                        startIcon={<Save />} 
+                        onClick={handleSaveLearningStyleAdjustments} 
+                        loading={isSubmitting}
+                        sx={{ background: uiConfigs.style.mainGradient.color, color: "secondary.contrastText" }}
+                      >
+                        Save Adjustments
+                      </LoadingButton>
+                      <Button 
+                        variant="outlined" 
+                        startIcon={<Close />} 
+                        onClick={handleResetLearningStyleAdjustments}
+                        sx={{ borderColor: "graycolor.two", color: "primary.main" }}
+                      >
+                        Cancel
+                      </Button>
                     </Box>
                   </Stack>
                 </Paper>

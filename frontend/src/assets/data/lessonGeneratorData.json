@@ -54,16 +54,16 @@
           "label": "Science",
           "topics": [
             {
-              "value": "Chemical Basis of Life",
+              "value": "Chemical Basis of Life ( Cabohydrates, Proteins, Lipids, Nucleic acids, Water, Minerals, Vitamins)",
               "label": "Chemical Basis of Life"
             },
             {
-              "value": "Chemistry",
-              "label": "Chemistry"
+              "value": "Motion in a straight line(Distance and displacement, Speed, Velocity, Acceleration, Displacement - Time graphs, Velocity - Time graphs, Gravitational acceleration )",
+              "label": "Motion in a straight line"
             },
             {
-              "value": "Biology",
-              "label": "Biology"
+              "value": "Structure of matter ",
+              "label": "Structure of matter "
             }
           ]
         },

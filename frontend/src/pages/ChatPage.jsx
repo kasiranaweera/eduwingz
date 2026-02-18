@@ -57,12 +57,20 @@ import CheckOutlinedIcon from "@mui/icons-material/CheckOutlined";
 import ReportGmailerrorredIcon from "@mui/icons-material/ReportGmailerrorred";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 
+// Remove <think>...</think> tags and all content within them
+const sanitizeMessageText = (text) => {
+  if (!text || typeof text !== "string") return text || "";
+  // Remove <think>...</think> blocks entirely (case-insensitive, handles multiline)
+  return text.replace(/<think\b[\s\S]*?<\/think>/gi, "").trim();
+};
+
 const normalizeMessage = (source, sender, fallbackIdPrefix) => {
   if (!source) return null;
   const timestamp = source.timestamp ? new Date(source.timestamp) : new Date();
   return {
     id: source.id ?? `${fallbackIdPrefix}-${timestamp.getTime()}`,
-    text: source.content ?? "",
+    // sanitize text to hide any <think> tags coming from the API
+    text: sanitizeMessageText(source.content ?? ""),
     sender,
     timestamp,
     attachments: Array.isArray(source.documents) ? source.documents : [],

@@ -10,8 +10,8 @@ import DashboardMainPage from "../pages/DashboardMainPage";
 import DashboardUpdatesPage from "../pages/DashboardUpdatesPage";
 import DashboardSettingsPage from "../pages/DashboardSettingsPage";
 import PlatformNotes from "../pages/PlatformNotes";
-import PlatformCommunity from "../pages/PlatformCommunity";
-import DashboardQuizzesPage from "../pages/DashboardQuizzesPage";
+import DashboardCommunityPage from "../pages/DashboardCommunityPage";
+import PlatformQuizzesPage from "../pages/PlatformQuizzesPage";
 import DashboardAnaliticsPage from "../pages/DashboardAnalyticsPage"
 import DashboardMinehoarizonPage from "../pages/DashboardMinehorizonPage"
 import PlatformLessons from "../pages/PlatformLessons";
@@ -131,19 +131,19 @@ const dashboardRoutes = [
     state: "platform-notes",
   },
   {
-    path: "/dashboard/platform/community",
+    path: "/dashboard/community",
     element: (
       <ProtectedPage>
-      <PlatformCommunity />
+      <DashboardCommunityPage />
       </ProtectedPage>
     ),
     state: "platform-community",
   },
   {
-    path: "/dashboard/quizzes",
+    path: "/dashboard/platform/quizzes",
     element: (
       <ProtectedPage>
-      <DashboardQuizzesPage />
+      <PlatformQuizzesPage />
       </ProtectedPage>
     ),
     state: "quizzes",

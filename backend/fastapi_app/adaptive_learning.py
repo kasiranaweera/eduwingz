@@ -20,7 +20,7 @@ class ILSLearningProfile:
             'active_reflective': 0,  # -11 to +11 (negative=active, positive=reflective)
             'sensing_intuitive': 0,  # -11 to +11 (negative=sensing, positive=intuitive)
             'visual_verbal': 0,      # -11 to +11 (negative=visual, positive=verbal)
-            'sequential_global': 0   # -11 to +11 (negative=sequential, positive=global)
+            'sequential_global': 0  # -11 to +11 (negative=sequential, positive=global)
         }
         self.interaction_history = []
         self.total_interactions = 0
