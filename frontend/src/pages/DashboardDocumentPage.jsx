@@ -115,6 +115,7 @@ const DashboardDocumentPage = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedType, setSelectedType] = useState("All");
   const [sortOrder, setSortOrder] = useState("Newest First");
+  const [isAscending, setIsAscending] = useState(false);
 
   // UI State
   const [categoryAnchorEl, setCategoryAnchorEl] = useState(null);

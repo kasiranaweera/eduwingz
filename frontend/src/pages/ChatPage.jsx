@@ -84,6 +84,7 @@ const ChatPage = () => {
 
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const messagesEndRef = useRef(null);
   const [animatedMessages, setAnimatedMessages] = useState(new Set());
   const [animatedTexts, setAnimatedTexts] = useState({});
