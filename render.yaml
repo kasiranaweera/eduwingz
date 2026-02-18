@@ -2,8 +2,9 @@ services:
   - type: web
     name: eduwingz-backend
     runtime: python
-    buildCommand: bash build.sh
-    startCommand: cd backend/backend && gunicorn backend.wsgi:application
+    rootDir: backend/backend
+    buildCommand: pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --no-input
+    startCommand: gunicorn backend.wsgi:application
     envVars:
       - key: DEBUG
         value: "False"
