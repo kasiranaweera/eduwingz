@@ -45,6 +45,7 @@ const DashboardMainPage = () => {
   useEffect(() => {
     // Set a welcome message when component mounts
     const welcomeMessage = `Welcome back, ${user.username}! How can I assist you with your learning today?`;
+    console.log(welcomeMessage);
     // autoMessage can be used to display welcome greeting
     // setAutoMessage(welcomeMessage);        // You could also fetch some initial data here if needed
     // fetchInitialData().then(data => setAutoMessage(data.message));
