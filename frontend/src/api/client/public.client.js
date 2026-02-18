@@ -1,8 +1,8 @@
 import axios from "axios";
 import queryString from "query-string";
 
-// const baseURL = "https://moonflix-api.vercel.app/api/v1/";
-const baseURL = "http://127.0.0.1:8001/";
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
+const baseURL = `${BACKEND_URL}/api`;
 
 const publicClient = axios.create({
   baseURL,

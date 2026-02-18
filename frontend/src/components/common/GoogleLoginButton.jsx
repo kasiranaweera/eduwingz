@@ -3,13 +3,15 @@ import { GoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+
 function GoogleLoginButton() {
   const onSuccess = async (credentialResponse) => {
     try {
       // Decode the credential to get ID token
       const decoded = jwtDecode(credentialResponse.credential);
       
-      const res = await axios.post('http://127.0.0.1:8000/users/google-login/', {
+      const res = await axios.post(`${BACKEND_URL}/users/google-login/`, {
         id_token: credentialResponse.credential
       });
       
