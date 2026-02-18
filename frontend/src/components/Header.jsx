@@ -15,6 +15,7 @@ import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
 import { themeModes } from "../configs/theme.config";
 import { setThemeMode } from "../redux/features/themeModeSlice";
+import Logo from "./common/Logo";
 import UserMenu from "./UserMenu";
 import { setAuthModalOpen } from "../redux/features/authModalSlice";
 import uiConfigs from "../configs/ui.config";
