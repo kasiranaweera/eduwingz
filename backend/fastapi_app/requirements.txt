@@ -16,7 +16,8 @@ langchain-ollama==0.1.0
 
 # Embeddings & Vector Store
 sentence-transformers==2.7.0
-faiss-cpu==1.7.4
+faiss-cpu==1.13.2
+
 
 # ML & Data Processing
 torch==2.1.0
