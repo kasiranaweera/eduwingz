@@ -6,8 +6,6 @@ import {
   TextField,
   Typography,
   Link,
-  Button,
-  Divider,
 } from "@mui/material";
 import { useFormik } from "formik";
 import { useDispatch, useSelector } from "react-redux";
@@ -17,19 +15,14 @@ import userApi from "../api/modules/user.api";
 import { setAuthModalOpen } from "../redux/features/authModalSlice";
 import { setUser } from "../redux/features/userSlice";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import GoogleIcon from "@mui/icons-material/Google";
-import themeConfigs, { themeModes } from "../configs/theme.config";
+import { themeModes } from "../configs/theme.config";
 import uiConfigs from "../configs/ui.config";
-
 
 // const swal = require('sweetalert2')
 
 const SignupForm = ({ switchAuthState, profileSetupState }) => {
   const { themeMode } = useSelector((state) => state.themeMode);
   const dispatch = useDispatch();
-
-  const navigate = useNavigate();
 
   const [isLoginRequest, setIsLoginRequest] = useState(false);
   const [errorMessage, setErrorMessage] = useState();

@@ -3,8 +3,6 @@ import {
   Avatar,
   Box,
   Button,
-  Chip,
-  CircularProgress,
   Divider,
   IconButton,
   Paper,
@@ -15,13 +13,11 @@ import {
 import SendIcon from "@mui/icons-material/Send";
 import { themeModes } from "../configs/theme.config";
 import { useSelector } from "react-redux";
-import TravelExploreOutlinedIcon from "@mui/icons-material/TravelExploreOutlined";
 import FormatShapesOutlinedIcon from "@mui/icons-material/FormatShapesOutlined";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import TemplateModal from "./TemplateModal";
 import AttachmentMenu from "./AttachmentMenu";
-import AddIcon from "@mui/icons-material/Add";
 import { Link } from "react-router-dom";
 import FloatingPageUpButton from "./FloatingPageUpButton";
 import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
@@ -29,7 +25,6 @@ import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import MicOutlinedIcon from "@mui/icons-material/MicOutlined";
-import StopCircleOutlinedIcon from "@mui/icons-material/StopCircleOutlined";
 import RecordingModal from "./RecordingModal";
 
 const ChatSection = ({
@@ -138,10 +133,6 @@ const ChatSection = ({
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleClick = () => {
-    console.info("You clicked the Chip.");
   };
 
   const handleDelete = (idx) => {

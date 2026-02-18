@@ -1,4 +1,4 @@
-import { Box, Button, IconButton, Modal, Typography } from "@mui/material";
+import { Box, Button, IconButton, Modal } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setAuthModalOpen } from "../redux/features/authModalSlice";

@@ -16,7 +16,7 @@ const ObjectCard = () => {
   return (
     <Box>
       {datalist.map((item, index) =>
-        index % 2 == 1 ? (
+        index % 2 === 1 ? (
           <Box
             key={index}
             sx={{

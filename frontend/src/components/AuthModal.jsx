@@ -6,7 +6,7 @@ import Logo from "./common/Logo";
 import SigninForm from "./SigninForm";
 import SignupForm from "./SignupForm";
 import { themeModes } from "../configs/theme.config";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
 import { setThemeMode } from "../redux/features/themeModeSlice";

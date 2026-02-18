@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Box, IconButton, LinearProgress, Typography } from "@mui/material";
+import { Box, IconButton, LinearProgress } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import mainlogo from "../assets/img/eduwingz_logo.png";
 import blacklogo from "../assets/img/eduwingz_name_b.png";
@@ -9,8 +9,6 @@ import { themeModes } from "../configs/theme.config";
 import { setThemeMode } from "../redux/features/themeModeSlice";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
-import OrbElement from "../components/common/OrbElement";
-import DecryptedText from "../components/common/DecryptedText";
 import ShinyText from "../components/common/ShinyText";
 
 const LoadingPage = () => {

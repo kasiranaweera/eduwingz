@@ -62,11 +62,13 @@ const GlowCursor = ({ disableInRef }) => {
       disableInRef.current.addEventListener("mouseleave", handleMouseLeave);
     }
 
+    const disableInRefCurrent = disableInRef?.current;
+
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
-      if (disableInRef?.current) {
-        disableInRef.current.removeEventListener("mouseenter", handleMouseEnter);
-        disableInRef.current.removeEventListener("mouseleave", handleMouseLeave);
+      if (disableInRefCurrent) {
+        disableInRefCurrent.removeEventListener("mouseenter", handleMouseEnter);
+        disableInRefCurrent.removeEventListener("mouseleave", handleMouseLeave);
       }
     };
   }, [isVisible, isDisabled, disableInRef]);

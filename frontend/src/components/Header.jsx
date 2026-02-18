@@ -10,14 +10,13 @@ import {
 import React, { cloneElement, useState } from "react";
 import Logo from "./common/Logo";
 import menuConfigs from "../configs/menu.configs";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
-import themeConfigs, { themeModes } from "../configs/theme.config";
+import { themeModes } from "../configs/theme.config";
 import { setThemeMode } from "../redux/features/themeModeSlice";
 import UserMenu from "./UserMenu";
-import DashboardIcon from "@mui/icons-material/Dashboard";
 import { setAuthModalOpen } from "../redux/features/authModalSlice";
 import uiConfigs from "../configs/ui.config";
 import MenuIcon from "@mui/icons-material/Menu";

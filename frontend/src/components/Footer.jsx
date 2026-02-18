@@ -6,8 +6,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import React, { use } from "react";
-import Logo from "./common/Logo";
+import React from "react";
 import menuConfigs from "../configs/menu.configs";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";

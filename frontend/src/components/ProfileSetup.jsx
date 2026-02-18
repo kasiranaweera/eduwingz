@@ -29,7 +29,6 @@ const steps = [
 
 const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
   const { themeMode } = useSelector((state) => state.themeMode);
-  const dispatch = useDispatch();
 
   const [activeStep, setActiveStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);

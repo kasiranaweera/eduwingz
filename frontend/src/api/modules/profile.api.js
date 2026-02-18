@@ -1,4 +1,3 @@
-import publicClient from "../client/public.client";
 import privateClient from "../client/private.client";
 
 const profileEndpoints = {

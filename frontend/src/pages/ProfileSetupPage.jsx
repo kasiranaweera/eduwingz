@@ -1,5 +1,5 @@
-import { Box, Button, IconButton, Typography } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import { Box, Button, IconButton } from "@mui/material";
+import { useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { themeModes } from "../configs/theme.config";
@@ -15,9 +15,6 @@ const ProfileSetupPage = () => {
   const { themeMode } = useSelector((state) => state.themeMode);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user } = useSelector((state) => state.user);
-
-  const height = window.innerHeight;
 
   const onSwithTheme = () => {
     const theme =

@@ -8,7 +8,6 @@ import {
   Avatar,
   ListItemText,
   Divider,
-  useTheme,
   IconButton,
   Modal,
   Button,
@@ -24,7 +23,7 @@ import CopyAllOutlinedIcon from "@mui/icons-material/CopyAllOutlined";
 import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
 
 import { toast } from "react-toastify";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 // Small helper to format date/time
 const formatDateTime = (iso) => {
@@ -37,7 +36,6 @@ const formatDateTime = (iso) => {
 };
 
 const ChatHistoryPage = () => {
-  const { themeMode } = useSelector((state) => state.themeMode);
   const [sessions, setSessions] = useState([]);
 
   const [openDelete, setOpenDelete] = useState(false);
@@ -58,7 +56,7 @@ const ChatHistoryPage = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const { response, err } = await chatApi.listSessions();
+        const { response } = await chatApi.listSessions();
         setSessions(response);
 
         // if (!err && response && response.data && Array.isArray(response.data)) {

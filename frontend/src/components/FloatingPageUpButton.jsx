@@ -1,6 +1,6 @@
 // src/components/FloatingPageUpButton.jsx
 import React, { useState, useEffect, useCallback } from "react";
-import { Fab, Zoom, useScrollTrigger } from "@mui/material";
+import { Fab, Zoom } from "@mui/material";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 
 const FloatingPageUpButton = () => {

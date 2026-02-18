@@ -4,22 +4,17 @@ import {
   Card,
   CardContent,
   Container,
-  Divider,
   Paper,
   Rating,
   Stack,
-  TableContainer,
   TextField,
   Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
 import FeedbackCard from "../components/FeedbackCard";
-import ObjectCard from "../components/ObjectCard";
 import { Link } from "react-router-dom";
 import hero_img from "../assets/img/hero.png";
-import bgImageDark from "../assets/img/main_dbg_img_1.png";
-import bgImageLight from "../assets/img/main_lbg_img_1.png";
 import uiConfig from "../configs/ui.config";
 import Particles from "../components/common/Particles";
 import { themeModes } from "../configs/theme.config";
@@ -44,22 +39,12 @@ import TrackChangesIcon from "@mui/icons-material/TrackChanges"; // for Adaptive
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents"; // for Progress Tracking
 import LightbulbIcon from "@mui/icons-material/Lightbulb"; // for Interactive Lessons
 import GroupIcon from "@mui/icons-material/Group";
-
-const feedbackData = [
-  {
-    username: "Ashika Ishan",
-    comment:
-      "EduWingz completely transformed how I study. The system quickly figured out that I'm a visual learner and started presenting content with diagrams and videos...",
-    starcount: 3,
-  },
-];
+import { useSelector } from "react-redux";
 
 const HomePage = () => {
   const { themeMode } = useSelector((state) => state.themeMode);
   const theme = useTheme();
-  const [value, setValue] = useState(0);
   const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
-  const { user } = useSelector((state) => state.user);
 
   const settings = {
     dots: true,

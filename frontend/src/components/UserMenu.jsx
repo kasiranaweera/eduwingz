@@ -36,15 +36,6 @@ function stringToColor(string) {
   return color;
 }
 
-function stringAvatar(name) {
-  return {
-    sx: {
-      bgcolor: stringToColor(name),
-    },
-    children: `${name.split(" ")[0][0]}${name.split(" ")[1][0]}`,
-  };
-}
-
 const UserMenu = () => {
   const { user } = useSelector((state) => state.user);
 

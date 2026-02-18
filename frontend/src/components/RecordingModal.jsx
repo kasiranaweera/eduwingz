@@ -1,9 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   Box,
   CircularProgress,
@@ -11,7 +7,6 @@ import {
   TextField,
   IconButton,
   Chip,
-  LinearProgress,
   Divider,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -26,7 +21,6 @@ import {
   Close,
   PauseCircleOutline,
   PlayCircleOutline,
-  Stop,
   StopCircleOutlined,
 } from "@mui/icons-material";
 

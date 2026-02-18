@@ -8,19 +8,16 @@ import {
   Box,
   Button,
   Paper,
-  Divider,
 } from "@mui/material";
 import {
   FilterCenterFocus,
   School,
   ChatBubbleOutline,
   TrendingUp,
-  Explore,
   Visibility,
 } from "@mui/icons-material";
 import uiConfigs from "../configs/ui.config";
 import front_img from "../assets/img/front-img.png";
-import LightRays from "../components/common/LightRays";
 
 const AboutPage = () => {
   const features = [
@@ -49,8 +46,6 @@ const AboutPage = () => {
         "Beautiful dashboards show strengths, growth areas, and mastery over time.",
     },
   ];
-
-  const mainGradient = "linear-gradient(135deg, #ff9800 0%, #ffc107 100%)";
 
   return (
     <Box sx={{ my: 6 }}>

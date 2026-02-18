@@ -50,10 +50,6 @@ const FeedbackCard = ({ name, comment, stars }) => {
     5: "Excellent+",
   };
 
-  function getLabelText(value) {
-    return `${value} Star${value !== 1 ? "s" : ""}, ${labels[value]}`;
-  }
-
   return (
     <Box
       sx={{

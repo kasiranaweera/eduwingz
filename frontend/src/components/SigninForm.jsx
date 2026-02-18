@@ -1,31 +1,22 @@
 import { LoadingButton } from "@mui/lab";
-import { Alert, Box, Button, Stack, TextField, Typography, Divider, FormControlLabel, Checkbox, Link} from "@mui/material";
+import { Alert, Box, Stack, TextField, Typography, FormControlLabel, Checkbox, Link} from "@mui/material";
 import { useFormik } from "formik";
 import { toast } from "react-toastify";
 import * as Yup from "yup";
 import userApi from "../api/modules/user.api";
 import { setUser } from "../redux/features/userSlice";
 import { setAuthModalOpen } from "../redux/features/authModalSlice";
-import GoogleIcon from '@mui/icons-material/Google';
 import { useState } from "react";
 import { jwtDecode } from "jwt-decode";
-// import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from "react-redux";
-// import { color } from "@mui/system";
-// import Cookies from 'js-cookie';
-import themeConfigs, { themeModes } from "../configs/theme.config";
-import { useNavigate } from "react-router-dom";
+import { themeModes } from "../configs/theme.config";
 import uiConfig from "../configs/ui.config";
-
 
 // const swal = require('sweetalert2')
 
 const SigninForm = ({ switchAuthState }) => {
   const dispatch = useDispatch();
   const { themeMode } = useSelector((state) => state.themeMode);
-  const navigate = useNavigate()
-
-  // const navigate = useNavigate();
 
   // const [authTokens, setAuthTokens] = useState(() =>
   //   localStorage.getItem("authTokens")

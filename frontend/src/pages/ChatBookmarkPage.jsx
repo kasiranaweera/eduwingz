@@ -8,7 +8,6 @@ import {
   Avatar,
   ListItemText,
   Divider,
-  useTheme,
   IconButton,
   Modal,
   Button,
@@ -37,7 +36,6 @@ const formatDateTime = (iso) => {
 };
 
 const ChatBookmarkPage = () => {
-  const { themeMode } = useSelector((state) => state.themeMode);
   const [bookmarks, setBookmarks] = useState([]);
   const [loading, setLoading] = useState(true);
 

@@ -20,7 +20,6 @@ const ChatNewPage = () => {
 
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
   const loadingMessages = [
     "Thinking...",

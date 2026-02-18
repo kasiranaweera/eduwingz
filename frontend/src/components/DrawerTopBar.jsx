@@ -17,8 +17,6 @@ import {
   ListItemText,
   Menu,
   styled,
-  TextField,
-  Toolbar,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -32,13 +30,10 @@ import { setThemeMode } from "../redux/features/themeModeSlice";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
 import MenuIcon from "@mui/icons-material/Menu";
-import DashboardIcon from "@mui/icons-material/Dashboard";
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
-import SettingsInputComponentIcon from "@mui/icons-material/SettingsInputComponent";
 import SearchIcon from "@mui/icons-material/Search";
 import AddCommentOutlinedIcon from "@mui/icons-material/AddCommentOutlined";
 import PortraitIcon from "@mui/icons-material/Portrait";
-import MuiLink from "@mui/material/Link";
 import uiConfigs from "../configs/ui.config";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import AddModeratorOutlinedIcon from "@mui/icons-material/AddModeratorOutlined";
