@@ -76,7 +76,6 @@ const normalizeMessage = (source, sender, fallbackIdPrefix) => {
 };
 
 const ChatPage = () => {
-  const { themeMode: _ } = useSelector((state) => state.themeMode);
   useTheme();
   const location = useLocation();
   const { sessionId } = useParams();
@@ -87,7 +86,6 @@ const ChatPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const [animatedMessages, setAnimatedMessages] = useState(new Set());
-  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const [animatedTexts, setAnimatedTexts] = useState({});
   const sendingRef = useRef(false);
 

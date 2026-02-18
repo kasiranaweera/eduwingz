@@ -30,7 +30,6 @@ import { LoadingButton } from "@mui/lab";
 import FloatingElement from "../components/common/FloatingElement";
 import DarkVeil from "../components/common/DarkVeil";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import { Grid as GridSystem } from "@mui/system";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import FilterTiltShiftIcon from "@mui/icons-material/FilterTiltShift";
 import TimelineIcon from "@mui/icons-material/Timeline";

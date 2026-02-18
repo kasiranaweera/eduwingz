@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import {
   Box,
   Tabs,
@@ -105,12 +105,7 @@ const DashboardSettingsPage = () => {
     category: "bug",
   });
 
-  useEffect(() => {
-    if (!userId) return;
-    fetchProfile();
-  }, [userId]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     setLoading(true);
     try {
       const { response, err } = await profileApi.getProfile(userId);
@@ -135,7 +130,12 @@ const DashboardSettingsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    fetchProfile();
+  }, [userId, fetchProfile]);
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);

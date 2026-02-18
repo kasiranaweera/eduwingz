@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -115,7 +115,6 @@ const DashboardDocumentPage = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedType, setSelectedType] = useState("All");
   const [sortOrder, setSortOrder] = useState("Newest First");
-  const [isAscending, setIsAscending] = useState(false);
 
   // UI State
   const [categoryAnchorEl, setCategoryAnchorEl] = useState(null);
@@ -145,7 +144,7 @@ const DashboardDocumentPage = () => {
   // Apply filters and sorting
   useEffect(() => {
     applyFiltersAndSort();
-  }, [documents, searchQuery, selectedCategory, selectedType, sortOrder, isAscending]);
+  }, [documents, searchQuery, selectedCategory, selectedType, sortOrder]);
 
   const fetchDocuments = async () => {
     try {
@@ -189,7 +188,7 @@ const DashboardDocumentPage = () => {
     return [];
   };
 
-  const applyFiltersAndSort = () => {
+  const applyFiltersAndSort = useCallback(() => {
     let filtered = [...documents];
 
     // Filter by search query
@@ -228,11 +227,11 @@ const DashboardDocumentPage = () => {
         comparison = (b.file_size || 0) - (a.file_size || 0);
       }
 
-      return isAscending ? -comparison : comparison;
+      return comparison;
     });
 
     setFilteredDocuments(filtered);
-  };
+  }, [documents, searchQuery, selectedCategory, selectedType, sortOrder]);
 
   const handleDocumentClick = (doc) => {
     setSelectedDocument(doc);

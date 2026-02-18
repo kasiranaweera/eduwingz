@@ -55,7 +55,6 @@ const PlatformLessons = () => {
   const [subject, setSubject] = useState("");
   const [topic, setTopic] = useState("");
   const [customTopic, setCustomTopic] = useState("");
-  const [markedDates, setMarkedDates] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingMessage, setGeneratingMessage] = useState("");
 

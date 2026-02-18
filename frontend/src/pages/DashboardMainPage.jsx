@@ -11,10 +11,8 @@ import { LocalLibraryOutlined } from '@mui/icons-material';
 
 const DashboardMainPage = () => {
     const { user } = useSelector((state) => state.user);
-    const [autoMessage, setAutoMessage] = useState('');
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
-    const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
     const loadingMessages = [
         "Thinking...",
