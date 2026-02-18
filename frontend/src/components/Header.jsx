@@ -8,7 +8,7 @@ import {
   useScrollTrigger,
 } from "@mui/material";
 import React, { cloneElement, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import menuConfigs from "../configs/menu.configs";
 import { useDispatch, useSelector } from "react-redux";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
@@ -53,7 +53,6 @@ const Header = () => {
   const { themeMode } = useSelector((state) => state.themeMode);
   const { appState } = useSelector((state) => state.appState);
   const dispatch = useDispatch();
-  const navigate = useNavigate();
 
   console.log('userdata 123', user);
 

@@ -15,7 +15,6 @@ import {
 } from "@mui/material";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import chatApi from "../api/modules/chat.api";
-import { useSelector } from "react-redux";
 
 import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
 import DeleteForeverOutlinedIcon from "@mui/icons-material/DeleteForeverOutlined";

@@ -20,7 +20,6 @@ const ChatNewPage = () => {
 
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
   const loadingMessages = [
     "Thinking...",
@@ -35,16 +34,15 @@ const ChatNewPage = () => {
   // Loading message rotation
   useEffect(() => {
     if (!isLoading) {
-      setLoadingMessageIndex(0);
       return;
     }
 
     const interval = setInterval(() => {
-      setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+      // Rotate through loading messages
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [isLoading, loadingMessages.length]);
+  }, [isLoading]);
 
   const handleSendMessage = async (messageText, attachments = []) => {
     const trimmed = messageText?.trim();

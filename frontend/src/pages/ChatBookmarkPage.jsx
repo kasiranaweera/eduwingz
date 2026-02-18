@@ -15,7 +15,6 @@ import {
 } from "@mui/material";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import chatApi from "../api/modules/chat.api";
-import { useSelector } from "react-redux";
 
 import DeleteForeverOutlinedIcon from "@mui/icons-material/DeleteForeverOutlined";
 import CopyAllOutlinedIcon from "@mui/icons-material/CopyAllOutlined";

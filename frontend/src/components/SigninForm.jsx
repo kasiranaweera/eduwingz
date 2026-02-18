@@ -8,15 +8,13 @@ import { setUser } from "../redux/features/userSlice";
 import { setAuthModalOpen } from "../redux/features/authModalSlice";
 import { useState } from "react";
 import { jwtDecode } from "jwt-decode";
-import { useDispatch, useSelector } from "react-redux";
-import { themeModes } from "../configs/theme.config";
+import { useDispatch } from "react-redux";
 import uiConfig from "../configs/ui.config";
 
 // const swal = require('sweetalert2')
 
 const SigninForm = ({ switchAuthState }) => {
   const dispatch = useDispatch();
-  const { themeMode } = useSelector((state) => state.themeMode);
 
   // const [authTokens, setAuthTokens] = useState(() =>
   //   localStorage.getItem("authTokens")
