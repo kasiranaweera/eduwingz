@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Direct connection to FastAPI backend for TTS and other AI services
-const FASTAPI_URL = process.env.REACT_APP_FASTAPI_URL || "http://localhost:8001";
+const FASTAPI_URL = (process.env.REACT_APP_FASTAPI_URL || "http://localhost:8001") || "https://eduwingz-fastapi.onrender.com";
 const fastApiClient = axios.create({
   baseURL: FASTAPI_URL,
   headers: {

@@ -1,7 +1,7 @@
 import axios from "axios";
 import queryString from "query-string";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
+const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || "http://localhost:8000") || "https://eduwingz-backend.onrender.com";
 const baseURL = `${BACKEND_URL}/api`;
 
 const privateClient = axios.create({
