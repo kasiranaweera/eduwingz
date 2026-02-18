@@ -117,6 +117,8 @@ const ChatPage = () => {
     "Gathering information...",
   ];
 
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+
   /* ---------------------------------------------------------- */
   /* 1. SEND MESSAGE – fixed duplicate logic                    */
   /* ---------------------------------------------------------- */

@@ -57,6 +57,7 @@ const PlatformLessons = () => {
   const [customTopic, setCustomTopic] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingMessage, setGeneratingMessage] = useState("");
+  const [markedDates, setMarkedDates] = useState([]);
 
   // Get subjects for selected grade
   const getSubjectsForGrade = () => {

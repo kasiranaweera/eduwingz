@@ -18,8 +18,8 @@ dj-database-url==2.1.0
 psycopg==3.2.6
 
 # Pydantic & Configuration
-pydantic==2.5.0
-pydantic-settings==2.0.3
+pydantic>=2.7.0  # Ensure wheels available for Python 3.13+
+pydantic-settings>=2.1.0
 python-dotenv==1.0.0
 
 # Authentication & Security
@@ -51,7 +51,7 @@ torch>=2.0.0
 transformers>=4.36.0
 
 # Data Processing
-numpy>=1.24.3
+numpy>=1.26.0  # Pin to version with wheels for Python 3.13+
 pypdf>=3.17.0
 
 # Web Scraping & Browsing
