@@ -45,7 +45,7 @@ import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import uiConfigs from "../configs/ui.config";
 import profileApi from "../api/modules/profile.api";
-import learningApi from "../api/modules/learning.api";
+import learningApi from "../api/modules/lessons.api";
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
