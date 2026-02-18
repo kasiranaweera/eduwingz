@@ -44,6 +44,7 @@ const HomePage = () => {
   const { themeMode } = useSelector((state) => state.themeMode);
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
+  const [value, setValue] = useState(0);
 
   const settings = {
     dots: true,
