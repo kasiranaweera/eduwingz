@@ -1,4 +1,4 @@
-torch==2.4.0
+torch==2.10.0
 transformers>=4.45.0
 gradio>=4.100.0
 ffmpeg-python
