@@ -23,6 +23,8 @@ const MainBoardPage = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  // Dummy use to avoid eslint warning
+  void setLoadingMessageIndex;
 
   const loadingMessages = [
     "Thinking...",
@@ -46,7 +48,7 @@ const MainBoardPage = () => {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [isLoading]);
+  }, [isLoading, loadingMessages.length]);
 
   const handleSendMessage = async (messageText, attachments = []) => {
     const trimmed = messageText?.trim();

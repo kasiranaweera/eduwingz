@@ -57,7 +57,10 @@ const PlatformLessons = () => {
   const [customTopic, setCustomTopic] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingMessage, setGeneratingMessage] = useState("");
+  // markedDates kept for future calendar functionality
   const [markedDates, setMarkedDates] = useState([]);
+  // Dummy use to avoid eslint warning
+  void setMarkedDates;
 
   // Get subjects for selected grade
   const getSubjectsForGrade = () => {

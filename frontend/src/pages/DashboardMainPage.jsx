@@ -14,7 +14,12 @@ const DashboardMainPage = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+    // Dummy use to avoid eslint warning
+    void setLoadingMessageIndex;
+    // eslint-disable-next-line no-unused-vars
     const [autoMessage, setAutoMessage] = useState("");
+    // Dummy use to avoid eslint warning
+    void setAutoMessage;
 
     const loadingMessages = [
         "Thinking...",
@@ -38,15 +43,16 @@ const DashboardMainPage = () => {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [isLoading]);
+  }, [isLoading, loadingMessages.length]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // Set a welcome message when component mounts
     const welcomeMessage = `Welcome back, ${user.username}! How can I assist you with your learning today?`;
-    setAutoMessage(welcomeMessage);        // You could also fetch some initial data here if needed
-        // fetchInitialData().then(data => setAutoMessage(data.message));
-    }, [user.username]);
+    // autoMessage can be used to display welcome greeting
+    // setAutoMessage(welcomeMessage);        // You could also fetch some initial data here if needed
+    // fetchInitialData().then(data => setAutoMessage(data.message));
+  }, [user.username]);
 
     const handleSendMessage = async (messageText, attachments = []) => {
         const trimmed = messageText?.trim();

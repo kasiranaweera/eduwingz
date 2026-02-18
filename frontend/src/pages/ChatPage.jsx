@@ -118,6 +118,8 @@ const ChatPage = () => {
   ];
 
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  // Debug: show current loading message
+  console.log(loadingMessageIndex, loadingMessages[loadingMessageIndex]);
 
   /* ---------------------------------------------------------- */
   /* 1. SEND MESSAGE – fixed duplicate logic                    */

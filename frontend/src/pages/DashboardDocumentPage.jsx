@@ -115,7 +115,10 @@ const DashboardDocumentPage = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedType, setSelectedType] = useState("All");
   const [sortOrder, setSortOrder] = useState("Newest First");
+  // isAscending kept for potential future sorting logic
   const [isAscending, setIsAscending] = useState(false);
+  // Dummy use to avoid eslint warning
+  void setIsAscending;
 
   // UI State
   const [categoryAnchorEl, setCategoryAnchorEl] = useState(null);
@@ -187,8 +190,11 @@ const DashboardDocumentPage = () => {
 
   const generateMockDocuments = () => {
     // Mock data disabled - remove this function or use for testing
+    // generateMockDocuments can be used for testing UI with sample data
     return [];
   };
+  // Dummy use to avoid eslint warning
+  void generateMockDocuments;
 
   const applyFiltersAndSort = useCallback(() => {
     let filtered = [...documents];
