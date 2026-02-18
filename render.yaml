@@ -16,3 +16,17 @@ services:
         value: "https://eduwingz.vercel.app, http://localhost:3000"
       - key: CSRF_TRUSTED_ORIGINS
         value: "https://eduwingz.vercel.app, https://eduwingz-backend.onrender.com"
+
+  - type: web
+    name: eduwingz-fastapi
+    runtime: python
+    rootDir: backend/fastapi_app
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 180
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: ENVIRONMENT
+        value: "production"
+      - key: CORS_ORIGINS
+        value: "https://eduwingz.vercel.app, http://localhost:3000, https://eduwingz-fastapi.onrender.com"
