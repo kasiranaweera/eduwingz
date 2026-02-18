@@ -9,18 +9,20 @@ class Settings(BaseSettings):
     OLLAMA_MODEL: str = "llama3.2:1b"
     LLM_MODEL: str = "Qwen/Qwen3-0.6B"  # Non-gated reasoning model
     # LLM_MODEL: str = "Qwen/Qwen2.5-0.5B-Instruct"  # Non-gated reasoning model
-    LLM_BACKEND: str = "huggingface"  # "ollama" or "huggingface"
+    LLM_BACKEND: str = "gemini"  # "ollama", "huggingface", "openrouter", or "gemini"
     EMBEDDING_MODEL: str = "sentence-transformers/all-mpnet-base-v2"
     CHUNK_SIZE: int = 1000
     CHUNK_OVERLAP: int = 200
     TOP_K: int = 5
-    MAX_TOKENS: int = 1024  # Maximum tokens for LLM response (optimized for speed)
+    MAX_TOKENS: int = 2048  # Maximum tokens for LLM response (DeepSeek can handle more)
     HUGGINGFACE_TOKEN: str | None = None  # Optional, for HuggingFace authentication if needed
     DEBUG: bool = True  # Optional, for debugging
     FASTAPI_URL: str = "http://localhost:8000"  # For Django-FastAPI communication
     
     # ==================== API KEYS FOR TOOLS ====================
     HF_TOKEN: str | None = None  # HuggingFace token
+    DEEPSEEK_OPEN_ROUTER_KEY: str | None = None  # OpenRouter API key for DeepSeek model
+    GEMINI_API_KEY: str | None = None  # Google Gemini API key
     GOOGLE_SERPER_API_KEY: str | None = None  # Google Serper Search
     YOUTUBE_API_KEY: str | None = None  # YouTube Search
     GITHUB_TOKEN: str | None = None  # GitHub API

@@ -53,6 +53,7 @@ rpa==5.11.0
 
 # Google API
 google-api-python-client==2.104.0
+google-generativeai==0.3.0
 
 # Additional utilities
 certifi>=2024.0.0
