@@ -13,8 +13,6 @@ import {
   Storage,
   Code as CodeIcon,
   Settings,
-  Lightbulb,
-  Security,
   DesktopWindowsOutlined,
   BoltOutlined,
   BarChartOutlined,

@@ -20,20 +20,16 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/material";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import uiConfigs from "../configs/ui.config";
 import menuConfigs from "../configs/menu.configs";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import SubjectIcon from "@mui/icons-material/Subject";
-import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
-import NoteIcon from "@mui/icons-material/Note";
-import ChatIcon from "@mui/icons-material/Chat";
 import FormatBoldIcon from "@mui/icons-material/FormatBold";
 import FormatItalicIcon from "@mui/icons-material/FormatItalic";
 import FormatUnderlinedIcon from "@mui/icons-material/FormatUnderlined";
@@ -142,7 +138,7 @@ const PlatformLessonId = () => {
     } else {
       setLoading(false);
     }
-  }, [lessonId, user]);
+  }, [lessonId, user, navigate]);
 
   // Handle topic selection
   const handleSelectTopic = (topic) => {

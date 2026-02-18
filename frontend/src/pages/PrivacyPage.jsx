@@ -22,11 +22,10 @@ import {
   RefreshOutlined,
   KeyOutlined,
   DescriptionOutlined,
-  TargetOutlined,
   PublicOutlined,
   CheckCircleOutlined,
-  FilterCenterFocusOutlined,
 } from "@mui/icons-material";
+import { FilterCenterFocusOutlined } from "@mui/icons-material";
 import uiConfigs from "../configs/ui.config";
 
 const PrivacyPage = () => {

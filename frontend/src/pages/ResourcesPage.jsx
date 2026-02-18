@@ -8,10 +8,6 @@ import {
   Card,
   CardContent,
   Button,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
   Divider,
 } from "@mui/material";
 import {
@@ -19,7 +15,6 @@ import {
   VideoLibraryOutlined,
   ArticleOutlined,
   SchoolOutlined,
-  LibraryBooksOutlined,
   DownloadOutlined,
   LinkOutlined,
   CheckCircleOutlined,

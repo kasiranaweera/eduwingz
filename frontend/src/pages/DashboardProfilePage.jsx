@@ -20,8 +20,6 @@ import {
   DialogActions,
   TextField,
   LinearProgress,
-  Tabs,
-  Tab,
 } from "@mui/material";
 import {
   Share,
@@ -31,11 +29,9 @@ import {
   Link as LinkIcon,
   GitHub,
   Mail,
-  Star,
   EmojiEvents,
   Quiz,
   MenuBook,
-  ArrowBack,
   MoreHoriz,
 } from "@mui/icons-material";
 import { useSelector } from "react-redux";
@@ -50,7 +46,6 @@ const DashboardProfilePage = () => {
   const [error, setError] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState({});
-  const [activeTab, setActiveTab] = useState(0);
 
   const userId = user?.user_id || user?.id || null;
 

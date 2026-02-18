@@ -5,11 +5,9 @@ import {
   List,
   ListItem,
   ListItemAvatar,
-  ListItemText,
   Paper,
   CircularProgress,
   useTheme,
-  useMediaQuery,
   IconButton,
   Button,
   Typography,
@@ -31,11 +29,9 @@ import notificationApi from "../api/modules/notification.api";
 import { useSelector } from "react-redux";
 
 import { AccountCircle } from "@mui/icons-material";
-import KeyboardDoubleArrowUpIcon from "@mui/icons-material/KeyboardDoubleArrowUp";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import AnimatedCollapsible from "../components/AnimatedCollapsible";
 
 import ReplayIcon from "@mui/icons-material/Replay";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
@@ -47,7 +43,6 @@ import BookmarksIcon from "@mui/icons-material/Bookmarks";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import BookmarksOutlinedIcon from "@mui/icons-material/BookmarksOutlined";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
-import FilePresentOutlinedIcon from "@mui/icons-material/FilePresentOutlined";
 import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
@@ -81,8 +76,8 @@ const normalizeMessage = (source, sender, fallbackIdPrefix) => {
 };
 
 const ChatPage = () => {
-  const { themeMode } = useSelector((state) => state.themeMode);
-  const theme = useTheme();
+  const { themeMode: _ } = useSelector((state) => state.themeMode);
+  useTheme();
   const location = useLocation();
   const { sessionId } = useParams();
   const navigate = useNavigate();

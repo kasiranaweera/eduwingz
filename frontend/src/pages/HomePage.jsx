@@ -30,7 +30,7 @@ import { LoadingButton } from "@mui/lab";
 import FloatingElement from "../components/common/FloatingElement";
 import DarkVeil from "../components/common/DarkVeil";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import { Grid } from "@mui/system";
+import { Grid as GridSystem } from "@mui/system";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import FilterTiltShiftIcon from "@mui/icons-material/FilterTiltShift";
 import TimelineIcon from "@mui/icons-material/Timeline";
@@ -46,7 +46,7 @@ const HomePage = () => {
   const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
   const [value, setValue] = useState(0);
 
-  const settings = {
+  const sliderSettings = {
     dots: true,
     infinite: true,
     speed: 600,

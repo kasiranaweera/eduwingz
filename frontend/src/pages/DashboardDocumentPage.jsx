@@ -26,8 +26,6 @@ import {
   Add as AddIcon,
   FilterList as FilterListIcon,
   SwapVert as SortIcon,
-  MoreVert as MoreVertIcon,
-  Close as CloseIcon,
   Download as DownloadIcon,
   Share as ShareIcon,
   Delete as DeleteIcon,
@@ -123,8 +121,6 @@ const DashboardDocumentPage = () => {
   const [categoryAnchorEl, setCategoryAnchorEl] = useState(null);
   const [typeAnchorEl, setTypeAnchorEl] = useState(null);
   const [sortAnchorEl, setSortAnchorEl] = useState(null);
-  const [docAnchorEl, setDocAnchorEl] = useState(null);
-  const [selectedDocId, setSelectedDocId] = useState(null);
 
   // Modal states
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -236,10 +232,6 @@ const DashboardDocumentPage = () => {
     });
 
     setFilteredDocuments(filtered);
-  };
-
-  const handleToggleSort = () => {
-    setIsAscending(!isAscending);
   };
 
   const handleDocumentClick = (doc) => {

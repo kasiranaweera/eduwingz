@@ -33,7 +33,6 @@ import {
   HelpOutline,
   Edit,
   Lock,
-  BugReport,
   PrivacyTip,
   OpenInNew,
   Save,

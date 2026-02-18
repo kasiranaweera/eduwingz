@@ -18,7 +18,6 @@ import {
   DialogActions,
   Divider,
   CircularProgress,
-  Tooltip,
   Menu,
   MenuItem,
   LinearProgress,
@@ -37,7 +36,6 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SchoolIcon from "@mui/icons-material/School";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
 import TimerIcon from "@mui/icons-material/Timer";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 
@@ -266,7 +264,6 @@ const PlatformQuizzesPage = () => {
   };
 
   const handleStartQuiz = (quizId) => {
-    const quiz = quizzes.find((q) => q.id === quizId);
     setSelectedQuizId(quizId);
     setCurrentQuizIndex(0);
     setUserAnswers({});

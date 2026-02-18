@@ -1,12 +1,10 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
   Paper,
-  Grid,
   Card,
   CardContent,
-  CardMedia,
   CardActions,
   Button,
   IconButton,
@@ -19,16 +17,10 @@ import {
   DialogContent,
   DialogActions,
   Divider,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
   Tooltip,
   CircularProgress,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import ThumbUpIcon from "@mui/icons-material/ThumbUp";
-import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import ShareIcon from "@mui/icons-material/Share";
 import CommentIcon from "@mui/icons-material/Comment";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";

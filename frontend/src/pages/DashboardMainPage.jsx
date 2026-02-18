@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux';
 import ChatSection from '../components/ChatSection';
 import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
-import DashboardIcon from "@mui/icons-material/Dashboard";
 import { useNavigate } from 'react-router-dom';
 import chatApi from '../api/modules/chat.api';
 import ShinyText from '../components/common/ShinyText';
