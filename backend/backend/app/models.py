@@ -45,7 +45,11 @@ class Profile(TimeStampedModel):
     other = models.ForeignKey(OtherDetail, on_delete=models.SET_NULL, blank=True, null=True)
 
     def __str__(self):
-        return self.profile_id
+        if self.profile_id:
+            return self.profile_id
+        elif self.user:
+            return self.user.email
+        return str(self.id)
 
     def save(self, *args, **kwargs):
         if not self.profile_id and self.user_id:
@@ -135,7 +139,9 @@ class Achievement(TimeStampedModel):
     points = models.IntegerField(default=0)
 
     def __str__(self):
-        return f"{self.profile.profile_id} - {self.title}"
+        profile_display = (self.profile.profile_id if self.profile and self.profile.profile_id else 
+                          str(self.profile.id) if self.profile else "Unknown")
+        return f"{profile_display} - {self.title}"
 
 
 class LearningStyleProfile(TimeStampedModel):
@@ -150,7 +156,9 @@ class LearningStyleProfile(TimeStampedModel):
     confidence = models.FloatField(default=0.0)
 
     def __str__(self):
-        return f"{self.profile.profile_id} - {self.current_style}"
+        profile_display = (self.profile.profile_id if self.profile and self.profile.profile_id else 
+                          str(self.profile.id) if self.profile else "Unknown")
+        return f"{profile_display} - {self.current_style}"
 
 
 class LearningStyleHistory(TimeStampedModel):
@@ -160,7 +168,11 @@ class LearningStyleHistory(TimeStampedModel):
     recorded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.learning_style.profile.profile_id} @ {self.recorded_at}: {self.style}"
+        if self.learning_style and self.learning_style.profile:
+            profile_display = (self.learning_style.profile.profile_id or 
+                             str(self.learning_style.profile.id))
+            return f"{profile_display} @ {self.recorded_at}: {self.style}"
+        return f"Learning Style @ {self.recorded_at}: {self.style}"
 
 
 class Competency(TimeStampedModel):
@@ -174,7 +186,9 @@ class Competency(TimeStampedModel):
         unique_together = ('profile', 'subject', 'topic')
 
     def __str__(self):
-        return f"{self.profile.profile_id} - {self.subject}/{self.topic}: {self.level}"
+        profile_display = (self.profile.profile_id if self.profile and self.profile.profile_id else 
+                          str(self.profile.id) if self.profile else "Unknown")
+        return f"{profile_display} - {self.subject}/{self.topic}: {self.level}"
 
 
 class CompetencyHistory(TimeStampedModel):
@@ -194,7 +208,9 @@ class EngagementMetric(TimeStampedModel):
     interaction_depth = models.FloatField(default=0.0)
 
     def __str__(self):
-        return f"{self.profile.profile_id} - {self.session_date} ({self.duration_seconds}s)"
+        profile_display = (self.profile.profile_id if self.profile and self.profile.profile_id else 
+                          str(self.profile.id) if self.profile else "Unknown")
+        return f"{profile_display} - {self.session_date} ({self.duration_seconds}s)"
 
 
 class PerformanceTrend(TimeStampedModel):
@@ -205,7 +221,9 @@ class PerformanceTrend(TimeStampedModel):
     recorded_at = models.DateField()
 
     def __str__(self):
-        return f"{self.profile.profile_id} - {self.subject} @ {self.recorded_at}: {self.score}"
+        profile_display = (self.profile.profile_id if self.profile and self.profile.profile_id else 
+                          str(self.profile.id) if self.profile else "Unknown")
+        return f"{profile_display} - {self.subject} @ {self.recorded_at}: {self.score}"
 
 
 class InterventionFlag(TimeStampedModel):
@@ -217,7 +235,10 @@ class InterventionFlag(TimeStampedModel):
     resolved = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.profile.profile_id} - {self.subject}/{self.topic} - {'resolved' if self.resolved else 'open'}"
+        profile_display = (self.profile.profile_id if self.profile and self.profile.profile_id else 
+                          str(self.profile.id) if self.profile else "Unknown")
+        status = 'resolved' if self.resolved else 'open'
+        return f"{profile_display} - {self.subject}/{self.topic} - {status}"
 
 
 class ClassAnalyticsSnapshot(TimeStampedModel):
