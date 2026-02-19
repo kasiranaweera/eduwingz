@@ -13,3 +13,16 @@ django-cors-headers>=4.5.0
 dj-database-url==2.1.0
 whitenoise==6.11.0
 gunicorn>=21.0.0
+
+# LangChain & AI Framework (compatible versions)
+langchain==0.3.27
+langchain-core==0.3.72
+langchain-community==0.3.27
+langchain-ollama==0.2.0
+
+# Embeddings & Vector Store
+sentence-transformers==2.7.0
+faiss-cpu==1.13.2
+
+# Utilities
+certifi>=2024.0.0

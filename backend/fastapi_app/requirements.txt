@@ -14,18 +14,17 @@ pydantic>=2.7.0  # Ensure wheels available for Python 3.13+
 pydantic-settings>=2.1.0
 python-dotenv==1.0.0
 
-# LangChain & AI Framework
-langchain>=0.2.0
-langchain-core>=0.2.20,<0.3.0
-langchain-community>=0.2.0
-langchain-ollama>=0.2.0
+# LangChain & AI Framework (compatible versions)
+langchain==0.3.27
+langchain-core==0.3.72
+langchain-community==0.3.27
+langchain-ollama==0.2.0
 
 # Embeddings & Vector Store
 sentence-transformers==2.7.0
 faiss-cpu==1.13.2
 
 # ML & Data Processing
-torch>=2.0.0
 transformers>=4.36.0
 numpy>=1.26.0  # Pin to version with wheels for Python 3.13+
 pypdf>=3.17.0
