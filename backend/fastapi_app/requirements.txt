@@ -3,6 +3,9 @@ pip>=24.0
 setuptools>=75.0
 wheel>=0.40
 
+# Greenlet compatibility - pin to version with wheels for Python 3.13+
+greenlet>=3.1.0
+
 # FastAPI & Web Framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
