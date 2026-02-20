@@ -3,7 +3,7 @@ pip>=24.0
 setuptools>=75.0
 wheel>=0.40
 
-# Greenlet compatibility - pin to version with wheels for Python 3.13+
+# Greenlet compatibility - pin to version with wheels for Python 3.11
 greenlet>=3.1.0
 
 # FastAPI & Web Framework
@@ -13,12 +13,12 @@ python-jose[cryptography]==3.3.0
 PyJWT==2.11.0
 python-multipart==0.0.6
 
-# Pydantic & Settings
-pydantic>=2.7.0  # Ensure wheels available for Python 3.13+
+# Pydantic & Settings (use Python 3.11 compatible versions)
+pydantic>=2.7.0
 pydantic-settings>=2.1.0
 python-dotenv==1.0.0
 
-# LangChain & AI Framework (compatible versions)
+# LangChain & AI Framework (compatible with Python 3.11)
 langchain==0.3.27
 langchain-core==0.3.72
 langchain-community==0.3.27
@@ -30,9 +30,9 @@ langchain-text-splitters>=0.2.0
 sentence-transformers==2.7.0
 faiss-cpu==1.13.2
 
-# ML & Data Processing
+# ML & Data Processing (ensure Python 3.11 compatibility)
 transformers>=4.36.0
-numpy>=1.26.0  # Pin to version with wheels for Python 3.13+
+numpy>=1.26.0,<2.0.0
 pypdf>=3.17.0
 
 # Search & Knowledge Tools

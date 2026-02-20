@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
+from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 import uvicorn
 from datetime import datetime
 import jwt
@@ -10,35 +10,66 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 import asyncio
 from contextlib import asynccontextmanager
-from services.rag_service import RAGService
-from services.agent_service import ReasoningAgent
-from services.lesson_generator_service import LessonGeneratorService
-from config import settings
-from fastapi import Form
-from langchain_core.messages import AIMessage, HumanMessage
 import io
 import base64
+import sys
+import traceback
+
+# Try to import main dependencies, but handle failures gracefully
+try:
+    from services.rag_service import RAGService
+    from services.agent_service import ReasoningAgent
+    from services.lesson_generator_service import LessonGeneratorService
+    from langchain_core.messages import AIMessage, HumanMessage
+    MAIN_SERVICES_AVAILABLE = True
+except Exception as e:
+    print(f"⚠️ Warning: Could not import main services: {e}")
+    traceback.print_exc()
+    MAIN_SERVICES_AVAILABLE = False
+    RAGService = None
+    ReasoningAgent = None
+    LessonGeneratorService = None
+
+try:
+    from config import settings
+except Exception as e:
+    print(f"⚠️ Warning: Could not import settings: {e}")
+    # Create a minimal settings object for fallback
+    class MinimalSettings:
+        SECRET_KEY = os.getenv("SECRET_KEY", "fallback-key-not-for-production")
+        ALGORITHM = "HS256"
+    settings = MinimalSettings()
+
 # edu design generator router
 try:
     from edu_design_generator.router import router as edu_design_router
-except Exception:
+except Exception as e:
+    print(f"⚠️ Warning: Could not import edu_design_router: {e}")
     edu_design_router = None
 
-rag_service = RAGService()
+rag_service = RAGService() if MAIN_SERVICES_AVAILABLE else None
 agent_service = None  # Will be initialized after RAG service
 lesson_generator_service = None  # Will be initialized after RAG service
 tts_engine = None
 stt_engine = None
 _initialization_lock = asyncio.Lock()
 _services_initialized = False
+_initialization_error = None
 
 async def ensure_services_initialized():
     """Lazy initialize services on first use to avoid startup timeout"""
-    global agent_service, lesson_generator_service, tts_engine, stt_engine, _services_initialized
+    global agent_service, lesson_generator_service, tts_engine, stt_engine, _services_initialized, _initialization_error
+    
+    if not MAIN_SERVICES_AVAILABLE:
+        print("⚠️ Main services not available, skipping initialization")
+        return
     
     async with _initialization_lock:
         if _services_initialized:
             return
+        
+        if _initialization_error:
+            raise RuntimeError(f"Previous initialization failed: {_initialization_error}")
         
         print("🚀 Initializing services on first request...")
         try:
@@ -53,8 +84,6 @@ async def ensure_services_initialized():
             
             # TTS engine
             try:
-                import sys
-                import os
                 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'text-to-speech'))
                 from tts_engine import TextToSpeech
                 print("📢 Initializing Text-to-Speech engine...")
@@ -69,8 +98,6 @@ async def ensure_services_initialized():
             
             # Initialize STT engine
             try:
-                import sys
-                import os
                 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'speech-to-text'))
                 from stt_engine import stt
                 print("🎤 STT engine already initialized in stt_engine.py")
@@ -86,13 +113,22 @@ async def ensure_services_initialized():
             _services_initialized = True
             print("✅ Services initialized successfully!")
         except Exception as e:
+            _initialization_error = str(e)
             print(f"❌ Error initializing services: {e}")
+            traceback.print_exc()
             raise
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Minimal lifespan - just start the app, services initialize on first request"""
-    print("✅ FastAPI app started. Services will initialize on first request.")
+    print("=" * 60)
+    print("✅ FastAPI app started successfully!")
+    print("=" * 60)
+    if MAIN_SERVICES_AVAILABLE:
+        print("📚 Main services available - services will initialize on first request")
+    else:
+        print("⚠️  Main services not available - app running in limited mode")
+    print("=" * 60)
     yield
     print("🔄 Shutting down...")
 
@@ -107,14 +143,32 @@ app = FastAPI(
 if edu_design_router is not None:
     app.include_router(edu_design_router, prefix="/api/edu-design")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+# Get CORS origins from environment or use defaults
+cors_origins = os.getenv("CORS_ORIGINS", "").split(",") if os.getenv("CORS_ORIGINS") else []
+cors_origins = [origin.strip() for origin in cors_origins if origin.strip()]
+
+# Add default local development origins if CORS_ORIGINS not set
+if not cors_origins:
+    cors_origins = [
         "http://localhost:8001",
         "http://localhost:3000",
         "http://127.0.0.1:8001",
         "http://127.0.0.1:3000",
-    ],
+    ]
+else:
+    # Always add local development origins
+    cors_origins.extend([
+        "http://localhost:8001",
+        "http://localhost:3000",
+        "http://127.0.0.1:8001",
+        "http://127.0.0.1:3000",
+    ])
+
+print(f"🔐 CORS allowed origins: {cors_origins}")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -122,7 +176,36 @@ app.add_middleware(
 
 security = HTTPBearer()
 
+# ============================================================================
+# HEALTH CHECK ENDPOINT - MUST BE PUBLICLY ACCESSIBLE FOR RENDER
+# ============================================================================
+@app.get("/health")
+async def health_check():
+    """Health check endpoint - no authentication required"""
+    return {
+        "status": "ok",
+        "services_available": MAIN_SERVICES_AVAILABLE,
+        "services_initialized": _services_initialized,
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.get("/api/status")
+async def api_status():
+    """API status endpoint"""
+    return {
+        "status": "running",
+        "main_services_available": MAIN_SERVICES_AVAILABLE,
+        "main_services_initialized": _services_initialized,
+        "tts_available": tts_engine is not None,
+        "stt_available": stt_engine is not None,
+        "initialization_error": _initialization_error
+    }
+
+# ============================================================================
+# AUTHENTICATION
+# ============================================================================
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify JWT token"""
     try:
         payload = jwt.decode(credentials.credentials, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id: int = payload.get("sub")
@@ -232,14 +315,6 @@ async def clear_session(session_id: str, user_id: int = Depends(verify_token)):
     """Clear session history in RAG service"""
     rag_service.clear_session_history(session_id)
     return {"message": "Session history cleared"}
-
-@app.get("/api/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "timestamp": datetime.utcnow(),
-        "version": "1.0.0"
-    }
 
 # ==================== LESSON GENERATION ENDPOINT ====================
 

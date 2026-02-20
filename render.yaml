@@ -24,6 +24,8 @@ services:
     buildCommand: pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --timeout-keep-alive 180
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.0"
       - key: DEBUG
         value: "False"
       - key: ENVIRONMENT
