@@ -27,56 +27,72 @@ except Exception:
 rag_service = RAGService()
 agent_service = None  # Will be initialized after RAG service
 lesson_generator_service = None  # Will be initialized after RAG service
+tts_engine = None
+stt_engine = None
+_initialization_lock = asyncio.Lock()
+_services_initialized = False
+
+async def ensure_services_initialized():
+    """Lazy initialize services on first use to avoid startup timeout"""
+    global agent_service, lesson_generator_service, tts_engine, stt_engine, _services_initialized
+    
+    async with _initialization_lock:
+        if _services_initialized:
+            return
+        
+        print("🚀 Initializing services on first request...")
+        try:
+            await rag_service.initialize()
+            # Initialize agent service with RAG service's LLM
+            agent_service = ReasoningAgent(
+                llm_client=rag_service.llm,
+                embedding_model=rag_service.embedding_model
+            )
+            # Initialize lesson generator service with RAG service's LLM and RAG service
+            lesson_generator_service = LessonGeneratorService(llm_client=rag_service.llm, rag_service=rag_service)
+            
+            # TTS engine
+            try:
+                import sys
+                import os
+                sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'text-to-speech'))
+                from tts_engine import TextToSpeech
+                print("📢 Initializing Text-to-Speech engine...")
+                tts_engine = TextToSpeech("eng")
+                print("✅ TTS engine initialized!")
+            except ModuleNotFoundError as e:
+                print(f"⚠️ Warning: TTS dependencies not installed: {e}")
+                tts_engine = None
+            except Exception as e:
+                print(f"⚠️ Warning: TTS engine initialization failed: {e}")
+                tts_engine = None
+            
+            # Initialize STT engine
+            try:
+                import sys
+                import os
+                sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'speech-to-text'))
+                from stt_engine import stt
+                print("🎤 STT engine already initialized in stt_engine.py")
+                stt_engine = stt
+                print("✅ STT engine ready!")
+            except ModuleNotFoundError as e:
+                print(f"⚠️ Warning: STT dependencies not installed: {e}")
+                stt_engine = None
+            except Exception as e:
+                print(f"⚠️ Warning: STT engine initialization failed: {e}")
+                stt_engine = None
+            
+            _services_initialized = True
+            print("✅ Services initialized successfully!")
+        except Exception as e:
+            print(f"❌ Error initializing services: {e}")
+            raise
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global agent_service, lesson_generator_service
-    print("🚀 Starting RAG Chat API...")
-    await rag_service.initialize()
-    # Initialize agent service with RAG service's LLM
-    agent_service = ReasoningAgent(
-        llm_client=rag_service.llm,
-        embedding_model=rag_service.embedding_model
-    )
-    # Initialize lesson generator service with RAG service's LLM and RAG service
-    lesson_generator_service = LessonGeneratorService(llm_client=rag_service.llm, rag_service=rag_service)
-    # TTS engine
-    try:
-        import sys
-        import os
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'text-to-speech'))
-        from tts_engine import TextToSpeech
-        global tts_engine
-        print("📢 Initializing Text-to-Speech engine...")
-        tts_engine = TextToSpeech("eng")
-        print("✅ TTS engine initialized!")
-    except ModuleNotFoundError as e:
-        print(f"⚠️ Warning: TTS dependencies not installed: {e}")
-        print("   Install with: pip install torch transformers soundfile librosa")
-        tts_engine = None
-    except Exception as e:
-        print(f"⚠️ Warning: TTS engine initialization failed: {e}")
-        tts_engine = None
-    
-    # Initialize STT engine
-    try:
-        import sys
-        import os
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'speech-to-text'))
-        from stt_engine import stt
-        global stt_engine
-        print("🎤 STT engine already initialized in stt_engine.py")
-        stt_engine = stt
-        print("✅ STT engine ready!")
-    except ModuleNotFoundError as e:
-        print(f"⚠️ Warning: STT dependencies not installed: {e}")
-        print("   Install with: pip install torch transformers")
-        stt_engine = None
-    except Exception as e:
-        print(f"⚠️ Warning: STT engine initialization failed: {e}")
-        stt_engine = None
-    
-    print("✅ Services initialized successfully!")
+    """Minimal lifespan - just start the app, services initialize on first request"""
+    print("✅ FastAPI app started. Services will initialize on first request.")
     yield
     print("🔄 Shutting down...")
 
@@ -131,6 +147,7 @@ async def process_message(message: MessageCreate, user_id: int = Depends(verify_
     3. Activate other tools (code execution, etc.) as needed based on query type
     """
     try:
+        await ensure_services_initialized()
         # First, try to get RAG results
         rag_response = await rag_service.chat(
             message.content, 
@@ -199,6 +216,8 @@ async def process_document(
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
     
+    await ensure_services_initialized()
+    
     file_path = f"media/uploads/{file.filename}"
     os.makedirs("media/uploads", exist_ok=True)
     with open(file_path, "wb") as f:
@@ -255,6 +274,7 @@ async def generate_lesson(request: GenerateLessonRequest):
         Generated topics in JSON format
     """
     try:
+        await ensure_services_initialized()
         print(f"📚 [API] Received lesson generation request:")
         print(f"   Grade: {request.grade}")
         print(f"   Subject: {request.subject}")
@@ -296,6 +316,7 @@ async def generate_lesson(request: GenerateLessonRequest):
 async def generate_topic_content(request: TopicContentRequest):
     """Generate adaptive content for a single topic using ILS learning profile."""
     try:
+        await ensure_services_initialized()
         print(f"📚 [API] Received topic content request: {request.topic_title} (Grade {request.grade} - {request.subject})")
         
         # Get learning profile if session_id provided
@@ -344,6 +365,7 @@ async def submit_questionnaire(
 ):
     """Submit ILS questionnaire responses and update learning profile"""
     try:
+        await ensure_services_initialized()
         print(f"📝 [Questionnaire] Received questionnaire submission for session: {questionnaire.session_id}")
         learning_profile = rag_service.get_or_create_learning_profile(questionnaire.session_id)
         
@@ -381,6 +403,7 @@ async def get_learning_profile(
 ):
     """Get learning profile for a session"""
     try:
+        await ensure_services_initialized()
         learning_profile = rag_service.get_or_create_learning_profile(session_id)
         learning_style = learning_profile.get_learning_style()
         
@@ -405,6 +428,7 @@ async def continue_response(
 ):
     """Continue generating response from where it left off"""
     try:
+        await ensure_services_initialized()
         print(f"🔄 [Continue] Continuing response for session: {continue_msg.session_id}")
         
         # Get the last assistant message from history
@@ -497,6 +521,7 @@ async def agent_chat(
     - Combine RAG with reasoning for comprehensive answers
     """
     try:
+        await ensure_services_initialized()
         print(f"\n📡 Agent Chat Request received")
         
         response = await rag_service.chat_with_agent(
@@ -520,6 +545,7 @@ async def agent_chat(
 async def get_available_tools(user_id: int = Depends(verify_token)):
     """Get list of all available tools and their status"""
     try:
+        await ensure_services_initialized()
         tools_info = await rag_service.get_available_tools()
         return {
             "status": "success",
@@ -535,6 +561,7 @@ async def get_agent_memory(
 ):
     """Get agent's reasoning memory for a session"""
     try:
+        await ensure_services_initialized()
         memory_summary = rag_service.get_agent_memory_summary(session_id)
         return {
             "status": "success",
@@ -550,6 +577,7 @@ async def clear_agent_memory(
 ):
     """Clear agent's memory for a session"""
     try:
+        await ensure_services_initialized()
         rag_service.clear_agent_memory(session_id)
         return {
             "status": "success",
@@ -573,6 +601,7 @@ async def generate_speech(
 ):
     """Generate audio from text using Text-to-Speech engine"""
     try:
+        await ensure_services_initialized()
         if not tts_engine:
             raise HTTPException(
                 status_code=503,
@@ -622,6 +651,7 @@ async def generate_speech_stream(
 ):
     """Generate audio from text and stream as file (streaming response)"""
     try:
+        await ensure_services_initialized()
         if not tts_engine:
             raise HTTPException(
                 status_code=503,
@@ -672,6 +702,7 @@ async def transcribe_audio(
 ):
     """Transcribe audio file to text using Speech-to-Text engine"""
     try:
+        await ensure_services_initialized()
         if not stt_engine:
             raise HTTPException(
                 status_code=503,
@@ -731,6 +762,7 @@ async def transcribe_audio_base64(
 ):
     """Transcribe audio from base64 encoded data"""
     try:
+        await ensure_services_initialized()
         if not stt_engine:
             raise HTTPException(
                 status_code=503,

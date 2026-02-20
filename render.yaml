@@ -2,9 +2,9 @@ services:
   - type: web
     name: eduwingz-backend
     runtime: python
-    rootDir: backend/fastapi_app
+    rootDir: backend/backend
     buildCommand: pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --timeout-keep-alive 180
+    startCommand: gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT --timeout 600
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.0"
@@ -22,7 +22,7 @@ services:
     runtime: python
     rootDir: backend/fastapi_app
     buildCommand: pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 180
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --timeout-keep-alive 180
     envVars:
       - key: DEBUG
         value: "False"
