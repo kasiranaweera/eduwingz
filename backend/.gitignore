@@ -1,5 +1,6 @@
 # Ignore virtual environment
 backend/venv/
+backend/backend/app/management/commands/create_admin.py
 
 # Python cache files
 __pycache__/
