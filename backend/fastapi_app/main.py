@@ -15,13 +15,17 @@ import base64
 import sys
 import traceback
 
+print("🚀 FastAPI startup initiated...")
+
 # Try to import main dependencies, but handle failures gracefully
 try:
+    print("📦 Importing RAG and agent services...")
     from services.rag_service import RAGService
     from services.agent_service import ReasoningAgent
     from services.lesson_generator_service import LessonGeneratorService
     from langchain_core.messages import AIMessage, HumanMessage
     MAIN_SERVICES_AVAILABLE = True
+    print("✅ Main services imported successfully")
 except Exception as e:
     print(f"⚠️ Warning: Could not import main services: {e}")
     traceback.print_exc()
@@ -31,7 +35,9 @@ except Exception as e:
     LessonGeneratorService = None
 
 try:
+    print("⚙️ Loading configuration...")
     from config import settings
+    print("✅ Configuration loaded")
 except Exception as e:
     print(f"⚠️ Warning: Could not import settings: {e}")
     # Create a minimal settings object for fallback
@@ -42,7 +48,9 @@ except Exception as e:
 
 # edu design generator router
 try:
+    print("📚 Importing edu_design_generator...")
     from edu_design_generator.router import router as edu_design_router
+    print("✅ Edu design generator imported")
 except Exception as e:
     print(f"⚠️ Warning: Could not import edu_design_router: {e}")
     edu_design_router = None
@@ -55,6 +63,8 @@ stt_engine = None
 _initialization_lock = asyncio.Lock()
 _services_initialized = False
 _initialization_error = None
+
+print("✅ Global services initialized to None (lazy initialization enabled)")
 
 async def ensure_services_initialized():
     """Lazy initialize services on first use to avoid startup timeout"""
@@ -73,45 +83,53 @@ async def ensure_services_initialized():
         
         print("🚀 Initializing services on first request...")
         try:
+            print("  • Initializing RAG service...")
             await rag_service.initialize()
+            print("  ✅ RAG service initialized")
+            
             # Initialize agent service with RAG service's LLM
+            print("  • Initializing agent service...")
             agent_service = ReasoningAgent(
                 llm_client=rag_service.llm,
                 embedding_model=rag_service.embedding_model
             )
+            print("  ✅ Agent service initialized")
+            
             # Initialize lesson generator service with RAG service's LLM and RAG service
+            print("  • Initializing lesson generator service...")
             lesson_generator_service = LessonGeneratorService(llm_client=rag_service.llm, rag_service=rag_service)
+            print("  ✅ Lesson generator service initialized")
             
             # TTS engine
             try:
                 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'text-to-speech'))
                 from tts_engine import TextToSpeech
-                print("📢 Initializing Text-to-Speech engine...")
+                print("  • Initializing Text-to-Speech engine...")
                 tts_engine = TextToSpeech("eng")
-                print("✅ TTS engine initialized!")
+                print("  ✅ TTS engine initialized!")
             except ModuleNotFoundError as e:
-                print(f"⚠️ Warning: TTS dependencies not installed: {e}")
+                print(f"  ⚠️ Warning: TTS dependencies not installed: {e}")
                 tts_engine = None
             except Exception as e:
-                print(f"⚠️ Warning: TTS engine initialization failed: {e}")
+                print(f"  ⚠️ Warning: TTS engine initialization failed: {e}")
                 tts_engine = None
             
             # Initialize STT engine
             try:
                 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'speech-to-text'))
                 from stt_engine import stt
-                print("🎤 STT engine already initialized in stt_engine.py")
+                print("  • STT engine already initialized in stt_engine.py")
                 stt_engine = stt
-                print("✅ STT engine ready!")
+                print("  ✅ STT engine ready!")
             except ModuleNotFoundError as e:
-                print(f"⚠️ Warning: STT dependencies not installed: {e}")
+                print(f"  ⚠️ Warning: STT dependencies not installed: {e}")
                 stt_engine = None
             except Exception as e:
-                print(f"⚠️ Warning: STT engine initialization failed: {e}")
+                print(f"  ⚠️ Warning: STT engine initialization failed: {e}")
                 stt_engine = None
             
             _services_initialized = True
-            print("✅ Services initialized successfully!")
+            print("✅ All services initialized successfully!")
         except Exception as e:
             _initialization_error = str(e)
             print(f"❌ Error initializing services: {e}")
@@ -128,6 +146,8 @@ async def lifespan(app: FastAPI):
         print("📚 Main services available - services will initialize on first request")
     else:
         print("⚠️  Main services not available - app running in limited mode")
+    print("=" * 60)
+    print("🟢 App is now listening and ready to accept requests!")
     print("=" * 60)
     yield
     print("🔄 Shutting down...")
@@ -177,8 +197,17 @@ app.add_middleware(
 security = HTTPBearer()
 
 # ============================================================================
-# HEALTH CHECK ENDPOINT - MUST BE PUBLICLY ACCESSIBLE FOR RENDER
+# ROOT & HEALTH CHECK ENDPOINTS - MUST BE PUBLICLY ACCESSIBLE FOR RENDER
 # ============================================================================
+@app.get("/")
+async def root():
+    """Root endpoint - confirms app is running"""
+    return {
+        "message": "EduWingz FastAPI Backend",
+        "status": "running",
+        "version": "1.0.0"
+    }
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint - no authentication required"""
@@ -889,5 +918,11 @@ async def transcribe_audio_base64(
         raise HTTPException(status_code=500, detail=f"Error transcribing audio: {str(e)}")
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port, reload=False)
+    try:
+        port = int(os.getenv("PORT", 8000))
+        print(f"🚀 Starting Uvicorn server on 0.0.0.0:{port}")
+        uvicorn.run(app, host="0.0.0.0", port=port, reload=False)
+    except Exception as e:
+        print(f"❌ Failed to start server: {e}")
+        traceback.print_exc()
+        sys.exit(1)

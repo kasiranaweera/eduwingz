@@ -82,7 +82,7 @@ const SigninForm = ({ switchAuthState }) => {
     //   //   toast.success("Sign in success");
     //   // }
 
-      if (err) setErrorMessage(err.message);
+      if (err) setErrorMessage(err?.message || err?.detail || "An error occurred during login");
     }
 
   });

@@ -24,7 +24,9 @@ publicClient.interceptors.response.use((response) => {
   if (response && response.data) return response.data;
   return response;
 }, (err) => {
-  throw err.response.data;
+  // Be defensive: some errors (network issues) don't have response
+  if (err && err.response && err.response.data) throw err.response.data;
+  throw err;
 });
 
 export default publicClient;
