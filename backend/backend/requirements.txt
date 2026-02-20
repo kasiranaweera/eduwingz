@@ -17,7 +17,7 @@ gunicorn>=21.0.0
 
 # LangChain & AI Framework (compatible versions)
 langchain==0.3.27
-langchain-core==0.3.75
+langchain-core==0.3.83
 langchain-community==0.3.27
 langchain-ollama==0.3.10
 
