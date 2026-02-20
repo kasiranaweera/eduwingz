@@ -12,12 +12,14 @@ const publicClient = axios.create({
 });
 
 publicClient.interceptors.request.use(async config => {
-  return {
-    ...config,
-    headers: {
-      "Content-Type": "application/json"
-    }
+  const headers = {
+    ...(config && config.headers ? config.headers : {})
   };
+  if (!headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
+  config.headers = headers;
+  return config;
 });
 
 publicClient.interceptors.response.use((response) => {
@@ -25,7 +27,11 @@ publicClient.interceptors.response.use((response) => {
   return response;
 }, (err) => {
   // Be defensive: some errors (network issues) don't have response
-  if (err && err.response && err.response.data) throw err.response.data;
+  if (err && err.response && err.response.data) {
+    console.error("API Error Response:", err.response.data);
+    throw err.response.data;
+  }
+  console.error("API Error (no response data):", err);
   throw err;
 });
 

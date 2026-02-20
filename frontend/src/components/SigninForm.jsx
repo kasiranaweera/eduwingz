@@ -50,15 +50,20 @@ const SigninForm = ({ switchAuthState }) => {
       const { response, err } = await userApi.signin(values);
       setIsLoginRequest(false);
 
-    //   console.log("Response:", response);
-    //       console.log("Error:", err);
-
-    //   console.log("Access:", jwtDecode(response.access));
-    //   console.log("Refresh:", jwtDecode(response.refresh));
-
+      console.log("📋 [SigninForm] Response:", response);
+      console.log("📋 [SigninForm] Error:", err);
 
       if (response) {
+        console.log("✅ [SigninForm] Login successful, response keys:", Object.keys(response));
         signinForm.resetForm();
+        
+        // Check if response has access token
+        if (!response.access) {
+          console.error("❌ [SigninForm] No access token in response");
+          toast.error("Invalid login response - missing access token");
+          return;
+        }
+        
         const decodedToken = jwtDecode(response.access);
         const userObject = {
           username: decodedToken.username,
@@ -66,23 +71,19 @@ const SigninForm = ({ switchAuthState }) => {
           id: decodedToken.user_id,
           token: response.access
         };
-        console.log(userObject)
+        console.log("👤 [SigninForm] User object created:", userObject)
         dispatch(setUser(userObject));
         dispatch(setAuthModalOpen(false));
         toast.success("Sign in success");
       } else {
+        console.warn("⚠️ [SigninForm] No response object");
         toast.error("Username or password does not exist");
       }
 
-
-    //   // if (response.status===200) {
-    //   //   signinForm.resetForm();
-    //   //   dispatch(setUser(response));
-    //   //   dispatch(setAuthModalOpen(false));
-    //   //   toast.success("Sign in success");
-    //   // }
-
-      if (err) setErrorMessage(err?.message || err?.detail || "An error occurred during login");
+      if (err) {
+        console.error("❌ [SigninForm] Error details:", err);
+        setErrorMessage(err?.message || err?.detail || "An error occurred during login");
+      }
     }
 
   });
