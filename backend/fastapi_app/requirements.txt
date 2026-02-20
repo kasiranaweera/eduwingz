@@ -23,7 +23,7 @@ langchain==0.3.27
 langchain-core==0.3.72
 langchain-community==0.3.27
 langchain-ollama==0.2.0
-langchain-huggingface==0.0.42
+langchain-huggingface==0.3.1
 langchain-text-splitters==0.3.9
 
 # Embeddings & Vector Store
