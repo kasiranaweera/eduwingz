@@ -25,7 +25,7 @@ services:
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --timeout-keep-alive 180
     envVars:
       - key: PYTHON_VERSION
-        value: "3.11.0"
+        value: "3.13.0"
       - key: DEBUG
         value: "False"
       - key: ENVIRONMENT
