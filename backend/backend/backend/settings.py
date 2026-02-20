@@ -150,7 +150,13 @@ AUTH_USER_MODEL = 'users.User'
 # CSRF Configuration for JSON APIs
 CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read CSRF token
-CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax' if DEBUG else 'None'
+CSRF_COOKIE_AGE = 31449600  # One year
+
+# Session configuration for CORS
+SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax' if DEBUG else 'None'
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'

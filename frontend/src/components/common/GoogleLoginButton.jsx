@@ -3,7 +3,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://eduwingz-backend.onrender.com';
 
 function GoogleLoginButton() {
   const onSuccess = async (credentialResponse) => {
