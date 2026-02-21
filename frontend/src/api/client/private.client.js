@@ -4,8 +4,11 @@ import queryString from "query-string";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://eduwingz-backend.onrender.com";
 const baseURL = BACKEND_URL;
 
+console.log("🔌 Private Client initialized with baseURL:", baseURL);
+
 const privateClient = axios.create({
   baseURL,
+  timeout: 30000, // 30 second timeout
   paramsSerializer: {
     encode: params => queryString.stringify(params)
   }
@@ -43,15 +46,39 @@ privateClient.interceptors.request.use(async config => {
 
   // Mutate and return the config object as expected by axios
   config.headers = headers;
+  console.log("📤 [Private API Request]", config.method.toUpperCase(), config.url, token ? "[Authenticated]" : "[Public]");
   return config;
 });
 
 privateClient.interceptors.response.use((response) => {
+  console.log("✅ [Private API Response]", response.status, response.statusText);
   if (response && response.data) return response.data;
   return response;
 }, (err) => {
-  // Be defensive: some errors (network issues) don't have response
-  if (err && err.response && err.response.data) throw err.response.data;
+  // Network error or no response from server
+  if (!err.response) {
+    console.error("❌ [Network Error]", {
+      message: err.message,
+      code: err.code,
+      baseURL: baseURL,
+      url: err.config?.url,
+      timeout: err.config?.timeout
+    });
+    const networkError = new Error(
+      `Network error: Cannot reach ${baseURL}. Check if the server is running and accessible.`
+    );
+    throw networkError;
+  }
+  
+  // Server responded with error status
+  console.error("❌ [API Error Response]", {
+    status: err.response.status,
+    statusText: err.response.statusText,
+    data: err.response.data,
+    url: err.response.config?.url
+  });
+  
+  if (err.response.data) throw err.response.data;
   throw err;
 });
 
