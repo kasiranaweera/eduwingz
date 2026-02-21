@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', '21444d310f654572d297c5b2b6363273d5ab6754580c26a846858a9702f61a10')
 
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+DEBUG = os.getenv('DEBUG', 'False') == 'False'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,eduwingz-backend.onrender.com').split(',')
 # Strip whitespace from ALLOWED_HOSTS
