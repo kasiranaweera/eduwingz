@@ -3,6 +3,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
 
 def api_root(request):
     """Root API endpoint that shows available endpoints"""
@@ -17,6 +18,10 @@ def api_root(request):
             'lessons': '/lessons/',
         }
     })
+
+def options_handler(request):
+    """Explicit OPTIONS handler for CORS preflight requests"""
+    return JsonResponse({})
 
 urlpatterns = [
     path('', api_root, name='api-root'),

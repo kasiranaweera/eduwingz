@@ -96,6 +96,11 @@ CORS_EXPOSE_HEADERS = [
     'x-csrftoken',
 ]
 
+# Additional CORS settings for django-cors-headers
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
+CORS_ALLOW_ALL_ORIGINS = False  # Use specific origins
+CORS_URLS_REGEX = r'^.*$'  # Apply CORS to all URLs
+
 ROOT_URLCONF = 'backend.urls'
 
 TEMPLATES = [
