@@ -52,18 +52,55 @@ const SignupForm = ({ switchAuthState, profileSetupState }) => {
     onSubmit: async (values) => {
       setErrorMessage(undefined);
       setIsLoginRequest(true);
+      
+      console.log("🔄 [SIGNUP] Registering with:", values.email, values.username);
+      
       const { response, err } = await userApi.signup(values);
       setIsLoginRequest(false);
 
-      if (response) {
+      console.log("📋 [SIGNUP] Response:", response);
+      console.log("📋 [SIGNUP] Error:", err);
+
+      // Successful signup
+      if (response && response.email) {
+        console.log("✅ [SIGNUP] Registration successful!");
         signinForm.resetForm();
-        dispatch(setUser(response));
-        dispatch(setAuthModalOpen(false));
-        toast.success("Sign in success");
-        navigate("/profile-setup");
+        toast.success("Account created successfully! Please check your email to verify.");
+        
+        // Switch back to login form
+        switchAuthState();
+        return;
       }
 
-      if (err) setErrorMessage(err.message);
+      // Handle errors
+      if (err) {
+        console.error("❌ [SIGNUP] Error occurred:", err);
+        
+        let errorMsg = "Registration failed. Please try again.";
+        
+        // Check for specific error messages
+        if (err.message) {
+          errorMsg = err.message;
+        }
+        // Check for field-specific errors from backend
+        else if (err.email && Array.isArray(err.email)) {
+          errorMsg = err.email[0];
+        } else if (err.username && Array.isArray(err.username)) {
+          errorMsg = err.username[0];
+        } else if (err.password && Array.isArray(err.password)) {
+          errorMsg = err.password[0];
+        } else if (err.password2 && Array.isArray(err.password2)) {
+          errorMsg = err.password2[0];
+        } else if (err.detail) {
+          errorMsg = err.detail;
+        } else if (err.non_field_errors && Array.isArray(err.non_field_errors)) {
+          errorMsg = err.non_field_errors[0];
+        }
+        
+        setErrorMessage(errorMsg);
+      } else {
+        setErrorMessage("Registration failed. Please try again.");
+      }
     },
     // onSubmit: async values => {
     // setErrorMessage(undefined);

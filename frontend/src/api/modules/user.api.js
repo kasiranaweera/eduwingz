@@ -26,14 +26,21 @@ const userApi = {
   },
   signup: async ({ email, username, password, confirmPassword}) => {
     try {
+      console.log("🔄 [SIGNUP] Sending registration request to:", userEndpoints.signup);
+      console.log("🔄 [SIGNUP] Data:", { email, username, password: "***" });
+      
       // backend RegisterSerializer expects `password2` as the confirmation field name
       const response = await publicClient.post(
         userEndpoints.signup,
         { email, username, password, password2: confirmPassword }
       );
 
+      console.log("✅ [SIGNUP] Response received:", response);
       return { response };
-    } catch (err) { return { err }; }
+    } catch (err) { 
+      console.error("❌ [SIGNUP] Error occurred:", err);
+      return { err }; 
+    }
   },
   getInfo: async () => {
     try {
