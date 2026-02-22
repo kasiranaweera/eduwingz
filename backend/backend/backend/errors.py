@@ -1,6 +1,7 @@
 from rest_framework.views import exception_handler
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 
 def custom_exception_handler(exc, context):
     """
@@ -13,6 +14,10 @@ def custom_exception_handler(exc, context):
             {"detail": "An unexpected error occurred."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+    
+    # If it's a validation error, return the data as-is (already in proper format)
+    if isinstance(exc, ValidationError):
+        return response
     
     return response
 

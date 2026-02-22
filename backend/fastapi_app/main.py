@@ -167,24 +167,30 @@ if edu_design_router is not None:
 cors_origins = os.getenv("CORS_ORIGINS", "").split(",") if os.getenv("CORS_ORIGINS") else []
 cors_origins = [origin.strip() for origin in cors_origins if origin.strip()]
 
-# Add default local development origins if CORS_ORIGINS not set
-if not cors_origins:
-    cors_origins = [
-        "http://localhost:8001",
-        "http://localhost:3000",
-        "http://127.0.0.1:8001",
-        "http://127.0.0.1:3000",
-    ]
-else:
-    # Always add local development origins
-    cors_origins.extend([
-        "http://localhost:8001",
-        "http://localhost:3000",
-        "http://127.0.0.1:8001",
-        "http://127.0.0.1:3000",
-    ])
+# Define all origins: production, staging, and local development
+production_origins = [
+    "https://eduwingz.vercel.app",  # Frontend
+    "https://eduwingz-backend.onrender.com",  # Backend (for backend -> fastapi communication)
+    "https://eduwingz-fastapi.onrender.com",  # FastAPI itself (for internal calls)
+]
 
-print(f"🔐 CORS allowed origins: {cors_origins}")
+local_origins = [
+    "http://localhost:8001",
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8000",
+]
+
+# Combine all origins: from env + production + local
+all_origins = cors_origins + production_origins + local_origins
+# Remove duplicates and empty strings
+cors_origins = list(set(origin.strip() for origin in all_origins if origin.strip()))
+
+print(f"🔐 CORS allowed origins ({len(cors_origins)} total):")
+for origin in sorted(cors_origins):
+    print(f"   ✅ {origin}")
 
 app.add_middleware(
     CORSMiddleware,

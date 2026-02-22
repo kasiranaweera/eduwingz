@@ -40,7 +40,11 @@ class RegisterView(generics.CreateAPIView):
         try:
             # Use serializer to validate and create user
             serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
+            
+            if not serializer.is_valid():
+                # Return validation errors in proper format
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
             user = serializer.save()
 
             try:
@@ -66,7 +70,10 @@ class RegisterView(generics.CreateAPIView):
         
         except Exception as e:
             print(f"Registration error: {str(e)}")
-            return APIErrorResponse.bad_request(str(e))
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class VerifyEmailView(APIView):

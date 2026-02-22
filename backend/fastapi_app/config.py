@@ -17,7 +17,8 @@ class Settings(BaseSettings):
     MAX_TOKENS: int = 2048  # Maximum tokens for LLM response (DeepSeek can handle more)
     HUGGINGFACE_TOKEN: str | None = None  # Optional, for HuggingFace authentication if needed
     DEBUG: bool = True  # Optional, for debugging
-    FASTAPI_URL: str = "http://localhost:8000"  # For Django-FastAPI communication
+    FASTAPI_URL: str = "http://localhost:8000"  # For Django-FastAPI communication (can be overridden by env)
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8001,http://127.0.0.1:3000,http://127.0.0.1:8001"
     
     # ==================== API KEYS FOR TOOLS ====================
     HF_TOKEN: str | None = None  # HuggingFace token
