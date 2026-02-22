@@ -37,30 +37,36 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
 
     def create(self, request, *args, **kwargs):
-        # Use serializer to validate and create user
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-
         try:
-            # build verification link
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            token = default_token_generator.make_token(user)
-            # path: /users/verify-email/<uidb64>/<token>/
-            verify_path = f"/users/verify-email/{uid}/{token}/"
-            verify_url = request.build_absolute_uri(verify_path)
+            # Use serializer to validate and create user
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            user = serializer.save()
 
-            subject = 'Verify your email'
-            message = f'Hi {user.username},\n\nPlease verify your email by clicking the link below:\n{verify_url}\n\nIf you did not register, please ignore this email.'
-            from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@example.com')
+            try:
+                # build verification link
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
+                # path: /users/verify-email/<uidb64>/<token>/
+                verify_path = f"/users/verify-email/{uid}/{token}/"
+                verify_url = request.build_absolute_uri(verify_path)
 
-            send_mail(subject, message, from_email, [user.email], fail_silently=False)
+                subject = 'Verify your email'
+                message = f'Hi {user.username},\n\nPlease verify your email by clicking the link below:\n{verify_url}\n\nIf you did not register, please ignore this email.'
+                from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@example.com')
+
+                send_mail(subject, message, from_email, [user.email], fail_silently=True)
+            except Exception as e:
+                # Log email error but don't fail registration
+                print(f"Email sending error: {str(e)}")
+                pass
+
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        
         except Exception as e:
-            # Log/send error response if desired; don't fail registration because of email issues
-            pass
-
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            print(f"Registration error: {str(e)}")
+            return APIErrorResponse.bad_request(str(e))
 
 
 class VerifyEmailView(APIView):
