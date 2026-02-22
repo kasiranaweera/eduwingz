@@ -64,9 +64,18 @@ privateClient.interceptors.response.use((response) => {
       url: err.config?.url,
       timeout: err.config?.timeout
     });
-    const networkError = new Error(
-      `Network error: Cannot reach ${baseURL}. Check if the server is running and accessible.`
-    );
+    
+    // Create user-friendly error message
+    let errorMessage = "Unable to connect to the server. Please try again.";
+    
+    if (err.code === "ECONNABORTED") {
+      errorMessage = "Request timeout. The server is taking too long to respond. Please try again.";
+    } else if (err.code === "ERR_NETWORK") {
+      errorMessage = "Network error. Please check your internet connection.";
+    }
+    
+    const networkError = new Error(errorMessage);
+    networkError.code = err.code;
     throw networkError;
   }
   

@@ -60,7 +60,7 @@ const SigninForm = ({ switchAuthState }) => {
         // Check if response has access token
         if (!response.access) {
           console.error("❌ [SigninForm] No access token in response");
-          toast.error("Invalid login response - missing access token");
+          setErrorMessage("Invalid login response. Please try again.");
           return;
         }
         
@@ -75,14 +75,29 @@ const SigninForm = ({ switchAuthState }) => {
         dispatch(setUser(userObject));
         dispatch(setAuthModalOpen(false));
         toast.success("Sign in success");
-      } else {
-        console.warn("⚠️ [SigninForm] No response object");
-        toast.error("Username or password does not exist");
-      }
-
-      if (err) {
+      } else if (err) {
         console.error("❌ [SigninForm] Error details:", err);
-        setErrorMessage(err?.message || err?.detail || "An error occurred during login");
+        
+        // Handle different error types
+        let errorMsg = "An error occurred during login";
+        
+        // API/Server error responses
+        if (err.detail) {
+          errorMsg = err.detail;
+        } else if (err.message && err.message.includes("Network error")) {
+          errorMsg = "Connection error. Please check if the server is running.";
+        } else if (err.message && err.message.includes("timeout")) {
+          errorMsg = "Request timeout. Please try again.";
+        } else if (err.message) {
+          errorMsg = err.message;
+        } else if (err.non_field_errors && Array.isArray(err.non_field_errors)) {
+          errorMsg = err.non_field_errors[0];
+        }
+        
+        setErrorMessage(errorMsg);
+      } else {
+        console.warn("⚠️ [SigninForm] No response or error object");
+        setErrorMessage("Username or password does not exist");
       }
     }
 
