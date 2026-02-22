@@ -47,57 +47,72 @@ const SigninForm = ({ switchAuthState }) => {
     onSubmit: async values => {
       setErrorMessage(undefined);
       setIsLoginRequest(true);
+      
+      console.log("🔄 [LOGIN] Attempting to login with:", values.email);
+      
       const { response, err } = await userApi.signin(values);
       setIsLoginRequest(false);
 
-      console.log("📋 [SigninForm] Response:", response);
-      console.log("📋 [SigninForm] Error:", err);
+      console.log("📋 [LOGIN] Response:", response);
+      console.log("📋 [LOGIN] Error:", err);
 
-      if (response) {
-        console.log("✅ [SigninForm] Login successful, response keys:", Object.keys(response));
+      // Successful login
+      if (response && response.access) {
+        console.log("✅ [LOGIN] Login successful!");
         signinForm.resetForm();
         
-        // Check if response has access token
-        if (!response.access) {
-          console.error("❌ [SigninForm] No access token in response");
-          setErrorMessage("Invalid login response. Please try again.");
-          return;
+        try {
+          const decodedToken = jwtDecode(response.access);
+          const userObject = {
+            username: decodedToken.username,
+            email: decodedToken.email,
+            id: decodedToken.user_id,
+            token: response.access
+          };
+          console.log("👤 [LOGIN] User object created:", userObject)
+          dispatch(setUser(userObject));
+          dispatch(setAuthModalOpen(false));
+          toast.success("Sign in successful");
+        } catch (decodeErr) {
+          console.error("❌ [LOGIN] Token decode error:", decodeErr);
+          setErrorMessage("Invalid token received from server. Please try again.");
         }
+        return;
+      }
+
+      // Handle errors
+      if (err) {
+        console.error("❌ [LOGIN] Error occurred:", err);
         
-        const decodedToken = jwtDecode(response.access);
-        const userObject = {
-          username: decodedToken.username,
-          email: decodedToken.email,
-          id: decodedToken.user_id,
-          token: response.access
-        };
-        console.log("👤 [SigninForm] User object created:", userObject)
-        dispatch(setUser(userObject));
-        dispatch(setAuthModalOpen(false));
-        toast.success("Sign in success");
-      } else if (err) {
-        console.error("❌ [SigninForm] Error details:", err);
+        let errorMsg = "Login failed. Please try again.";
         
-        // Handle different error types
-        let errorMsg = "An error occurred during login";
-        
-        // API/Server error responses
-        if (err.detail) {
+        // Check error message content first (more specific)
+        if (err.message) {
+          if (err.message.includes("Unable to connect")) {
+            errorMsg = "Cannot reach the server. Please check your internet connection.";
+          } else if (err.message.includes("timeout")) {
+            errorMsg = "Request took too long. Please try again.";
+          } else if (err.message.includes("CORS")) {
+            errorMsg = "Server configuration error. Please contact support.";
+          } else {
+            errorMsg = err.message;
+          }
+        }
+        // Check error object for API-specific errors
+        else if (err.detail) {
           errorMsg = err.detail;
-        } else if (err.message && err.message.includes("Network error")) {
-          errorMsg = "Connection error. Please check if the server is running.";
-        } else if (err.message && err.message.includes("timeout")) {
-          errorMsg = "Request timeout. Please try again.";
-        } else if (err.message) {
-          errorMsg = err.message;
         } else if (err.non_field_errors && Array.isArray(err.non_field_errors)) {
           errorMsg = err.non_field_errors[0];
+        } else if (err.email && Array.isArray(err.email)) {
+          errorMsg = err.email[0];
+        } else if (err.password && Array.isArray(err.password)) {
+          errorMsg = err.password[0];
         }
         
         setErrorMessage(errorMsg);
       } else {
-        console.warn("⚠️ [SigninForm] No response or error object");
-        setErrorMessage("Username or password does not exist");
+        // No response and no error - unusual case
+        setErrorMessage("Invalid username or password");
       }
     }
 
