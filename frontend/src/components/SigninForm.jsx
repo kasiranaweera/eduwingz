@@ -10,6 +10,7 @@ import { useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import { useDispatch } from "react-redux";
 import uiConfig from "../configs/ui.config";
+import diagnostic from "../api/diagnostic";
 
 // const swal = require('sweetalert2')
 
@@ -88,8 +89,11 @@ const SigninForm = ({ switchAuthState }) => {
         
         // Check error message content first (more specific)
         if (err.message) {
-          if (err.message.includes("Unable to connect")) {
-            errorMsg = "Cannot reach the server. Please check your internet connection.";
+          if (err.message.includes("Cannot reach")) {
+            errorMsg = "Cannot reach server. Check your internet connection.";
+            // Run diagnostics in background
+            console.log("🔍 Running diagnostics due to connection error...");
+            diagnostic.runFullDiagnostics().catch(e => console.error("Diagnostic error:", e));
           } else if (err.message.includes("timeout")) {
             errorMsg = "Request took too long. Please try again.";
           } else if (err.message.includes("CORS")) {

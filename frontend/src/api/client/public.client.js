@@ -9,6 +9,7 @@ console.log("🔌 Public Client initialized with baseURL:", baseURL);
 const publicClient = axios.create({
   baseURL,
   timeout: 30000, // 30 second timeout
+  withCredentials: true, // Allow cookies and CORS credentials
   paramsSerializer: {
     encode: params => queryString.stringify(params)
   }
@@ -18,11 +19,11 @@ publicClient.interceptors.request.use(async config => {
   const headers = {
     ...(config && config.headers ? config.headers : {})
   };
-  if (!headers["Content-Type"]) {
+  if (!headers["Content-Type"] && !(config.data instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
   config.headers = headers;
-  console.log("📤 [Public API Request]", config.method.toUpperCase(), config.url);
+  console.log("📤 [Public API Request]", config.method.toUpperCase(), baseURL + config.url);
   return config;
 });
 
@@ -32,19 +33,12 @@ publicClient.interceptors.response.use((response) => {
   return response;
 }, (err) => {
   // Log all error details for debugging
-  console.error("❌ [API Error Full Details]", {
+  console.error("❌ [API Error Details]", {
     message: err.message,
     code: err.code,
-    errno: err.errno,
     status: err.response?.status,
     statusText: err.response?.statusText,
     data: err.response?.data,
-    config: {
-      baseURL: err.config?.baseURL,
-      url: err.config?.url,
-      method: err.config?.method,
-      timeout: err.config?.timeout,
-    }
   });
 
   // Server responded with error status (4xx, 5xx)
@@ -61,23 +55,27 @@ publicClient.interceptors.response.use((response) => {
     throw err;
   }
   
-  // Network error or no response from server
+  // Network error or no response from server (includes CORS errors)
   if (!err.response) {
     console.error("❌ [Network/CORS Error - No Server Response]", {
       message: err.message,
       code: err.code,
       baseURL: baseURL,
+      errorMessage: err.message,
     });
     
-    // Create user-friendly error message
-    let errorMessage = "Unable to connect to server. Check your internet connection.";
+    // Handle different network error codes
+    let errorMessage = "Unable to connect to server. Checking connection...";
     
     if (err.code === "ECONNABORTED") {
-      errorMessage = "Request timeout. Server took too long to respond. Please try again.";
+      errorMessage = "Request timeout. Server is slow. Try again.";
     } else if (err.code === "ERR_NETWORK" || err.code === "ENOTFOUND") {
-      errorMessage = "Network error. Please check your internet connection.";
+      // ERR_NETWORK typically means CORS or DNS failure
+      errorMessage = "Cannot reach server. Check internet or server status.";
+    } else if (err.message && err.message.includes("timeout")) {
+      errorMessage = "Request timeout. Please try again.";
     } else if (err.message && err.message.includes("CORS")) {
-      errorMessage = "Server access denied. This is a server configuration issue.";
+      errorMessage = "CORS error. Server configuration issue.";
     }
     
     const networkError = new Error(errorMessage);
