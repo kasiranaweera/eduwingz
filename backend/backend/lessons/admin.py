@@ -22,11 +22,18 @@ class SubjectAdmin(admin.ModelAdmin):
 
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
-    list_display = ('title', 'user', 'subject', 'created_at', 'updated_at')
+    list_display = ('title', 'get_user_display', 'subject', 'created_at', 'updated_at')
     list_filter = ('created_at', 'user', 'subject', 'is_active')
     search_fields = ('title', 'user__username', 'subject__name', 'description')
     ordering = ('-created_at',)
     readonly_fields = ('id', 'created_at', 'updated_at')
+    
+    def get_user_display(self, obj):
+        try:
+            return obj.user.username if obj.user else 'Unknown'
+        except Exception as e:
+            return f"Error: {str(e)}"
+    get_user_display.short_description = 'User'
 
 
 @admin.register(Topic)

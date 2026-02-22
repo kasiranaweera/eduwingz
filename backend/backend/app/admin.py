@@ -8,10 +8,10 @@ from .models import (
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ('profile_id', 'user', 'first_name', 'last_name', 'username','tagline','bio','status','created_at')
+    list_display = ('profile_id', 'get_user_display', 'first_name', 'last_name', 'username','tagline','status','created_at')
     search_fields = ('profile_id', 'user__username', 'user__email', 'first_name', 'last_name', 'username')
     readonly_fields = ('profile_id', 'created_at', 'updated_at')
-    list_filter = ('created_at', 'updated_at')
+    list_filter = ('created_at', 'updated_at', 'status')
     fieldsets = (
         ('Basic Info', {
             'fields': ('profile_id', 'user', 'username', 'first_name', 'last_name', 'tagline', 'status')
@@ -24,6 +24,13 @@ class ProfileAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+    
+    def get_user_display(self, obj):
+        try:
+            return obj.user.username if obj.user else 'Unknown'
+        except Exception as e:
+            return f"Error: {str(e)}"
+    get_user_display.short_description = 'User'
 
 @admin.register(OtherDetail)
 class OtherDetailAdmin(admin.ModelAdmin):
