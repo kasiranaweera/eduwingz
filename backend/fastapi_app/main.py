@@ -55,7 +55,7 @@ except Exception as e:
     print(f"⚠️ Warning: Could not import edu_design_router: {e}")
     edu_design_router = None
 
-rag_service = RAGService() if MAIN_SERVICES_AVAILABLE else None
+rag_service = None  # LAZY - Will be initialized on first request, not at startup
 agent_service = None  # Will be initialized after RAG service
 lesson_generator_service = None  # Will be initialized after RAG service
 tts_engine = None
@@ -64,11 +64,11 @@ _initialization_lock = asyncio.Lock()
 _services_initialized = False
 _initialization_error = None
 
-print("✅ Global services initialized to None (lazy initialization enabled)")
+print("✅ Global services will be lazily initialized on first request (startup is fast!)")
 
 async def ensure_services_initialized():
     """Lazy initialize services on first use to avoid startup timeout"""
-    global agent_service, lesson_generator_service, tts_engine, stt_engine, _services_initialized, _initialization_error
+    global rag_service, agent_service, lesson_generator_service, tts_engine, stt_engine, _services_initialized, _initialization_error
     
     if not MAIN_SERVICES_AVAILABLE:
         print("⚠️ Main services not available, skipping initialization")
@@ -83,6 +83,8 @@ async def ensure_services_initialized():
         
         print("🚀 Initializing services on first request...")
         try:
+            print("  • Creating RAG service instance...")
+            rag_service = RAGService()
             print("  • Initializing RAG service...")
             await rag_service.initialize()
             print("  ✅ RAG service initialized")
