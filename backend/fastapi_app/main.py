@@ -17,23 +17,7 @@ import traceback
 
 print("🚀 FastAPI startup initiated...")
 
-# Try to import main dependencies, but handle failures gracefully
-try:
-    print("📦 Importing RAG and agent services...")
-    from services.rag_service import RAGService
-    from services.agent_service import ReasoningAgent
-    from services.lesson_generator_service import LessonGeneratorService
-    from langchain_core.messages import AIMessage, HumanMessage
-    MAIN_SERVICES_AVAILABLE = True
-    print("✅ Main services imported successfully")
-except Exception as e:
-    print(f"⚠️ Warning: Could not import main services: {e}")
-    traceback.print_exc()
-    MAIN_SERVICES_AVAILABLE = False
-    RAGService = None
-    ReasoningAgent = None
-    LessonGeneratorService = None
-
+# Try to import minimal required dependencies
 try:
     print("⚙️ Loading configuration...")
     from config import settings
@@ -46,7 +30,7 @@ except Exception as e:
         ALGORITHM = "HS256"
     settings = MinimalSettings()
 
-# edu design generator router
+# edu design generator router - lightweight, import at startup
 try:
     print("📚 Importing edu_design_generator...")
     from edu_design_generator.router import router as edu_design_router
@@ -54,6 +38,12 @@ try:
 except Exception as e:
     print(f"⚠️ Warning: Could not import edu_design_router: {e}")
     edu_design_router = None
+
+# MAIN SERVICES - Will be imported lazily on first request
+RAGService = None
+ReasoningAgent = None
+LessonGeneratorService = None
+MAIN_SERVICES_AVAILABLE = False
 
 rag_service = None  # LAZY - Will be initialized on first request, not at startup
 agent_service = None  # Will be initialized after RAG service
@@ -69,10 +59,24 @@ print("✅ Global services will be lazily initialized on first request (startup 
 async def ensure_services_initialized():
     """Lazy initialize services on first use to avoid startup timeout"""
     global rag_service, agent_service, lesson_generator_service, tts_engine, stt_engine, _services_initialized, _initialization_error
+    global RAGService, ReasoningAgent, LessonGeneratorService, MAIN_SERVICES_AVAILABLE
     
+    # Import services only when first needed
     if not MAIN_SERVICES_AVAILABLE:
-        print("⚠️ Main services not available, skipping initialization")
-        return
+        print("📦 Attempting to import RAG and agent services on first request...")
+        try:
+            from services.rag_service import RAGService as RAGServiceClass
+            from services.agent_service import ReasoningAgent as ReasoningAgentClass
+            from services.lesson_generator_service import LessonGeneratorService as LessonGeneratorServiceClass
+            RAGService = RAGServiceClass
+            ReasoningAgent = ReasoningAgentClass
+            LessonGeneratorService = LessonGeneratorServiceClass
+            MAIN_SERVICES_AVAILABLE = True
+            print("✅ Main services imported successfully on first request")
+        except Exception as e:
+            print(f"❌ Could not import main services: {e}")
+            traceback.print_exc()
+            return  # Can't proceed without services
     
     async with _initialization_lock:
         if _services_initialized:

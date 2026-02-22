@@ -37,18 +37,25 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
 
     def create(self, request, *args, **kwargs):
+        """
+        Handle user registration with validation and email verification
+        """
         try:
             # Use serializer to validate and create user
             serializer = self.get_serializer(data=request.data)
             
             if not serializer.is_valid():
                 # Return validation errors in proper format
+                print(f"[REGISTER] Validation errors: {serializer.errors}")
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
+            print(f"[REGISTER] Validation passed, creating user...")
             user = serializer.save()
+            print(f"[REGISTER] User created: {user.username} (ID: {user.id})")
 
+            # Send verification email (non-blocking)
             try:
-                # build verification link
+                print(f"[REGISTER] Sending verification email to {user.email}...")
                 uid = urlsafe_base64_encode(force_bytes(user.pk))
                 token = default_token_generator.make_token(user)
                 # path: /users/verify-email/<uidb64>/<token>/
@@ -60,19 +67,26 @@ class RegisterView(generics.CreateAPIView):
                 from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@example.com')
 
                 send_mail(subject, message, from_email, [user.email], fail_silently=True)
+                print(f"[REGISTER] Verification email sent successfully")
             except Exception as e:
                 # Log email error but don't fail registration
-                print(f"Email sending error: {str(e)}")
-                pass
+                print(f"[REGISTER] Email sending error (non-critical): {str(e)}")
+                import traceback
+                traceback.print_exc()
 
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            # Return the newly created user data
+            print(f"[REGISTER] Registration successful, returning user data")
+            user_serializer = UserSerializer(user)
+            headers = self.get_success_headers(user_serializer.data)
+            return Response(user_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         
         except Exception as e:
-            print(f"Registration error: {str(e)}")
+            print(f"[REGISTER] Registration error: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return Response(
                 {"detail": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 

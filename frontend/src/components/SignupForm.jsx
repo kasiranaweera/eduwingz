@@ -32,13 +32,13 @@ const SignupForm = ({ switchAuthState }) => {
     validationSchema: Yup.object({
       // firstame: Yup.string().required("username is required"),
       // lastname: Yup.string().required("username is required"),
-      email: Yup.string().required("username is required"),
+      email: Yup.string().email("Invalid email format").required("Email is required"),
       password: Yup.string()
         .min(8, "password minimum 8 characters")
         .required("password is required"),
-      username: Yup.string().required("displayName is required"),
+      username: Yup.string().required("Username is required"),
       confirmPassword: Yup.string()
-        .oneOf([Yup.ref("password")], "confirmPassword not match")
+        .oneOf([Yup.ref("password")], "Passwords must match")
         .min(8, "confirmPassword minimum 8 characters")
         .required("confirmPassword is required"),
     }),
@@ -46,85 +46,67 @@ const SignupForm = ({ switchAuthState }) => {
       setErrorMessage(undefined);
       setIsLoginRequest(true);
       
-      console.log("🔄 [SIGNUP] Registering with:", values.email, values.username);
+      console.log("🔄 [SIGNUP] Form submitted with values:", { 
+        email: values.email, 
+        username: values.username,
+        password: "***",
+        confirmPassword: "***"
+      });
       
-      const { response, err } = await userApi.signup(values);
-      setIsLoginRequest(false);
+      try {
+        const { response, err } = await userApi.signup(values);
+        setIsLoginRequest(false);
 
-      console.log("📋 [SIGNUP] Response:", response);
-      console.log("📋 [SIGNUP] Error:", err);
+        console.log("📋 [SIGNUP] Response:", response);
+        console.log("📋 [SIGNUP] Error:", err);
 
-      // Successful signup
-      if (response && response.email) {
-        console.log("✅ [SIGNUP] Registration successful!");
-        signinForm.resetForm();
-        toast.success("Account created successfully! Please check your email to verify.");
-        
-        // Switch back to login form
-        switchAuthState();
-        return;
-      }
-
-      // Handle errors
-      if (err) {
-        console.error("❌ [SIGNUP] Error occurred:", err);
-        
-        let errorMsg = "Registration failed. Please try again.";
-        
-        // Check for specific error messages
-        if (err.message) {
-          errorMsg = err.message;
+        // Successful signup
+        if (response && response.email) {
+          console.log("✅ [SIGNUP] Registration successful!");
+          signinForm.resetForm();
+          toast.success("Account created successfully! Please check your email to verify.");
+          
+          // Switch back to login form
+          switchAuthState();
+          return;
         }
-        // Check for field-specific errors from backend
-        else if (err.email && Array.isArray(err.email)) {
-          errorMsg = err.email[0];
-        } else if (err.username && Array.isArray(err.username)) {
-          errorMsg = err.username[0];
-        } else if (err.password && Array.isArray(err.password)) {
-          errorMsg = err.password[0];
-        } else if (err.password2 && Array.isArray(err.password2)) {
-          errorMsg = err.password2[0];
-        } else if (err.detail) {
-          errorMsg = err.detail;
-        } else if (err.non_field_errors && Array.isArray(err.non_field_errors)) {
-          errorMsg = err.non_field_errors[0];
+
+        // Handle errors
+        if (err) {
+          console.error("❌ [SIGNUP] Error occurred:", err);
+          
+          let errorMsg = "Registration failed. Please try again.";
+          
+          // Check for specific error messages
+          if (err.message) {
+            errorMsg = err.message;
+          }
+          // Check for field-specific errors from backend
+          else if (err.email && Array.isArray(err.email)) {
+            errorMsg = err.email[0];
+          } else if (err.username && Array.isArray(err.username)) {
+            errorMsg = err.username[0];
+          } else if (err.password && Array.isArray(err.password)) {
+            errorMsg = err.password[0];
+          } else if (err.password2 && Array.isArray(err.password2)) {
+            errorMsg = err.password2[0];
+          } else if (err.detail) {
+            errorMsg = err.detail;
+          } else if (err.non_field_errors && Array.isArray(err.non_field_errors)) {
+            errorMsg = err.non_field_errors[0];
+          }
+          
+          setErrorMessage(errorMsg);
+        } else {
+          setErrorMessage("Registration failed. Please try again.");
         }
-        
-        setErrorMessage(errorMsg);
-      } else {
-        setErrorMessage("Registration failed. Please try again.");
+      } catch (error) {
+        console.error("❌ [SIGNUP] Unexpected error:", error);
+        setIsLoginRequest(false);
+        setErrorMessage("An unexpected error occurred. Please try again.");
       }
     },
-    // onSubmit: async values => {
-    // setErrorMessage(undefined);
-    // setIsLoginRequest(true);
-    // console.log("Submitting values:", values);
-
-    // const { response, err } = await userApi.signup(values);
-
-    // console.log("Response:", response);
-    // console.log("Error:", err);
-    // setIsLoginRequest(false);
-
-    // if (!response) {
-    // navigate("/auth")
-    // toast.error("Registration Successful, Login Now");
-
-    // } else {
-    //     console.log(response.status);
-    //     console.log("there was a server issue");
-    //     toast.error("There was a server issue");
-
-    // }
-    // if (response) {
-    //   signinForm.resetForm();
-    //   dispatch(setUser(response));
-    //   dispatch(setAuthModalOpen(false));
-    //   toast.success("Sign in success");
-    // }
-
-    // if (err) setErrorMessage(err.message);
-    // }
+    // Old code removed - new async/await implementation above
   });
 
   return (
