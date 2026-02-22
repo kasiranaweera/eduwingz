@@ -8,22 +8,15 @@ import {
   Link,
 } from "@mui/material";
 import { useFormik } from "formik";
-import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import * as Yup from "yup";
 import userApi from "../api/modules/user.api";
-import { setAuthModalOpen } from "../redux/features/authModalSlice";
-import { setUser } from "../redux/features/userSlice";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import uiConfigs from "../configs/ui.config";
 
 // const swal = require('sweetalert2')
 
-const SignupForm = ({ switchAuthState, profileSetupState }) => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-
+const SignupForm = ({ switchAuthState }) => {
   const [isLoginRequest, setIsLoginRequest] = useState(false);
   const [errorMessage, setErrorMessage] = useState();
 
