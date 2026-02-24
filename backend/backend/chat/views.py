@@ -275,14 +275,22 @@ class ChatMessageView(APIView):
             if documents_to_search and documents_to_search.exists():
                 payload["document_ids"] = [str(doc.id) for doc in documents_to_search]
 
+            logger.info(f"[CHAT] Forwarding message to FastAPI: {fastapi_url}")
+            logger.info(f"[CHAT] Payload: {payload}")
+
             try:
+                logger.info(f"[CHAT] Sending request to FastAPI with timeout=180s")
                 response = requests.post(
                     fastapi_url,
                     headers=headers,
-                    json=payload
+                    json=payload,
+                    timeout=180  # 3 minutes timeout for LLM processing
                 )
+                logger.info(f"[CHAT] FastAPI response status: {response.status_code}")
                 response.raise_for_status()
                 fastapi_data = response.json()
+                logger.info(f"[CHAT] FastAPI response data keys: {fastapi_data.keys()}")
+                logger.info(f"[CHAT] Assistant answer length: {len(fastapi_data.get('answer', ''))}")
 
                 # Store assistant message, linking to user message
                 # Store is_incomplete flag in context metadata if present
@@ -347,7 +355,19 @@ class ChatMessageView(APIView):
                     }
                 }, status=201)
             except requests.RequestException as e:
-                logger.error(f"Error proxying to FastAPI: {str(e)}")
+                logger.error(f"[CHAT] Error proxying to FastAPI: {str(e)}")
+                logger.error(f"[CHAT] Error type: {type(e).__name__}")
+                logger.error(f"[CHAT] FastAPI URL attempted: {fastapi_url}")
+                # Delete the user message since we failed to get a response
+                user_message.delete()
+                return APIErrorResponse.server_error(f"Failed to process message. Service error: {str(e)}")
+            except Exception as e:
+                logger.error(f"[CHAT] Unexpected error: {str(e)}", exc_info=True)
+                # Delete the user message since we failed
+                try:
+                    user_message.delete()
+                except:
+                    pass
                 return APIErrorResponse.server_error(str(e))
         except ChatSession.DoesNotExist:
             return APIErrorResponse.not_found("Session not found")

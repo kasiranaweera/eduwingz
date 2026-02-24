@@ -24,6 +24,7 @@ import {
 import ChatSection from "../components/ChatSection";
 import logoicon from "../assets/logo/eduwingz_logo.png";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import chatApi from "../api/modules/chat.api";
 import notificationApi from "../api/modules/notification.api";
 
@@ -194,6 +195,7 @@ const ChatPage = () => {
             await chatApi.uploadDocument(sessionId, file);
           if (uploadErr) {
             console.error("upload document error", uploadErr);
+            toast.error(`Failed to upload file: ${file.name}`, { autoClose: 5000 });
             throw uploadErr;
           }
           if (uploadResponse) {
@@ -217,12 +219,22 @@ const ChatPage = () => {
 
       if (err) {
         console.error("post message error", err);
-        if (
-          typeof err?.detail === "string" &&
-          err.detail.toLowerCase().includes("authentication")
-        ) {
-          navigate("/auth");
+        let errorMessage = "Failed to send message. Please try again.";
+        
+        if (typeof err?.detail === "string") {
+          errorMessage = err.detail;
+          if (err.detail.toLowerCase().includes("authentication")) {
+            navigate("/auth");
+            return false;
+          }
+        } else if (err?.message) {
+          errorMessage = err.message;
+        } else if (typeof err === "string") {
+          errorMessage = err;
         }
+        
+        // Show error toast
+        toast.error(errorMessage, { autoClose: 5000 });
         return false;
       }
 
@@ -294,7 +306,8 @@ const ChatPage = () => {
         success = true;
       }
     } catch (e) {
-      console.error(e);
+      console.error("[CHAT] Unexpected error in handleSendMessage:", e);
+      toast.error("An unexpected error occurred. Please try again.", { autoClose: 5000 });
     } finally {
       setIsLoading(false);
       sendingRef.current = false;

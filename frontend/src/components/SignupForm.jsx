@@ -12,11 +12,13 @@ import { toast } from "react-toastify";
 import * as Yup from "yup";
 import userApi from "../api/modules/user.api";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import uiConfigs from "../configs/ui.config";
 
 // const swal = require('sweetalert2')
 
 const SignupForm = ({ switchAuthState }) => {
+  const navigate = useNavigate();
   const [isLoginRequest, setIsLoginRequest] = useState(false);
   const [errorMessage, setErrorMessage] = useState();
 
@@ -64,10 +66,12 @@ const SignupForm = ({ switchAuthState }) => {
         if (response && response.email) {
           console.log("✅ [SIGNUP] Registration successful!");
           signinForm.resetForm();
-          toast.success("Account created successfully! Please check your email to verify.");
-          
-          // Switch back to login form
-          switchAuthState();
+          toast.success("Account created successfully! Redirecting to home...", {
+            autoClose: 3000,
+            onClose: () => {
+              navigate("/home");
+            }
+          });
           return;
         }
 
