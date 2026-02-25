@@ -15,9 +15,31 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.conf import settings
 from django.urls import reverse
+import threading
+
+
+def send_verification_email_async(user, verify_url, from_email):
+    """Send verification email in a background thread to avoid blocking"""
+    def send_email():
+        try:
+            subject = 'Verify your email'
+            message = f'Hi {user.username},\n\nPlease verify your email by clicking the link below:\n{verify_url}\n\nIf you did not register, please ignore this email.'
+            send_mail(subject, message, from_email, [user.email], fail_silently=False)
+            print(f"[REGISTER] Verification email sent successfully to {user.email}")
+        except Exception as e:
+            # Log but don't crash - user is already registered
+            print(f"[REGISTER] Email sending error (non-critical): {str(e)}")
+            import traceback
+            traceback.print_exc()
+    
+    # Start email sending in background thread
+    email_thread = threading.Thread(target=send_email, daemon=True)
+    email_thread.start()
+
 
 class MyGetInfoData(APIView):
     permission_classes = [IsAuthenticated]
+
     
     def get(self, request):
         """Get current user information"""
@@ -53,28 +75,26 @@ class RegisterView(generics.CreateAPIView):
             user = serializer.save()
             print(f"[REGISTER] User created: {user.username} (ID: {user.id})")
 
-            # Send verification email (non-blocking)
+            # Send verification email asynchronously (non-blocking)
             try:
-                print(f"[REGISTER] Sending verification email to {user.email}...")
+                print(f"[REGISTER] Queueing verification email to {user.email}...")
                 uid = urlsafe_base64_encode(force_bytes(user.pk))
                 token = default_token_generator.make_token(user)
                 # path: /users/verify-email/<uidb64>/<token>/
                 verify_path = f"/users/verify-email/{uid}/{token}/"
                 verify_url = request.build_absolute_uri(verify_path)
-
-                subject = 'Verify your email'
-                message = f'Hi {user.username},\n\nPlease verify your email by clicking the link below:\n{verify_url}\n\nIf you did not register, please ignore this email.'
                 from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@example.com')
-
-                send_mail(subject, message, from_email, [user.email], fail_silently=True)
-                print(f"[REGISTER] Verification email sent successfully")
+                
+                # Send email in background thread (non-blocking)
+                send_verification_email_async(user, verify_url, from_email)
+                print(f"[REGISTER] Email sending queued (async)")
             except Exception as e:
                 # Log email error but don't fail registration
-                print(f"[REGISTER] Email sending error (non-critical): {str(e)}")
+                print(f"[REGISTER] Email queueing error (non-critical): {str(e)}")
                 import traceback
                 traceback.print_exc()
 
-            # Return the newly created user data
+            # Return the newly created user data immediately (no wait for email)
             print(f"[REGISTER] Registration successful, returning user data")
             user_serializer = UserSerializer(user)
             headers = self.get_success_headers(user_serializer.data)

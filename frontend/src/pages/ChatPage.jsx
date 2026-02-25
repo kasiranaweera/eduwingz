@@ -250,6 +250,12 @@ const ChatPage = () => {
           "assistant"
         );
 
+        console.log("📨 [SEND] Response received:");
+        console.log("  - user_message:", response.user_message);
+        console.log("  - assistant_message:", response.assistant_message);
+        console.log("  - normalizedUser:", normalizedUser);
+        console.log("  - normalizedAssistant:", normalizedAssistant);
+
         // Check if documents are already in the response, otherwise fetch them
         if (normalizedUser) {
           // If documents are already in the response, use them
@@ -288,17 +294,32 @@ const ChatPage = () => {
         setMessages((prev) => {
           const out = [...prev];
           // Check for duplicates before adding
-          if (normalizedUser && !out.find((m) => m.id === normalizedUser.id)) {
-            out.push(normalizedUser);
+          if (normalizedUser) {
+            if (!out.find((m) => m.id === normalizedUser.id)) {
+              console.log("✅ [SEND] Adding user message:", normalizedUser.id);
+              out.push(normalizedUser);
+            } else {
+              console.warn("⚠️ [SEND] User message already exists:", normalizedUser.id);
+            }
+          } else {
+            console.error("❌ [SEND] Failed to normalize user message!");
           }
-          if (
-            normalizedAssistant &&
-            !out.find((m) => m.id === normalizedAssistant.id)
-          ) {
-            out.push(normalizedAssistant);
-            // Don't mark new messages as animated - let them animate
-            // Only existing messages (from API) should skip animation
+
+          if (normalizedAssistant) {
+            if (!out.find((m) => m.id === normalizedAssistant.id)) {
+              console.log("✅ [SEND] Adding assistant message:", normalizedAssistant.id);
+              out.push(normalizedAssistant);
+              // Don't mark new messages as animated - let them animate
+              // Only existing messages (from API) should skip animation
+            } else {
+              console.warn("⚠️ [SEND] Assistant message already exists:", normalizedAssistant.id);
+            }
+          } else {
+            console.error("❌ [SEND] Failed to normalize assistant message!");
+            console.error("  - response.assistant_message:", response.assistant_message);
           }
+
+          console.log("📊 [SEND] Total messages after update:", out.length);
           return out;
         });
         // Clear quoted message after successful send

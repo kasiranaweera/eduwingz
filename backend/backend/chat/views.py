@@ -161,18 +161,18 @@ class ChatMessageView(APIView):
                             "message_type": user_message.message_type,
                             "content": user_message.content,
                             "context": None,
-                        "timestamp": user_message.timestamp,
-                        "documents": [
-                            serialize_document(doc, request=request)
-                            for doc in user_message.documents.all()
-                        ]
+                            "timestamp": user_message.timestamp.isoformat(),
+                            "documents": [
+                                serialize_document(doc, request=request)
+                                for doc in user_message.documents.all()
+                            ]
                         },
                         "assistant_message": {
                             "id": str(assistant_message.id),
                             "message_type": assistant_message.message_type,
                             "content": assistant_message.content,
                             "context": json.loads(assistant_message.context) if assistant_message.context else None,
-                            "timestamp": assistant_message.timestamp,
+                            "timestamp": assistant_message.timestamp.isoformat(),
                             "is_good": assistant_message.is_good,
                             "is_bookmarked": assistant_message.is_bookmarked
                         } if assistant_message else None
@@ -192,14 +192,14 @@ class ChatMessageView(APIView):
                             "message_type": user_message.message_type,
                             "content": user_message.content,
                             "context": None,
-                            "timestamp": user_message.timestamp
+                            "timestamp": user_message.timestamp.isoformat()
                         },
                         "assistant_message": {
                             "id": str(assistant_message.id),
                             "message_type": assistant_message.message_type,
                             "content": assistant_message.content,
                             "context": json.loads(assistant_message.context) if assistant_message.context else None,
-                            "timestamp": assistant_message.timestamp,
+                            "timestamp": assistant_message.timestamp.isoformat(),
                             "is_good": assistant_message.is_good,
                             "is_bookmarked": assistant_message.is_bookmarked
                         } if assistant_message else None
@@ -337,7 +337,7 @@ class ChatMessageView(APIView):
                         "message_type": user_message.message_type,
                         "content": user_message.content,
                         "context": None,
-                        "timestamp": user_message.timestamp,
+                        "timestamp": user_message.timestamp.isoformat(),
                         "documents": [
                             serialize_document(doc, request=request)
                             for doc in user_message.documents.all()
@@ -351,7 +351,7 @@ class ChatMessageView(APIView):
                         "is_incomplete": is_incomplete,
                         "is_good": assistant_message.is_good,
                         "is_bookmarked": assistant_message.is_bookmarked,
-                        "timestamp": assistant_message.timestamp
+                        "timestamp": assistant_message.timestamp.isoformat()
                     }
                 }, status=201)
             except requests.RequestException as e:
@@ -452,7 +452,7 @@ class ChatMessageView(APIView):
                             "message_type": user_message.message_type,
                             "content": user_message.content,
                             "context": None,
-                            "timestamp": user_message.timestamp,
+                            "timestamp": user_message.timestamp.isoformat(),
                             "documents": [
                                 serialize_document(doc, request=request)
                                 for doc in user_message.documents.all()
@@ -465,7 +465,7 @@ class ChatMessageView(APIView):
                             "context": fastapi_data.get("context"),
                             "is_good": assistant_message.is_good,
                             "is_bookmarked": assistant_message.is_bookmarked,
-                            "timestamp": assistant_message.timestamp
+                            "timestamp": assistant_message.timestamp.isoformat()
                         }
                     })
                 except requests.RequestException as e:
