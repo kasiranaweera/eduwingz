@@ -242,6 +242,96 @@ async def api_status():
         "initialization_error": _initialization_error
     }
 
+@app.get("/api/health/chat")
+async def health_check_chat():
+    """Health check for chat service - tests LLM connectivity"""
+    print("\n🏥 [HEALTH CHECK] Starting chat service health check...")
+    
+    health_status = {
+        "service": "chat",
+        "status": "unknown",
+        "llm_backend": settings.LLM_BACKEND,
+        "llm_model": None,
+        "llm_available": False,
+        "gemini_api_key_set": False,
+        "openrouter_api_key_set": False,
+        "services_initialized": _services_initialized,
+        "tests": {},
+        "errors": []
+    }
+    
+    try:
+        # Check if services are initialized
+        if not _services_initialized:
+            print("⏳ Services not initialized, initializing...")
+            await ensure_services_initialized()
+        
+        # Check LLM setup
+        print(f"🔍 Checking LLM backend: {settings.LLM_BACKEND}")
+        health_status["llm_backend"] = settings.LLM_BACKEND
+        
+        if settings.LLM_BACKEND == "gemini":
+            health_status["gemini_api_key_set"] = bool(settings.GEMINI_API_KEY)
+            if not settings.GEMINI_API_KEY:
+                health_status["errors"].append("GEMINI_API_KEY environment variable not set")
+                print("❌ GEMINI_API_KEY not set!")
+            else:
+                print("✅ GEMINI_API_KEY is set")
+        
+        elif settings.LLM_BACKEND == "openrouter":
+            health_status["openrouter_api_key_set"] = bool(settings.DEEPSEEK_OPEN_ROUTER_KEY)
+            if not settings.DEEPSEEK_OPEN_ROUTER_KEY:
+                health_status["errors"].append("DEEPSEEK_OPEN_ROUTER_KEY environment variable not set")
+                print("❌ DEEPSEEK_OPEN_ROUTER_KEY not set!")
+            else:
+                print("✅ DEEPSEEK_OPEN_ROUTER_KEY is set")
+        
+        # Test LLM with a simple query
+        if rag_service and rag_service.llm:
+            print("🧪 Testing LLM with simple query...")
+            try:
+                from langchain_core.messages import SystemMessage, HumanMessage
+                test_messages = [
+                    SystemMessage(content="You are a helpful assistant."),
+                    HumanMessage(content="Say 'Health check passed' in one sentence.")
+                ]
+                test_response = await asyncio.get_event_loop().run_in_executor(
+                    None, lambda: rag_service.llm.invoke(test_messages, max_tokens=100)
+                )
+                if test_response and hasattr(test_response, 'content'):
+                    health_status["tests"]["llm_response"] = test_response.content[:100]
+                    health_status["llm_available"] = True
+                    print(f"✅ LLM test passed: {test_response.content[:50]}...")
+                else:
+                    health_status["errors"].append("LLM response missing content attribute")
+                    print("❌ LLM response has no content")
+            except Exception as e:
+                error_msg = f"LLM test failed: {str(e)}"
+                health_status["errors"].append(error_msg)
+                print(f"❌ {error_msg}")
+        else:
+            health_status["errors"].append("RAG service or LLM not initialized")
+            print("❌ RAG service or LLM not available")
+        
+        # Determine overall status
+        if health_status["llm_available"]:
+            health_status["status"] = "healthy"
+        elif health_status["errors"]:
+            health_status["status"] = "unhealthy"
+        else:
+            health_status["status"] = "degraded"
+        
+        print(f"📊 Health check result: {health_status['status']}")
+        return health_status
+        
+    except Exception as e:
+        print(f"❌ Health check failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        health_status["status"] = "error"
+        health_status["errors"].append(f"Health check exception: {str(e)}")
+        return health_status
+
 # ============================================================================
 # AUTHENTICATION
 # ============================================================================
@@ -271,13 +361,23 @@ async def process_message(message: MessageCreate, user_id: int = Depends(verify_
     3. Activate other tools (code execution, etc.) as needed based on query type
     """
     try:
+        print(f"\n🔵 [CHAT/PROCESS] Starting message processing...")
+        print(f"   User ID: {user_id}")
+        print(f"   Message: {message.content[:100]}...")
+        print(f"   Session ID: {message.session_id}")
+        
+        print(f"⏳ [CHAT/PROCESS] Ensuring services initialized...")
         await ensure_services_initialized()
+        print(f"✅ [CHAT/PROCESS] Services initialized successfully")
+        
         # First, try to get RAG results
+        print(f"🔍 [CHAT/PROCESS] Starting RAG search...")
         rag_response = await rag_service.chat(
             message.content, 
             message.session_id,
             document_ids=message.document_ids
         )
+        print(f"✅ [CHAT/PROCESS] RAG response received")
         
         rag_score = rag_response.get("confidence_score", 0)
         
@@ -304,6 +404,7 @@ async def process_message(message: MessageCreate, user_id: int = Depends(verify_
                     if step.get("type") == "action":
                         tools_used.append(step.get("action"))
             
+            print(f"✅ [CHAT/PROCESS] Agent response generated with {len(tools_used)} tools")
             return {
                 "answer": agent_response.get("final_response", rag_response["answer"]),
                 "is_incomplete": False,
@@ -315,6 +416,7 @@ async def process_message(message: MessageCreate, user_id: int = Depends(verify_
             }
         
         # If RAG is sufficient, return RAG response
+        print(f"✅ [CHAT/PROCESS] Returning RAG response with confidence score: {rag_score:.2f}")
         return {
             "answer": rag_response["answer"],
             "is_incomplete": rag_response.get("is_incomplete", False),
@@ -324,7 +426,8 @@ async def process_message(message: MessageCreate, user_id: int = Depends(verify_
         }
     
     except Exception as e:
-        print(f"❌ Error in process_message: {e}")
+        print(f"❌ ERROR in process_message: {str(e)}")
+        print(f"   Exception type: {type(e).__name__}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error processing message: {str(e)}")

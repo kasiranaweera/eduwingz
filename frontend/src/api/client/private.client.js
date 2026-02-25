@@ -1,7 +1,7 @@
 import axios from "axios";
 import queryString from "query-string";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://eduwingz-backend.onrender.com";
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://eduwingz-backend.onrender.com" || "http://localhost:8000";
 const baseURL = BACKEND_URL;
 
 console.log("🔌 Private Client initialized with baseURL:", baseURL);

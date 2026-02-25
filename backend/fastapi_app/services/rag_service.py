@@ -331,10 +331,22 @@ class RAGService:
             
             # Run the LLM
             print(f"🤖 [RAG Service] Invoking LLM to generate response (max_tokens: {settings.MAX_TOKENS})")
-            response = await asyncio.get_event_loop().run_in_executor(
-                None, lambda: self.llm.invoke(lc_messages, max_tokens=settings.MAX_TOKENS)
-            )
-            print(f"✅ [RAG Service] LLM response generated (length: {len(response.content)} chars)")
+            try:
+                print(f"   LLM backend: {self.llm}")
+                print(f"   Attempting to invoke LLM...")
+                response = await asyncio.get_event_loop().run_in_executor(
+                    None, lambda: self.llm.invoke(lc_messages, max_tokens=settings.MAX_TOKENS)
+                )
+                print(f"✅ [RAG Service] LLM response generated (length: {len(response.content)} chars)")
+            except AttributeError as e:
+                print(f"❌ [RAG Service] LLM object doesn't have invoke method: {str(e)}")
+                print(f"   LLM type: {type(self.llm)}")
+                print(f"   LLM attributes: {dir(self.llm)}")
+                raise Exception(f"LLM not properly initialized: {str(e)}")
+            except Exception as e:
+                print(f"❌ [RAG Service] LLM invocation failed: {str(e)}")
+                print(f"   Exception type: {type(e).__name__}")
+                raise
             
             # Check if response seems incomplete (ends with incomplete sentence or seems cut off)
             is_incomplete = self._is_response_incomplete(response.content)

@@ -191,6 +191,12 @@ class LLM_Model:
             
             try:
                 print(f"📡 [Gemini] Sending request to Gemini model...")
+                print(f"   Messages count: {len(messages)}")
+                print(f"   Max tokens: {max_tokens}")
+                
+                # Check if API key is set
+                if not api_key:
+                    raise ValueError("GEMINI_API_KEY environment variable not set")
                 
                 # Use Gemini 1.5 Pro model (latest available)
                 model = genai.GenerativeModel(
@@ -230,21 +236,33 @@ class LLM_Model:
                 # Start chat with history
                 chat = model.start_chat(history=chat_history[:-1] if chat_history and isinstance(lc_messages[-1], HumanMessage) else chat_history)
                 
+                print(f"📤 [Gemini] Sending chat message...")
                 # Send message and get response
                 response = chat.send_message(user_input)
                 content = response.text.strip()
                 
+                if not content:
+                    raise Exception("Gemini API returned empty response")
+                
                 print(f"✅ [Gemini] Received response ({len(content)} chars)")
                 return types.SimpleNamespace(content=content)
                 
+            except ValueError as e:
+                # Missing API key
+                error_msg = f"Gemini configuration error: {str(e)}"
+                print(f"❌ [Gemini] {error_msg}")
+                raise Exception(error_msg)
             except Exception as e:
                 error_msg = f"Gemini API error: {str(e)}"
+                print(f"❌ [Gemini] {error_msg}")
                 if "API key" in str(e) or "403" in str(e) or "401" in str(e):
                     raise Exception(f"{error_msg} - Check your GEMINI_API_KEY")
                 elif "quota" in str(e).lower() or "429" in str(e):
                     raise Exception(f"{error_msg} - You've exceeded your quota or rate limit")
                 elif "not found" in str(e).lower() or "404" in str(e):
                     raise Exception(f"{error_msg} - Model not available. Try 'gemini-1.5-flash' or check available models")
+                elif "timeout" in str(e).lower() or "deadline" in str(e).lower():
+                    raise Exception(f"{error_msg} - Request timeout. The API is taking too long to respond")
                 else:
                     raise Exception(error_msg)
         

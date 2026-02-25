@@ -66,10 +66,10 @@ const SignupForm = ({ switchAuthState }) => {
         if (response && response.email) {
           console.log("✅ [SIGNUP] Registration successful!");
           signinForm.resetForm();
-          toast.success("Account created successfully! Redirecting to home...", {
+          toast.success("Account created successfully! Reloading...", {
             autoClose: 3000,
             onClose: () => {
-              navigate("/home");
+              window.location.reload();
             }
           });
           return;

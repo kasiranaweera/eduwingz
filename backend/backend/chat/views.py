@@ -1,6 +1,7 @@
 import requests
 import json
 import os
+import time
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -60,6 +61,71 @@ def serialize_document(document, request=None):
         "message_id": str(document.message_id) if document.message_id else None,
         "file_url": file_url
     }
+
+
+def post_to_fastapi_with_retry(url, headers, json_payload, max_retries=3):
+    """
+    Post to FastAPI with retry logic for rate limiting (429 errors)
+    
+    Args:
+        url: FastAPI endpoint URL
+        headers: Request headers (including auth)
+        json_payload: Request body
+        max_retries: Maximum number of retry attempts
+    
+    Returns:
+        Response object on success
+        
+    Raises:
+        Exception on final failure
+    """
+    base_wait_time = 2  # Start with 2 seconds
+    
+    for attempt in range(max_retries):
+        try:
+            logger.info(f"[CHAT] FastAPI request attempt {attempt + 1}/{max_retries}")
+            response = requests.post(
+                url,
+                headers=headers,
+                json=json_payload,
+                timeout=180  # 3 minutes timeout for LLM processing
+            )
+            
+            # Handle 429 Too Many Requests (rate limit)
+            if response.status_code == 429:
+                if attempt < max_retries - 1:
+                    wait_time = base_wait_time * (2 ** attempt)  # Exponential backoff
+                    logger.warning(f"[CHAT] Rate limited (429). Waiting {wait_time}s before retry...")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    logger.error(f"[CHAT] Rate limited after {max_retries} attempts")
+                    response.raise_for_status()
+            
+            # For other errors, raise immediately
+            response.raise_for_status()
+            return response
+            
+        except requests.exceptions.Timeout:
+            if attempt < max_retries - 1:
+                wait_time = base_wait_time * (2 ** attempt)
+                logger.warning(f"[CHAT] Timeout. Waiting {wait_time}s before retry...")
+                time.sleep(wait_time)
+                continue
+            else:
+                logger.error(f"[CHAT] Timeout after {max_retries} attempts")
+                raise
+        
+        except requests.exceptions.RequestException as e:
+            if attempt < max_retries - 1:
+                logger.warning(f"[CHAT] Request error: {str(e)}. Retrying...")
+                time.sleep(base_wait_time * (2 ** attempt))
+                continue
+            else:
+                logger.error(f"[CHAT] Request failed after {max_retries} attempts: {str(e)}")
+                raise
+    
+    raise Exception("Max retries exceeded")
 
 
 class ChatSessionView(APIView):
@@ -279,12 +345,12 @@ class ChatMessageView(APIView):
             logger.info(f"[CHAT] Payload: {payload}")
 
             try:
-                logger.info(f"[CHAT] Sending request to FastAPI with timeout=180s")
-                response = requests.post(
+                logger.info(f"[CHAT] Sending request to FastAPI with retry logic")
+                response = post_to_fastapi_with_retry(
                     fastapi_url,
-                    headers=headers,
-                    json=payload,
-                    timeout=180  # 3 minutes timeout for LLM processing
+                    headers,
+                    payload,
+                    max_retries=3
                 )
                 logger.info(f"[CHAT] FastAPI response status: {response.status_code}")
                 response.raise_for_status()
