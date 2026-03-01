@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Direct connection to FastAPI backend for TTS and other AI services
-const FASTAPI_URL = process.env.REACT_APP_FASTAPI_URL || "https://eduwingz-fastapi.onrender.com" || "http://localhost:8001";
+const FASTAPI_URL = process.env.REACT_APP_FASTAPI_URL || "http://localhost:8001";
 const fastApiClient = axios.create({
   baseURL: FASTAPI_URL,
   headers: {
@@ -33,7 +33,7 @@ fastApiClient.interceptors.request.use(async config => {
   const headers = {
     ...(config && config.headers ? config.headers : {})
   };
-  
+
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
   config.headers = headers;

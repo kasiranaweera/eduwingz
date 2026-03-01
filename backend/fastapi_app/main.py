@@ -568,6 +568,91 @@ async def generate_topic_content(request: TopicContentRequest):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+# ==================== QUIZ GENERATION ENDPOINT ====================
+
+class GenerateQuizRequest(BaseModel):
+    topic: str
+    subject: str = ""
+    grade: str = ""
+    difficulty: str = "medium"
+    num_questions: int = 5
+    question_type: str = "multiple_choice"
+
+@app.post("/generate-quiz")
+async def generate_quiz(request: GenerateQuizRequest):
+    """Generate quiz questions using the LLM."""
+    try:
+        await ensure_services_initialized()
+        print(f"🧩 [QUIZ] Generating quiz: {request.topic} ({request.difficulty})")
+
+        import json as json_module
+        from langchain_core.messages import SystemMessage, HumanMessage
+
+        system_prompt = f"""You are an expert educational quiz generator. Generate exactly {request.num_questions} {request.difficulty} difficulty multiple-choice questions about "{request.topic}" for {request.grade or 'high school students'} studying {request.subject or 'general education'}.
+
+Return ONLY valid JSON (no markdown, no code fences) with this exact structure:
+{{
+  "title": "Quiz title",
+  "description": "Brief quiz description",
+  "time_limit": 30,
+  "questions": [
+    {{
+      "question": "Question text here",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correct": 0,
+      "explanation": "Why the correct answer is correct"
+    }}
+  ]
+}}
+
+IMPORTANT:
+- "correct" is the zero-based index of the correct option
+- Each question MUST have exactly 4 options
+- Output ONLY the JSON object, nothing else"""
+
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=f"Generate {request.num_questions} {request.difficulty} quiz questions about: {request.topic}")
+        ]
+
+        response = await asyncio.get_event_loop().run_in_executor(
+            None, lambda: rag_service.llm.invoke(messages, max_tokens=4096)
+        )
+
+        response_text = response.content if hasattr(response, 'content') else str(response)
+
+        # Clean up the response — strip markdown code fences if present
+        text = response_text.strip()
+        if text.startswith("```"):
+            text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+        text = text.strip()
+        if text.startswith("json"):
+            text = text[4:].strip()
+
+        try:
+            quiz_data = json_module.loads(text)
+        except json_module.JSONDecodeError:
+            # Try to extract JSON from the response
+            import re
+            json_match = re.search(r'\{[\s\S]*\}', text)
+            if json_match:
+                quiz_data = json_module.loads(json_match.group())
+            else:
+                print(f"❌ [QUIZ] Could not parse LLM response as JSON: {text[:200]}")
+                raise HTTPException(status_code=500, detail="Failed to parse quiz from AI response")
+
+        print(f"✅ [QUIZ] Generated quiz with {len(quiz_data.get('questions', []))} questions")
+        return quiz_data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ [QUIZ] Error generating quiz: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Quiz generation error: {str(e)}")
+
 # ========================================================================
 
 class QuestionnaireSubmit(BaseModel):

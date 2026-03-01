@@ -350,6 +350,26 @@ const lessonsApi = {
       return { err };
     }
   },
+
+  // ==================== LEARNING STYLE ADJUSTMENTS ====================
+
+  /**
+   * Submit manual learning style adjustments to FastAPI backend
+   * @param {string} sessionId - Session ID for the learning profile
+   * @param {Object} adjustments - Learning style dimension scores
+   * @returns {Promise}
+   */
+  submitManualAdjustments: async (sessionId, adjustments) => {
+    try {
+      const response = await privateClient.post("fastapi/submit-questionnaire", {
+        session_id: sessionId,
+        ...adjustments,
+      });
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
 };
 
 export default lessonsApi;

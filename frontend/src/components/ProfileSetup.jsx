@@ -1,17 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
 import { LoadingButton } from "@mui/lab";
 import {
-  Alert,
-  Box,
-  Stack,
-  TextField,
-  Typography,
-  Button,
-  Stepper,
-  Step,
-  StepLabel,
-  Avatar,
-  MenuItem,
+  Alert, Box, Stack, TextField, Typography, Button, Stepper, Step, StepLabel,
+  Avatar, MenuItem, Paper, Grid
 } from "@mui/material";
 import { useFormik } from "formik";
 import { useSelector } from "react-redux";
@@ -20,20 +11,27 @@ import * as Yup from "yup";
 import uiConfigs from "../configs/ui.config";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import TuneIcon from '@mui/icons-material/Tune';
+import { useNavigate } from 'react-router-dom';
 
 const steps = [
   'Profile Data',
   'Learning Profile',
-  'Confirmation'
+  'Learning Style'
 ];
 
 const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
   const { themeMode } = useSelector((state) => state.themeMode);
+  const navigate = useNavigate();
 
   const [activeStep, setActiveStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState();
   const [profilePicPreview, setProfilePicPreview] = useState(null);
+
+  // Custom states for Step 3 selection
+  const [learningStyleMode, setLearningStyleMode] = useState(null); // 'questionnaire' | 'manual'
 
   const profileForm = useFormik({
     initialValues: {
@@ -44,44 +42,52 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
       profilePic: null,
       tagline: "",
       status: "active",
-      
+
       // Step 2 - Learning Profile
       favSubject: "",
       averageLearningHours: "",
       studyTimePeriod: "morning",
-      strength: "",
-      learningStyles: "",
+
+      // Step 3 - Learning Style (only used if manual)
+      active_reflective: 0,
+      sensing_intuitive: 0,
+      visual_verbal: 0,
+      sequential_global: 0,
     },
     validationSchema: Yup.object({
-      // Step 1
-      firstName: Yup.string().required("First name is required"),
-      lastName: Yup.string().required("Last name is required"),
-      bio: Yup.string().max(500, "Bio cannot exceed 500 characters"),
-      tagline: Yup.string().max(100, "Tagline cannot exceed 100 characters"),
-      status: Yup.string().required("Status is required"),
-      
-      // Step 2
-      favSubject: Yup.string().required("Favorite subject is required"),
-      averageLearningHours: Yup.number()
-        .min(1, "Must be at least 1 hour")
-        .max(24, "Cannot exceed 24 hours")
-        .required("Average learning hours is required"),
-      studyTimePeriod: Yup.string().required("Study time period is required"),
-      strength: Yup.string().required("Strength is required"),
-      learningStyles: Yup.string().required("Learning styles is required"),
+      // Validating current step only
+      ...(activeStep === 0 && {
+        firstName: Yup.string().required("First name is required"),
+        lastName: Yup.string().required("Last name is required"),
+        bio: Yup.string().max(500, "Bio cannot exceed 500 characters"),
+        tagline: Yup.string().max(100, "Tagline cannot exceed 100 characters"),
+        status: Yup.string().required("Status is required"),
+      }),
+      ...(activeStep === 1 && {
+        favSubject: Yup.string().required("Favorite subject is required"),
+        averageLearningHours: Yup.number()
+          .min(1, "Must be at least 1 hour")
+          .max(24, "Cannot exceed 24 hours")
+          .required("Average learning hours is required"),
+        studyTimePeriod: Yup.string().required("Study time period is required"),
+      }),
     }),
     onSubmit: async (values) => {
+      // Submitting the final profile data
       setErrorMessage(undefined);
       setIsSubmitting(true);
-      
+
       try {
-        // TODO: Replace with actual API call to update user profile
-        // const { response, err } = await userApi.updateProfile(values);
-        
-        // Simulated success
-        toast.success("Welcome! Your profile has been set up successfully!");
-        if (onSuccess) {
-          onSuccess();
+        // Here you would normally await userApi.updateProfile(values)
+        // Simulated API call wait
+        await new Promise(r => setTimeout(r, 800));
+
+        if (learningStyleMode === 'questionnaire') {
+          toast.success("Profile saved! Let's discover your learning style...");
+          navigate('/ils-questionnaire');
+        } else {
+          toast.success("Welcome! Your profile has been set up successfully!");
+          if (onSuccess) onSuccess();
         }
       } catch (error) {
         setErrorMessage(error.message || "Failed to setup profile");
@@ -91,8 +97,25 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
     },
   });
 
-  const handleNext = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep + 1);
+  const handleNext = async () => {
+    const errors = await profileForm.validateForm();
+    profileForm.setTouched(
+      Object.keys(profileForm.values).reduce((acc, key) => {
+        acc[key] = true;
+        return acc;
+      }, {})
+    );
+
+    // Check if there are errors for the current step fields
+    const stepFields =
+      activeStep === 0 ? ['firstName', 'lastName', 'status'] :
+        activeStep === 1 ? ['favSubject', 'averageLearningHours', 'studyTimePeriod'] : [];
+
+    const hasStepErrors = stepFields.some(field => errors[field]);
+
+    if (!hasStepErrors) {
+      setActiveStep((prevActiveStep) => prevActiveStep + 1);
+    }
   };
 
   const handleBack = () => {
@@ -111,24 +134,34 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
     }
   };
 
+  const handleSelectLearningStyleMode = (mode) => {
+    setLearningStyleMode(mode);
+    if (mode === 'questionnaire') {
+      // Submit form immediately to save profile, then redirect
+      profileForm.handleSubmit();
+    }
+  };
+
   const renderStepContent = () => {
     switch (activeStep) {
       case 0:
         return (
           <Box>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+            <Typography variant="h6" sx={{ mb: 3, fontWeight: 700 }}>
               Tell us about yourself
             </Typography>
-            
-            {/* Profile Picture Upload */}
-            <Box sx={{ mb: 3, display: "flex", flexDirection: "column", alignItems: "center" }}>
+
+            <Box sx={{ mb: 4, display: "flex", flexDirection: "column", alignItems: "center" }}>
               <Avatar
                 sx={{
-                  width: 100,
-                  height: 100,
-                  mb: 1,
-                  bgcolor: "primary.main",
-                  fontSize: "2rem",
+                  width: 110,
+                  height: 110,
+                  mb: 2,
+                  bgcolor: uiConfigs.style.mainGradient.color,
+                  fontSize: "2.5rem",
+                  boxShadow: '0 8px 24px rgba(255, 143, 0, 0.25)',
+                  border: '4px solid',
+                  borderColor: 'background.paper'
                 }}
                 src={profilePicPreview}
               >
@@ -138,23 +171,14 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
                 variant="outlined"
                 component="label"
                 startIcon={<CloudUploadIcon />}
-                sx={{ mb: 1 }}
+                sx={{ borderRadius: 8, textTransform: 'none' }}
               >
-                Upload Profile Picture
-                <input
-                  hidden
-                  accept="image/*"
-                  type="file"
-                  onChange={handleProfilePicChange}
-                />
+                Upload Photo
+                <input hidden accept="image/*" type="file" onChange={handleProfilePicChange} />
               </Button>
-              <Typography variant="caption" color="textSecondary">
-                JPG, PNG up to 5MB
-              </Typography>
             </Box>
 
-            {/* First and Last Name */}
-            <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: "repeat(2, 1fr)", mb: 2 }}>
+            <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: "repeat(2, 1fr)", mb: 3 }}>
               <TextField
                 type="text"
                 placeholder="John"
@@ -165,13 +189,8 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
                 value={profileForm.values.firstName}
                 onChange={profileForm.handleChange}
                 onBlur={profileForm.handleBlur}
-                error={
-                  profileForm.touched.firstName &&
-                  profileForm.errors.firstName !== undefined
-                }
-                helperText={
-                  profileForm.touched.firstName && profileForm.errors.firstName
-                }
+                error={profileForm.touched.firstName && Boolean(profileForm.errors.firstName)}
+                helperText={profileForm.touched.firstName && profileForm.errors.firstName}
               />
               <TextField
                 type="text"
@@ -183,17 +202,11 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
                 value={profileForm.values.lastName}
                 onChange={profileForm.handleChange}
                 onBlur={profileForm.handleBlur}
-                error={
-                  profileForm.touched.lastName &&
-                  profileForm.errors.lastName !== undefined
-                }
-                helperText={
-                  profileForm.touched.lastName && profileForm.errors.lastName
-                }
+                error={profileForm.touched.lastName && Boolean(profileForm.errors.lastName)}
+                helperText={profileForm.touched.lastName && profileForm.errors.lastName}
               />
             </Box>
 
-            {/* Tagline */}
             <TextField
               type="text"
               placeholder="e.g., Passionate learner"
@@ -203,17 +216,9 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
               value={profileForm.values.tagline}
               onChange={profileForm.handleChange}
               onBlur={profileForm.handleBlur}
-              error={
-                profileForm.touched.tagline &&
-                profileForm.errors.tagline !== undefined
-              }
-              helperText={
-                profileForm.touched.tagline && profileForm.errors.tagline
-              }
-              sx={{ mb: 2 }}
+              sx={{ mb: 3 }}
             />
 
-            {/* Bio */}
             <TextField
               type="text"
               placeholder="Tell us about yourself..."
@@ -225,14 +230,9 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
               value={profileForm.values.bio}
               onChange={profileForm.handleChange}
               onBlur={profileForm.handleBlur}
-              error={
-                profileForm.touched.bio && profileForm.errors.bio !== undefined
-              }
-              helperText={profileForm.touched.bio && profileForm.errors.bio}
-              sx={{ mb: 2 }}
+              sx={{ mb: 3 }}
             />
 
-            {/* Status */}
             <TextField
               select
               name="status"
@@ -241,13 +241,6 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
               value={profileForm.values.status}
               onChange={profileForm.handleChange}
               onBlur={profileForm.handleBlur}
-              error={
-                profileForm.touched.status &&
-                profileForm.errors.status !== undefined
-              }
-              helperText={
-                profileForm.touched.status && profileForm.errors.status
-              }
             >
               <MenuItem value="active">Active Learner</MenuItem>
               <MenuItem value="casual">Casual Learner</MenuItem>
@@ -259,14 +252,13 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
       case 1:
         return (
           <Box>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-              Your Learning Profile
+            <Typography variant="h6" sx={{ mb: 3, fontWeight: 700 }}>
+              Your Learning Routine
             </Typography>
 
-            {/* Favorite Subject */}
             <TextField
               type="text"
-              placeholder="e.g., Mathematics, Science"
+              placeholder="e.g., Mathematics, Coding"
               name="favSubject"
               label="Favorite Subject"
               fullWidth
@@ -274,17 +266,11 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
               value={profileForm.values.favSubject}
               onChange={profileForm.handleChange}
               onBlur={profileForm.handleBlur}
-              error={
-                profileForm.touched.favSubject &&
-                profileForm.errors.favSubject !== undefined
-              }
-              helperText={
-                profileForm.touched.favSubject && profileForm.errors.favSubject
-              }
-              sx={{ mb: 2 }}
+              error={profileForm.touched.favSubject && Boolean(profileForm.errors.favSubject)}
+              helperText={profileForm.touched.favSubject && profileForm.errors.favSubject}
+              sx={{ mb: 3 }}
             />
 
-            {/* Average Learning Hours */}
             <TextField
               type="number"
               name="averageLearningHours"
@@ -295,18 +281,11 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
               value={profileForm.values.averageLearningHours}
               onChange={profileForm.handleChange}
               onBlur={profileForm.handleBlur}
-              error={
-                profileForm.touched.averageLearningHours &&
-                profileForm.errors.averageLearningHours !== undefined
-              }
-              helperText={
-                profileForm.touched.averageLearningHours &&
-                profileForm.errors.averageLearningHours
-              }
-              sx={{ mb: 2 }}
+              error={profileForm.touched.averageLearningHours && Boolean(profileForm.errors.averageLearningHours)}
+              helperText={profileForm.touched.averageLearningHours && profileForm.errors.averageLearningHours}
+              sx={{ mb: 3 }}
             />
 
-            {/* Study Time Period */}
             <TextField
               select
               name="studyTimePeriod"
@@ -316,122 +295,178 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
               value={profileForm.values.studyTimePeriod}
               onChange={profileForm.handleChange}
               onBlur={profileForm.handleBlur}
-              error={
-                profileForm.touched.studyTimePeriod &&
-                profileForm.errors.studyTimePeriod !== undefined
-              }
-              helperText={
-                profileForm.touched.studyTimePeriod &&
-                profileForm.errors.studyTimePeriod
-              }
-              sx={{ mb: 2 }}
+              error={profileForm.touched.studyTimePeriod && Boolean(profileForm.errors.studyTimePeriod)}
+              helperText={profileForm.touched.studyTimePeriod && profileForm.errors.studyTimePeriod}
             >
               <MenuItem value="morning">Morning (6AM - 12PM)</MenuItem>
               <MenuItem value="afternoon">Afternoon (12PM - 6PM)</MenuItem>
               <MenuItem value="evening">Evening (6PM - 12AM)</MenuItem>
               <MenuItem value="night">Night (12AM - 6AM)</MenuItem>
             </TextField>
-
-            {/* Strength */}
-            <TextField
-              type="text"
-              placeholder="e.g., Problem solving, Creativity"
-              name="strength"
-              label="Your Strength"
-              fullWidth
-              required
-              multiline
-              rows={2}
-              value={profileForm.values.strength}
-              onChange={profileForm.handleChange}
-              onBlur={profileForm.handleBlur}
-              error={
-                profileForm.touched.strength &&
-                profileForm.errors.strength !== undefined
-              }
-              helperText={
-                profileForm.touched.strength && profileForm.errors.strength
-              }
-              sx={{ mb: 2 }}
-            />
-
-            {/* Learning Styles */}
-            <TextField
-              type="text"
-              placeholder="e.g., Visual, Auditory, Kinesthetic, Reading/Writing"
-              name="learningStyles"
-              label="Learning Styles"
-              fullWidth
-              required
-              multiline
-              rows={2}
-              value={profileForm.values.learningStyles}
-              onChange={profileForm.handleChange}
-              onBlur={profileForm.handleBlur}
-              error={
-                profileForm.touched.learningStyles &&
-                profileForm.errors.learningStyles !== undefined
-              }
-              helperText={
-                profileForm.touched.learningStyles &&
-                profileForm.errors.learningStyles
-              }
-            />
-            
-            <Alert severity="info" sx={{ mt: 2 }}>
-              💡 You can take our <strong>Learning Style Assessment</strong> on Google Form to get a detailed analysis. We'll use this to personalize your learning experience!
-            </Alert>
           </Box>
         );
 
       case 2:
         return (
-          <Box sx={{ textAlign: "center" }}>
-            <CheckCircleIcon sx={{ fontSize: 80, color: "success.main", mb: 2 }} />
-            <Typography variant="h5" sx={{ mb: 1, fontWeight: 600 }}>
-              Almost There! 🎉
+          <Box>
+            <Typography variant="h6" sx={{ mb: 1, fontWeight: 700, textAlign: 'center' }}>
+              Discover Your Learning Style
             </Typography>
-            <Typography variant="body2" sx={{ mb: 3, color: "textSecondary" }}>
-              Review your information and confirm to complete your profile setup.
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 4, textAlign: 'center' }}>
+              Personalize EduWingz to adapt to how you learn best.
             </Typography>
 
-            {/* Summary */}
-            <Box sx={{ 
-              bgcolor: themeMode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
-              p: 2,
-              borderRadius: 2,
-              mb: 3,
-              textAlign: "left"
-            }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                Profile Summary
-              </Typography>
-              <Stack spacing={1}>
-                <Typography variant="caption">
-                  <strong>Name:</strong> {profileForm.values.firstName} {profileForm.values.lastName}
-                </Typography>
-                <Typography variant="caption">
-                  <strong>Tagline:</strong> {profileForm.values.tagline || "Not provided"}
-                </Typography>
-                <Typography variant="caption">
-                  <strong>Favorite Subject:</strong> {profileForm.values.favSubject}
-                </Typography>
-                <Typography variant="caption">
-                  <strong>Learning Hours:</strong> {profileForm.values.averageLearningHours} hours/day
-                </Typography>
-                <Typography variant="caption">
-                  <strong>Study Time:</strong> {profileForm.values.studyTimePeriod}
-                </Typography>
-              </Stack>
-            </Box>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <Paper
+                  onClick={() => handleSelectLearningStyleMode('questionnaire')}
+                  sx={{
+                    p: 4,
+                    height: '100%',
+                    borderRadius: 4,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center',
+                    background: 'linear-gradient(135deg, rgba(255, 143, 0, 0.1) 0%, rgba(255, 143, 0, 0.02) 100%)',
+                    border: '2px solid',
+                    borderColor: learningStyleMode === 'questionnaire' ? 'primary.main' : 'transparent',
+                    transition: 'all 0.3s ease',
+                    boxShadow: learningStyleMode === 'questionnaire' ? '0 8px 32px rgba(255,143,0,0.2)' : 'none',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      borderColor: 'primary.main',
+                      boxShadow: '0 8px 32px rgba(255,143,0,0.15)'
+                    }
+                  }}
+                >
+                  <Box sx={{ p: 2, borderRadius: '50%', bgcolor: 'primary.main', color: 'white', mb: 2 }}>
+                    <PsychologyIcon fontSize="large" />
+                  </Box>
+                  <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                    Take the Questionnaire
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                    Answer 44 quick questions to get an accurate analysis of your learning style dimensions.
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 600, bgcolor: 'rgba(255,143,0,0.1)', px: 2, py: 0.5, borderRadius: 4 }}>
+                    ⭐️ Highly Recommended
+                  </Typography>
+                </Paper>
+              </Grid>
 
-            <Alert severity="success" sx={{ mb: 2 }}>
-              ✅ Your profile is ready! Click "Complete Setup" to finish and start your learning journey.
-            </Alert>
+              <Grid item xs={12} md={6}>
+                <Paper
+                  onClick={() => setLearningStyleMode('manual')}
+                  sx={{
+                    p: 4,
+                    height: '100%',
+                    borderRadius: 4,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center',
+                    border: '2px solid',
+                    borderColor: learningStyleMode === 'manual' ? 'text.primary' : themeMode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      borderColor: 'text.primary'
+                    }
+                  }}
+                >
+                  <Box sx={{ p: 2, borderRadius: '50%', bgcolor: themeMode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', mb: 2 }}>
+                    <TuneIcon fontSize="large" />
+                  </Box>
+                  <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                    I Know My Style
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    Manually define your Index of Learning Styles (ILS) preferences if you already know them.
+                  </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
 
-            <Alert severity="info" sx={{ fontSize: "0.85rem" }}>
-              📋 <strong>Note:</strong> You can always update your profile later from the settings page. Don't forget to take our Google Form for a personalized learning style assessment!
-            </Alert>
+            {/* Manual Entry Form */}
+            {learningStyleMode === 'manual' && (
+              <Box sx={{ mt: 5, animation: 'fadeIn 0.5s' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 3 }}>
+                  Set your Index of Learning Styles (ILS)
+                </Typography>
+
+                <Grid container spacing={3}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      select
+                      fullWidth
+                      label="Active vs Reflective"
+                      name="active_reflective"
+                      value={profileForm.values.active_reflective}
+                      onChange={profileForm.handleChange}
+                    >
+                      <MenuItem value={-11}>Strongly Active</MenuItem>
+                      <MenuItem value={-5}>Moderately Active</MenuItem>
+                      <MenuItem value={0}>Balanced</MenuItem>
+                      <MenuItem value={5}>Moderately Reflective</MenuItem>
+                      <MenuItem value={11}>Strongly Reflective</MenuItem>
+                    </TextField>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      select
+                      fullWidth
+                      label="Sensing vs Intuitive"
+                      name="sensing_intuitive"
+                      value={profileForm.values.sensing_intuitive}
+                      onChange={profileForm.handleChange}
+                    >
+                      <MenuItem value={-11}>Strongly Sensing</MenuItem>
+                      <MenuItem value={-5}>Moderately Sensing</MenuItem>
+                      <MenuItem value={0}>Balanced</MenuItem>
+                      <MenuItem value={5}>Moderately Intuitive</MenuItem>
+                      <MenuItem value={11}>Strongly Intuitive</MenuItem>
+                    </TextField>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      select
+                      fullWidth
+                      label="Visual vs Verbal"
+                      name="visual_verbal"
+                      value={profileForm.values.visual_verbal}
+                      onChange={profileForm.handleChange}
+                    >
+                      <MenuItem value={-11}>Strongly Visual</MenuItem>
+                      <MenuItem value={-5}>Moderately Visual</MenuItem>
+                      <MenuItem value={0}>Balanced</MenuItem>
+                      <MenuItem value={5}>Moderately Verbal</MenuItem>
+                      <MenuItem value={11}>Strongly Verbal</MenuItem>
+                    </TextField>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      select
+                      fullWidth
+                      label="Sequential vs Global"
+                      name="sequential_global"
+                      value={profileForm.values.sequential_global}
+                      onChange={profileForm.handleChange}
+                    >
+                      <MenuItem value={-11}>Strongly Sequential</MenuItem>
+                      <MenuItem value={-5}>Moderately Sequential</MenuItem>
+                      <MenuItem value={0}>Balanced</MenuItem>
+                      <MenuItem value={5}>Moderately Global</MenuItem>
+                      <MenuItem value={11}>Strongly Global</MenuItem>
+                    </TextField>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
           </Box>
         );
 
@@ -442,17 +477,17 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
 
   return (
     <Box>
-      <Box sx={{ textAlign: "center", marginBottom: 4 }}>
-        <Typography sx={{ fontWeight: 500 }} variant="h5">
+      <Box sx={{ textAlign: "center", marginBottom: 5 }}>
+        <Typography sx={{ fontWeight: 700, mb: 1 }} variant="h4">
           Complete Your Profile
         </Typography>
-        <Typography sx={{ color: "inherit", mt: 1 }} variant="body2">
-          3 Easy Steps
+        <Typography color="textSecondary" variant="body1">
+          Personalize your EduWingz experience in three simple steps.
         </Typography>
       </Box>
 
       {/* Stepper */}
-      <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+      <Stepper activeStep={activeStep} sx={{ mb: 5, '& .MuiStepLabel-root .Mui-completed': { color: 'success.main' } }}>
         {steps.map((label) => (
           <Step key={label}>
             <StepLabel>{label}</StepLabel>
@@ -461,66 +496,78 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
       </Stepper>
 
       {/* Step Content */}
-      <Box sx={{ mb: 4, minHeight: "300px" }}>
+      <Box sx={{ mb: 5, minHeight: "260px" }}>
         {renderStepContent()}
       </Box>
 
       {/* Error Message */}
       {errorMessage && (
-        <Box sx={{ marginBottom: 2 }}>
-          <Alert severity="error" variant="outlined">
+        <Box sx={{ marginBottom: 3 }}>
+          <Alert severity="error" variant="filled" sx={{ borderRadius: 2 }}>
             {errorMessage}
           </Alert>
         </Box>
       )}
 
       {/* Navigation Buttons */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
         <Box sx={{ display: "flex", gap: 2 }}>
           <Button
-            disabled={activeStep === 0}
+            disabled={activeStep === 0 || isSubmitting}
             onClick={handleBack}
-            variant="outlined"
+            variant="text"
+            sx={{ fontWeight: 600 }}
           >
             Back
           </Button>
-          <Button
-            onClick={() => {
-              if (onSkip) {
-                onSkip();
-              }
-            }}
-            variant="text"
-            sx={{ color: "primary.main" }}
-          >
-            Skip Setup
-          </Button>
+          {activeStep === 0 && (
+            <Button
+              onClick={() => onSkip && onSkip()}
+              variant="text"
+              color="inherit"
+              sx={{ opacity: 0.6 }}
+            >
+              Skip Setup
+            </Button>
+          )}
         </Box>
 
         {activeStep === steps.length - 1 ? (
-          <LoadingButton
-            onClick={() => profileForm.handleSubmit()}
-            variant="contained"
-            loading={isSubmitting}
-            sx={{
-              background: uiConfigs.style.mainGradient.color,
-              color: "secondary.contrastText",
-              borderRadius: 1,
-            }}
-          >
-            Complete Setup
-          </LoadingButton>
+          learningStyleMode === 'manual' && (
+            <LoadingButton
+              onClick={() => profileForm.handleSubmit()}
+              variant="contained"
+              loading={isSubmitting}
+              sx={{
+                background: uiConfigs.style.mainGradient.color,
+                color: "white",
+                borderRadius: 8,
+                px: 4,
+                py: 1,
+                fontSize: '1.05rem',
+                textTransform: 'none',
+                boxShadow: '0 4px 14px 0 rgba(255,143,0,0.39)',
+              }}
+            >
+              Complete Setup
+            </LoadingButton>
+          )
         ) : (
           <Button
             onClick={handleNext}
             variant="contained"
             sx={{
-              background: uiConfigs.style.mainGradient.color,
-              color: "secondary.contrastText",
-              borderRadius: 1,
+              bgcolor: 'text.primary',
+              color: 'background.paper',
+              borderRadius: 8,
+              px: 4,
+              py: 1,
+              '&:hover': {
+                bgcolor: 'text.secondary'
+              }
             }}
           >
-            Next
+            Next Step
           </Button>
         )}
       </Box>
@@ -528,4 +575,4 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
   );
 };
 
-export default ProfileSetup
+export default ProfileSetup;

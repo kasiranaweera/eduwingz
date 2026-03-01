@@ -16,6 +16,7 @@ def api_root(request):
             'app': '/app/',
             'chat': '/chat/',
             'lessons': '/lessons/',
+            'quiz': '/quiz/',
         }
     })
 
@@ -30,6 +31,7 @@ urlpatterns = [
     path('app/', include('app.urls')),
     path('chat/', include('chat.urls')),
     path('lessons/', include('lessons.urls')),
+    path('quiz/', include('quiz.urls')),
 ]
 
 # Serve media files in development

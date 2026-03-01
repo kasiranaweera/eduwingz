@@ -23,7 +23,19 @@ const profileApi = {
     } catch (err) {
       return { err };
     }
-  }
+  },
+
+  updateLearningStyleAdjustments: async (userId, adjustments) => {
+    try {
+      const response = await privateClient.put(profileEndpoints.updateProfile(userId), {
+        manual_adjustments: adjustments,
+        manual_adjustments_completed: true,
+      });
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
 };
 
 export default profileApi;

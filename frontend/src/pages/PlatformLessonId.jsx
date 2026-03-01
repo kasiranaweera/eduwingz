@@ -489,7 +489,7 @@ const PlatformLessonId = () => {
                     gap: 1,
                     p: 1,
                     borderRadius: 1,
-                    border:1,
+                    border: 1,
                     borderColor: "divider",
                   }}
                 >
@@ -537,7 +537,7 @@ const PlatformLessonId = () => {
                   variant="outlined"
                   size="small"
                   placeholder="Enter topic content here..."
-                  sx={{ 
+                  sx={{
                     mb: 3,
                     "& .MuiOutlinedInput-root": {
                       backgroundColor: "background.default",
@@ -755,7 +755,7 @@ const PlatformLessonId = () => {
           <Divider sx={{ mt: 1, mb: 3 }} orientation="horizontal" flexItem />
           <Typography>{user.username} - Your learning assistant</Typography>
 
-          <Box sx={{ mt: 3, p: 2, borderRadius: 2, border:1, borderColor: "divider" }}>
+          <Box sx={{ mt: 3, p: 2, borderRadius: 2, border: 1, borderColor: "divider" }}>
             <Typography variant="body2" color="text.secondary">
               💡 Drag the left edge to resize this panel
             </Typography>
@@ -848,7 +848,7 @@ const PlatformLessonId = () => {
                   sx={{
                     p: 2,
                     borderRadius: 2,
-                    border:1,
+                    border: 1,
                     borderColor: "divider",
                     textAlign: "center",
                   }}
@@ -895,7 +895,7 @@ const PlatformLessonId = () => {
             </IconButton>
             <Typography variant="h5">{lesson?.title}</Typography>
           </Box>
-          <Box sx={{ display: "flex", gap:1 }}>
+          <Box sx={{ display: "flex", gap: 1 }}>
             {editDrawerOpen ||
               notesDrawerOpen ||
               resourcesDrawerOpen ||
@@ -906,8 +906,8 @@ const PlatformLessonId = () => {
                     textTransform: "initial",
                     border: 1,
                     borderColor: "graycolor.two",
-                    borderRadius:3,
-                    px:3
+                    borderRadius: 3,
+                    px: 3
                   }}
                 >
                   Topics
@@ -925,7 +925,7 @@ const PlatformLessonId = () => {
         <Grid sx={{ mt: 2 }} container spacing={3}>
           {/* Sidebar - Topics */}
           {editDrawerOpen || notesDrawerOpen || resourcesDrawerOpen || chatDrawerOpen ? null : (
-            <Grid item xs={12} size={3}>
+            <Grid item xs={12} md={3}>
               <Paper
                 elevation={0}
                 sx={{
@@ -999,7 +999,7 @@ const PlatformLessonId = () => {
           <Grid
             item
             xs={12}
-            size={editDrawerOpen || notesDrawerOpen || resourcesDrawerOpen || chatDrawerOpen ? 12 : 9}
+            size={{ xs: 12, md: editDrawerOpen || notesDrawerOpen || resourcesDrawerOpen || chatDrawerOpen ? 12 : 9 }}
             container
             direction="column"
             spacing={3}
@@ -1026,28 +1026,28 @@ const PlatformLessonId = () => {
                     {selectedTopic.content}
                   </Typography>
                   {/* If no content, show generate button */}
-                {!selectedTopic.content && (
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 3,
-                      border: 1,
-                      borderColor: "graycolor.two",
-                      borderRadius: 3,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between'
-                    }}
-                  >
-                    <Typography variant="body2" color="text.secondary">No content yet for this topic.</Typography>
-                    <Button variant="contained" onClick={handleGenerateAndSaveContent} disabled={isGeneratingTopicContent}>
-                      {isGeneratingTopicContent ? (<CircularProgress size={20} color="inherit" />) : 'Generate content'}
-                    </Button>
-                  </Paper>
-                )}
+                  {!selectedTopic.content && (
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 3,
+                        border: 1,
+                        borderColor: "graycolor.two",
+                        borderRadius: 3,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}
+                    >
+                      <Typography variant="body2" color="text.secondary">No content yet for this topic.</Typography>
+                      <Button variant="contained" onClick={handleGenerateAndSaveContent} disabled={isGeneratingTopicContent}>
+                        {isGeneratingTopicContent ? (<CircularProgress size={20} color="inherit" />) : 'Generate content'}
+                      </Button>
+                    </Paper>
+                  )}
                 </Paper>
 
-                
+
               </>
             ) : (
               <Paper

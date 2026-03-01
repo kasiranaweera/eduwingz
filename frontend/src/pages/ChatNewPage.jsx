@@ -49,8 +49,8 @@ const ChatNewPage = () => {
     if (!trimmed) return false;
 
     setIsLoading(true);
-    
-    // Create a new chat session on the backend, post initial message, then open session page
+
+    // Create a new chat session on the backend, upload attachments, then open session page
     try {
       const title = trimmed ? trimmed.slice(0, 80) : 'New Chat';
       const { response: session, err: sessionErr } = await chatApi.createSession({ title });
@@ -63,7 +63,7 @@ const ChatNewPage = () => {
       }
 
       const sessionId = session?.id || session?.session_id || session?.uuid || session?.pk || session?.id;
-      
+
       if (!sessionId) {
         console.error('No session ID received');
         navigate('/dashboard/chat');
@@ -97,21 +97,14 @@ const ChatNewPage = () => {
         console.log(`Successfully uploaded ${documentIds.length} document(s). IDs:`, documentIds);
       }
 
-      // Try to send the first message if we have a session id and a message
-      if (sessionId && trimmed) {
-        const { err: msgErr } = await chatApi.postMessage(sessionId, { 
-          content: trimmed,
-          document_ids: documentIds,
-        });
-        if (msgErr) {
-          console.error('post initial message error', msgErr);
-          setIsLoading(false);
-          return false;
+      // Navigation: Instead of posting the message here and waiting,
+      // navigate immediately so ChatPage handles the UI loading sequence.
+      navigate(`/dashboard/chat/${sessionId}`, {
+        state: {
+          autoPostMessage: trimmed,
+          autoPostDocumentIds: documentIds,
         }
-      }
-
-      // Navigate to session page
-      navigate(`/dashboard/chat/${sessionId}`);
+      });
       setIsLoading(false);
       return true;
 
@@ -161,7 +154,7 @@ const ChatNewPage = () => {
           )}
           <Box sx={{ justifyContent: "center", display: "flex" }}>
             <ChatSection handleSendMessage={handleSendMessage} sx={{ width: "50vw" }} />
-          </Box>          
+          </Box>
         </Box>
       </Stack>
     </Container>

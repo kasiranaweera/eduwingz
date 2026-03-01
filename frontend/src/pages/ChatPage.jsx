@@ -136,47 +136,64 @@ const ChatPage = () => {
     }
     sendingRef.current = true;
 
-    // ---- optimistic UI only for *new* sessions ----
+    // ---- create a real session for new chats ----
     if (!sessionId) {
-      const now = new Date();
-      const userMessage = {
-        id: now.getTime(),
-        text: trimmed,
-        sender: "user",
-        timestamp: now,
-        attachments: attachments.map((file, index) => ({
-          id: `${now.getTime()}-${index}`,
-          filename: file.name,
-          processed: false,
-          file_url: URL.createObjectURL(file),
-        })),
-      };
-      setMessages((prev) => {
-        // Check for duplicates
-        if (!prev.find((m) => m.id === userMessage.id)) {
-          return [...prev, userMessage];
-        }
-        return prev;
-      });
       setIsLoading(true);
-      setTimeout(() => {
-        const botMessage = {
-          id: Date.now() + 1,
-          text: `Response to: "${trimmed}"`,
-          sender: "bot",
-          timestamp: new Date(),
-          attachments: [],
-        };
-        setMessages((prev) => {
-          // Check for duplicates
-          if (!prev.find((m) => m.id === botMessage.id)) {
-            return [...prev, botMessage];
+      try {
+        const title = trimmed.slice(0, 80);
+        const { response: session, err: sessionErr } = await chatApi.createSession({ title });
+        if (sessionErr) {
+          console.error('create session error', sessionErr);
+          toast.error('Failed to create chat session');
+          setIsLoading(false);
+          sendingRef.current = false;
+          return false;
+        }
+        const newSessionId = session?.id;
+        if (!newSessionId) {
+          console.error('No session ID received');
+          setIsLoading(false);
+          sendingRef.current = false;
+          return false;
+        }
+
+        // Upload files if any
+        let documentIds = [];
+        if (attachments.length > 0) {
+          for (const file of attachments) {
+            const { response: uploadResponse, err: uploadErr } = await chatApi.uploadDocument(newSessionId, file);
+            if (uploadErr) {
+              console.error('upload document error', uploadErr);
+              continue;
+            }
+            if (uploadResponse?.id) documentIds.push(uploadResponse.id);
           }
-          return prev;
+        }
+
+        // Post the first message
+        const { err: msgErr } = await chatApi.postMessage(newSessionId, {
+          content: trimmed,
+          document_ids: documentIds,
         });
+        if (msgErr) {
+          console.error('post initial message error', msgErr);
+          toast.error('Failed to send message');
+          setIsLoading(false);
+          sendingRef.current = false;
+          return false;
+        }
+
+        // Navigate to the real session page
+        navigate(`/dashboard/chat/${newSessionId}`);
+        sendingRef.current = false;
+        return true;
+      } catch (e) {
+        console.error('[CHAT] Error creating session:', e);
+        toast.error('An unexpected error occurred');
         setIsLoading(false);
-      }, 1500);
-      return true;
+        sendingRef.current = false;
+        return false;
+      }
     }
 
     setIsLoading(true);
@@ -220,7 +237,7 @@ const ChatPage = () => {
       if (err) {
         console.error("post message error", err);
         let errorMessage = "Failed to send message. Please try again.";
-        
+
         if (typeof err?.detail === "string") {
           errorMessage = err.detail;
           if (err.detail.toLowerCase().includes("authentication")) {
@@ -232,7 +249,7 @@ const ChatPage = () => {
         } else if (typeof err === "string") {
           errorMessage = err;
         }
-        
+
         // Show error toast
         toast.error(errorMessage, { autoClose: 5000 });
         return false;
@@ -432,6 +449,66 @@ const ChatPage = () => {
               }
             }
           }
+
+          if (mounted && location.state?.autoPostMessage) {
+            const { autoPostMessage, autoPostDocumentIds = [] } = location.state;
+            window.history.replaceState({}, document.title);
+
+            const timestamp = new Date();
+            const tempId = `u-temp-${timestamp.getTime()}`;
+            const normalizedUserMsg = {
+              id: tempId,
+              text: sanitizeMessageText(autoPostMessage),
+              sender: "user",
+              timestamp,
+              attachments: [],
+              is_incomplete: false,
+              is_good: false,
+              is_bookmarked: false,
+            };
+
+            setMessages(prev => [...prev, normalizedUserMsg]);
+
+            try {
+              const { response: postRes, err: postErr } = await chatApi.postMessage(sessionId, {
+                content: autoPostMessage,
+                document_ids: autoPostDocumentIds
+              });
+
+              if (mounted) {
+                if (postErr) {
+                  const errorMsg = typeof postErr?.detail === "string" ? postErr.detail : postErr?.message || "Failed to send message";
+                  toast.error(errorMsg, { autoClose: 5000 });
+
+                  // Clean up temp message on error
+                  setMessages(prev => prev.filter(m => m.id !== tempId));
+                } else if (postRes) {
+                  const nUser = normalizeMessage(postRes.user_message, "user", "user");
+                  const nBot = normalizeMessage(postRes.assistant_message, "bot", "assistant");
+
+                  setMessages(prev => {
+                    // Start by removing the temporary user message bubble
+                    const out = prev.filter(m => m.id !== tempId);
+
+                    // Only add if it doesn't already exist (prevent duplicates if getMessages already grabbed it)
+                    if (nUser && !out.find(m => m.id === nUser.id)) out.push(nUser);
+                    if (nBot && !out.find(m => m.id === nBot.id)) out.push(nBot);
+
+                    return out;
+                  });
+                } else {
+                  setMessages(prev => prev.filter(m => m.id !== tempId));
+                  toast.error("Invalid response from server", { autoClose: 5000 });
+                }
+              }
+            } catch (postException) {
+              console.error("autoPost exception:", postException);
+              if (mounted) {
+                setMessages(prev => prev.filter(m => m.id !== tempId));
+                toast.error("An unexpected error occurred", { autoClose: 5000 });
+              }
+            }
+          }
         } finally {
           setIsLoading(false);
         }
@@ -439,34 +516,35 @@ const ChatPage = () => {
       }
 
       // ---- first-time message from route state ----
-      if (user_message) {
-        const userMessage = {
-          id: 1,
-          text: user_message,
-          sender: "user",
-          timestamp: new Date(),
-          attachments: [],
-        };
-        setMessages([userMessage]);
-
+      if (user_message && mounted) {
         setIsLoading(true);
-        setTimeout(() => {
-          const botMessage = {
-            id: 2,
-            text: `Response to: "${user_message}"`,
-            sender: "bot",
-            timestamp: new Date(),
-            attachments: [],
-          };
-          setMessages((prev) => {
-            // Check for duplicates
-            if (!prev.find((m) => m.id === botMessage.id)) {
-              return [...prev, botMessage];
-            }
-            return prev;
+        try {
+          const title = user_message.slice(0, 80);
+          const { response: session, err: sessionErr } = await chatApi.createSession({ title });
+          if (sessionErr || !session?.id) {
+            console.error('create session error', sessionErr);
+            setIsLoading(false);
+            return;
+          }
+          const newSessionId = session.id;
+
+          const { err: msgErr } = await chatApi.postMessage(newSessionId, {
+            content: user_message,
           });
+          if (msgErr) {
+            console.error('post initial message error', msgErr);
+            setIsLoading(false);
+            return;
+          }
+
+          // Navigate to the real session page with the response
+          if (mounted) {
+            navigate(`/dashboard/chat/${newSessionId}`, { replace: true });
+          }
+        } catch (e) {
+          console.error('[CHAT] Error handling route state message:', e);
           setIsLoading(false);
-        }, 1500);
+        }
       }
     })();
     return () => (mounted = false);
@@ -686,10 +764,10 @@ const ChatPage = () => {
     if (!messageText) return;
 
     console.log("📌 [TargetReply] Setting quoted message:", messageText.substring(0, 50));
-    
+
     // Set the quoted message in state
     setQuotedMessage(messageText);
-    
+
     // Scroll to the input field
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -1232,7 +1310,7 @@ ${message.text}
                               {/* Blinking cursor during typing */}
                               {animatedTexts[message.id] &&
                                 animatedTexts[message.id].length <
-                                  message.text.length && (
+                                message.text.length && (
                                   <span
                                     style={{
                                       display: "inline",
@@ -1362,9 +1440,9 @@ ${message.text}
                                     }}
                                   >
                                     {attachment?.filename?.endsWith(".png") ||
-                                    attachment?.filename?.endsWith(".jpg") ||
-                                    attachment?.filename?.endsWith(".jpeg") ||
-                                    attachment?.filename?.endsWith(".webp") ? (
+                                      attachment?.filename?.endsWith(".jpg") ||
+                                      attachment?.filename?.endsWith(".jpeg") ||
+                                      attachment?.filename?.endsWith(".webp") ? (
                                       <Avatar
                                         variant="rounded"
                                         src={attachment.file_url || undefined}
@@ -1373,8 +1451,8 @@ ${message.text}
                                         <ImageOutlinedIcon />
                                       </Avatar>
                                     ) : attachment?.filename?.endsWith(
-                                        ".pdf"
-                                      ) ? (
+                                      ".pdf"
+                                    ) ? (
                                       <Avatar variant="rounded">
                                         <PictureAsPdfOutlinedIcon />
                                       </Avatar>
@@ -1425,7 +1503,7 @@ ${message.text}
                               }
                             >
                               {handleCopyMessage &&
-                              handleCopyMessageId === message.id ? (
+                                handleCopyMessageId === message.id ? (
                                 <CheckOutlinedIcon sx={{ fontSize: 18 }} />
                               ) : (
                                 <ContentCopyIcon sx={{ fontSize: 18 }} />
@@ -1582,12 +1660,12 @@ ${message.text}
         onClose={handleCloseMoreMenu}
       >
         <MenuItem onClick={handleShareMessage}>
-        <Box sx={{ display: "flex", gap: 1 }}>
+          <Box sx={{ display: "flex", gap: 1 }}>
             <ShareIcon />
             <Typography>Share Message</Typography>
           </Box></MenuItem>
         <MenuItem onClick={handleExportPDF}>
-        <Box sx={{ display: "flex", gap: 1 }}>
+          <Box sx={{ display: "flex", gap: 1 }}>
             <FileDownloadOutlinedIcon />
             <Typography>Export as File</Typography>
           </Box></MenuItem>

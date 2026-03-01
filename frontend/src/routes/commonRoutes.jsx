@@ -9,17 +9,18 @@ import TeamPage from "../pages/TeamPage"
 import PrivacyPage from "../pages/PrivacyPage"
 import MainBoardPage from "../pages/MainBoardPage"
 import ProfileSetupPage from "../pages/ProfileSetupPage"
+import ILSQuestionnairePage from "../pages/ILSQuestionnairePage"
 
 export const routesGen = {
   home: "/",
 };
 
 const commonRoutes = [
-//   {
-//     index: true,
-//     element: <StartPage />,
-//     state: "start",
-//   },
+  //   {
+  //     index: true,
+  //     element: <StartPage />,
+  //     state: "start",
+  //   },
   {
     path: "/home",
     element: <HomePage />,
@@ -74,6 +75,11 @@ const commonRoutes = [
     path: "/profile-setup",
     element: <ProfileSetupPage />,
     state: "profilesetup",
+  },
+  {
+    path: "/ils-questionnaire",
+    element: <ILSQuestionnairePage />,
+    state: "ilsquestionnaire",
   },
 ];
 

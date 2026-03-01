@@ -14,7 +14,14 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        token['user_id'] = user.user_id
+
+        # Force 'sub' claim to be a string. Stricter versions of pyjwt (like on Python 3.13)
+        # require 'sub' to be a string and will throw InvalidSubjectError if it's an int.
+        if 'sub' in token:
+            token['sub'] = str(token['sub'])
+
+        # Avoid overwriting SimpleJWT's internal 'user_id' which maps to the database primary key.
+        token['app_user_id'] = user.user_id
         token['username'] = user.username
         token['email'] = user.email
         try:

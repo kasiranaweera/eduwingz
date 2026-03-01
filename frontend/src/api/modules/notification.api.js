@@ -53,7 +53,7 @@ const notificationApi = {
         title: data.title,
         content: data.content,
       };
-      const response = await privateClient.put(
+      const response = await privateClient.post(
         notificationEndpoints.toggleBookmark(sessionId, messageId),
         payload
       );
@@ -83,7 +83,7 @@ const notificationApi = {
       const payload = {
         is_good: isGood,
       };
-      const response = await privateClient.put(
+      const response = await privateClient.post(
         notificationEndpoints.markGood(sessionId, messageId),
         payload
       );

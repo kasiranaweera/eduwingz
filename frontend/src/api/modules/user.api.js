@@ -5,7 +5,8 @@ const userEndpoints = {
   signin: "users/token/",
   signup: "users/register/",
   getInfo: "user/info",
-  passwordUpdate: "user/update-password"
+  passwordUpdate: "user/update-password",
+  notifications: (userId) => `app/user/${userId}/notifications/`,
 };
 
 const userApi = {
@@ -19,16 +20,16 @@ const userApi = {
 
       console.log("✅ [LOGIN] Response received:", response);
       return { response };
-    } catch (err) { 
+    } catch (err) {
       console.error("❌ [LOGIN] Error occurred:", err);
-      return { err }; 
+      return { err };
     }
   },
-  signup: async ({ email, username, password, confirmPassword}) => {
+  signup: async ({ email, username, password, confirmPassword }) => {
     try {
       console.log("🔄 [SIGNUP] Sending registration request to:", userEndpoints.signup);
       console.log("🔄 [SIGNUP] Data:", { email, username, password: "***" });
-      
+
       // backend RegisterSerializer expects `password2` as the confirmation field name
       const response = await publicClient.post(
         userEndpoints.signup,
@@ -37,9 +38,9 @@ const userApi = {
 
       console.log("✅ [SIGNUP] Response received:", response);
       return { response };
-    } catch (err) { 
+    } catch (err) {
       console.error("❌ [SIGNUP] Error occurred:", err);
-      return { err }; 
+      return { err };
     }
   },
   getInfo: async () => {
@@ -58,6 +59,14 @@ const userApi = {
 
       return { response };
     } catch (err) { return { err }; }
+  },
+  getNotifications: async ({ userId }) => {
+    try {
+      const response = await privateClient.get(userEndpoints.notifications(userId));
+      return { response };
+    } catch (err) {
+      return { err };
+    }
   }
 };
 

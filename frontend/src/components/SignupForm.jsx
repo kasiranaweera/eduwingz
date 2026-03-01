@@ -13,12 +13,15 @@ import * as Yup from "yup";
 import userApi from "../api/modules/user.api";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { setAuthModalOpen } from "../redux/features/authModalSlice";
 import uiConfigs from "../configs/ui.config";
 
 // const swal = require('sweetalert2')
 
 const SignupForm = ({ switchAuthState }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [isLoginRequest, setIsLoginRequest] = useState(false);
   const [errorMessage, setErrorMessage] = useState();
 
@@ -47,14 +50,14 @@ const SignupForm = ({ switchAuthState }) => {
     onSubmit: async (values) => {
       setErrorMessage(undefined);
       setIsLoginRequest(true);
-      
-      console.log("🔄 [SIGNUP] Form submitted with values:", { 
-        email: values.email, 
+
+      console.log("🔄 [SIGNUP] Form submitted with values:", {
+        email: values.email,
         username: values.username,
         password: "***",
         confirmPassword: "***"
       });
-      
+
       try {
         const { response, err } = await userApi.signup(values);
         setIsLoginRequest(false);
@@ -66,10 +69,11 @@ const SignupForm = ({ switchAuthState }) => {
         if (response && response.email) {
           console.log("✅ [SIGNUP] Registration successful!");
           signinForm.resetForm();
-          toast.success("Account created successfully! Reloading...", {
-            autoClose: 3000,
+          toast.success("Account created successfully! Redirecting...", {
+            autoClose: 1500,
             onClose: () => {
-              window.location.reload();
+              dispatch(setAuthModalOpen(false));
+              navigate("/profile-setup");
             }
           });
           return;
@@ -78,9 +82,9 @@ const SignupForm = ({ switchAuthState }) => {
         // Handle errors
         if (err) {
           console.error("❌ [SIGNUP] Error occurred:", err);
-          
+
           let errorMsg = "Registration failed. Please try again.";
-          
+
           // Check for specific error messages
           if (err.message) {
             errorMsg = err.message;
@@ -99,7 +103,7 @@ const SignupForm = ({ switchAuthState }) => {
           } else if (err.non_field_errors && Array.isArray(err.non_field_errors)) {
             errorMsg = err.non_field_errors[0];
           }
-          
+
           setErrorMessage(errorMsg);
         } else {
           setErrorMessage("Registration failed. Please try again.");
@@ -126,7 +130,7 @@ const SignupForm = ({ switchAuthState }) => {
           Unlock Your Knowledge, Ignite Your Fun!
         </Typography>
       </Box>
-      <Stack spacing={2} sx={{ mb: 3, width:350 }}>
+      <Stack spacing={2} sx={{ mb: 3, width: 350 }}>
         {/* <Button
           variant="outlined"
           size="large"
@@ -256,10 +260,10 @@ const SignupForm = ({ switchAuthState }) => {
         variant="contained"
         loading={isLoginRequest}
         sx={{
-          background:uiConfigs.style.mainGradient.color,
+          background: uiConfigs.style.mainGradient.color,
           mt: 1,
-          borderRadius:100,
-          color:'secondary.contrastText'
+          borderRadius: 100,
+          color: 'secondary.contrastText'
         }}
       >
         create an account

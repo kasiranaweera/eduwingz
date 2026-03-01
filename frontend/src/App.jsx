@@ -26,12 +26,7 @@ const App = () => {
 
   const dispatch = useDispatch();
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      dispatch(setUser(JSON.parse(savedUser)));
-    }
-  }, [dispatch]);
+
 
   return (
     <ThemeProvider theme={themeConfigs.custom({ mode: themeMode })}>

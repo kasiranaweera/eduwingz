@@ -24,6 +24,11 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  useMediaQuery,
+  useTheme,
+  alpha,
+  Grid,
+  Chip,
 } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
 import {
@@ -54,16 +59,28 @@ function TabPanel(props) {
       hidden={value !== index}
       id={`vertical-tabpanel-${index}`}
       aria-labelledby={`vertical-tab-${index}`}
+      style={{ width: '100%' }}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && (
+        <Box sx={{
+          p: { xs: 2, md: 4 },
+          animation: 'fadeIn 0.4s ease-out'
+        }}>
+          {children}
+        </Box>
+      )}
     </div>
   );
 }
 
 const DashboardSettingsPage = () => {
   const { user } = useSelector((state) => state.user);
+  const { themeMode } = useSelector((state) => state.themeMode);
   const userId = user?.user_id || user?.id;
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isDark = themeMode === "dark";
 
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -97,7 +114,7 @@ const DashboardSettingsPage = () => {
   });
 
   const [isEditingLearningStyle, setIsEditingLearningStyle] = useState(false);
-  const [learningStyleSource, setLearningStyleSource] = useState("interactions"); // "questionnaire", "manual", or "interactions"
+  const [learningStyleSource, setLearningStyleSource] = useState("interactions");
 
   const [issueReport, setIssueReport] = useState({
     title: "",
@@ -115,8 +132,7 @@ const DashboardSettingsPage = () => {
       }
       setProfile(response);
       setEditData(response);
-      
-      // Load manual adjustments if they exist
+
       if (response.manual_adjustments && response.manual_adjustments_completed) {
         setLearningStyleAdjustments(response.manual_adjustments);
         setLearningStyleSource("manual");
@@ -137,14 +153,8 @@ const DashboardSettingsPage = () => {
     fetchProfile();
   }, [userId, fetchProfile]);
 
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
-  };
-
-  const handleProfileChange = (e) => {
-    const { name, value } = e.target;
-    setEditData((prev) => ({ ...prev, [name]: value }));
-  };
+  const handleTabChange = (event, newValue) => setActiveTab(newValue);
+  const handleProfileChange = (e) => setEditData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleSaveProfile = async () => {
     setIsSubmitting(true);
@@ -166,48 +176,22 @@ const DashboardSettingsPage = () => {
 
   const handleResetPassword = async () => {
     setIsSubmitting(true);
-    try {
-      toast.info("Password reset link sent to your email");
-    } catch (error) {
-      toast.error("Error sending password reset");
-    } finally {
-      setIsSubmitting(false);
-    }
+    setTimeout(() => { toast.info("Password reset link sent to your email"); setIsSubmitting(false); }, 1000);
   };
 
   const handleEnable2FA = async () => {
     setIsSubmitting(true);
-    try {
-      toast.info("Two-factor authentication setup initiated");
-    } catch (error) {
-      toast.error("Error enabling 2FA");
-    } finally {
-      setIsSubmitting(false);
-    }
+    setTimeout(() => { toast.info("Two-factor authentication setup initiated"); setIsSubmitting(false); }, 1000);
   };
 
   const handleClearChatHistory = async () => {
     setIsSubmitting(true);
-    try {
-      toast.success("Chat history cleared successfully");
-      setOpenClearHistoryDialog(false);
-    } catch (error) {
-      toast.error("Error clearing chat history");
-    } finally {
-      setIsSubmitting(false);
-    }
+    setTimeout(() => { toast.success("Chat history cleared successfully"); setOpenClearHistoryDialog(false); setIsSubmitting(false); }, 1000);
   };
 
   const handleClearCache = async () => {
     setIsSubmitting(true);
-    try {
-      toast.success("Cache cleared successfully");
-      setOpenClearCacheDialog(false);
-    } catch (error) {
-      toast.error("Error clearing cache");
-    } finally {
-      setIsSubmitting(false);
-    }
+    setTimeout(() => { toast.success("Cache cleared successfully"); setOpenClearCacheDialog(false); setIsSubmitting(false); }, 1000);
   };
 
   const handleSubmitReport = () => {
@@ -239,362 +223,372 @@ const DashboardSettingsPage = () => {
   const handleSaveLearningStyleAdjustments = async () => {
     setIsSubmitting(true);
     try {
-      // First, call Django API to update the profile with manual adjustments
       const { response, err } = await profileApi.updateLearningStyleAdjustments(userId, learningStyleAdjustments);
-      if (err) {
-        toast.error("Failed to update learning style adjustments in profile");
-        return;
-      }
-      
-      // Update profile state with the response
+      if (err) { toast.error("Failed to update learning style adjustments"); return; }
       setProfile(response);
       setEditData(response);
-      
-      // Second, call FastAPI learning endpoint to update the ILS learning profile
-      // Use userId as session_id for the learning profile
-      const { response: learningResponse, err: learningErr } = await learningApi.submitManualAdjustments(
-        String(userId),
-        learningStyleAdjustments
-      );
-      
-      if (learningErr) {
-        console.warn("Warning: Could not sync manual adjustments to learning profile:", learningErr);
-        // Don't fail the user experience, but log the warning
-      } else {
-        console.log("✅ Manual adjustments synced to ILS learning profile", learningResponse);
-      }
-      
+
+      await learningApi.submitManualAdjustments(String(userId), learningStyleAdjustments);
+
       setIsEditingLearningStyle(false);
       setLearningStyleSource("manual");
-      toast.success("Learning style adjustments saved successfully! Adaptive learning mode activated.");
+      toast.success("Learning style adjustments saved successfully!");
     } catch (error) {
-      console.error("Error updating learning style adjustments:", error);
-      toast.error("Error updating learning style adjustments");
+      toast.error("Error updating learning style");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleResetLearningStyleAdjustments = () => {
-    setLearningStyleAdjustments({
-      active_reflective: 0,
-      sensing_intuitive: 0,
-      visual_verbal: 0,
-      sequential_global: 0,
-    });
-    setIsEditingLearningStyle(false);
+  const premiumPaperStyle = {
+    p: { xs: 2.5, md: 4 },
+    borderRadius: 4,
+    bgcolor: isDark ? alpha(theme.palette.background.paper, 0.4) : alpha('#ffffff', 0.8),
+    backdropFilter: "blur(20px)",
+    border: "1px solid",
+    borderColor: isDark ? alpha(theme.palette.common.white, 0.05) : alpha(theme.palette.common.black, 0.05),
+    boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.05)',
+    mb: 4
+  };
+
+  const sectionPaperStyle = {
+    p: 3,
+    borderRadius: 3,
+    bgcolor: isDark ? alpha(theme.palette.background.default, 0.4) : alpha('#ffffff', 0.6),
+    border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+    mb: 3,
+    transition: 'all 0.3s',
+    '&:hover': {
+      borderColor: theme.palette.primary.main,
+      boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.1)}`
+    }
   };
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", p: 6 }}>
-        <CircularProgress />
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: '60vh' }}>
+        <CircularProgress sx={{ color: uiConfigs.style.mainGradient.color }} />
       </Box>
     );
   }
 
   if (!profile) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error">Failed to load settings. Please try again.</Alert>
+      <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
+        <Alert severity="error" sx={{ borderRadius: 3 }}>Failed to load settings. Please try again.</Alert>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ gap: 3, display: "flex", flexDirection: "column" }}>
-      <Typography variant="h5" sx={{ fontWeight: 600, color: "primary.contrastText" }}>
+    <Box sx={{ pb: 6, position: 'relative' }}>
+      {/* Dynamic Background */}
+      <Box sx={{
+        position: 'absolute',
+        top: -50,
+        right: -50,
+        width: 300,
+        height: 300,
+        borderRadius: '50%',
+        background: `radial-gradient(circle, ${alpha(theme.palette.info.main, 0.15)} 0%, transparent 70%)`,
+        zIndex: 0,
+        pointerEvents: 'none'
+      }} />
+
+      <Typography variant="h4" sx={{
+        fontWeight: 800, mb: 4, position: 'relative', zIndex: 1,
+        background: uiConfigs.style.mainGradient.color,
+        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
+      }}>
         Settings
       </Typography>
 
-      <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: "graycolor.two", borderRadius: 3 }}>
-        <Box sx={{ display: "flex", gap: 0 }}>
-          <Tabs
-            orientation="vertical"
-            variant="scrollable"
-            value={activeTab}
-            onChange={handleTabChange}
-            sx={{
-              borderRight: 1,
-              borderColor: "graycolor.two",
-              minWidth: 220,
-              pr: 3,
-              "& .MuiTab-root": {
-                alignItems: "center",
-                textAlign: "left",
-                borderRadius: 2,
-                transition: "all 0.2s ease",
-                justifyContent: "flex-start",
-                color: "text.secondary",
-                "&:hover": { bgcolor: "action.hover", color: "primary.main" },
-                "&.Mui-selected": { bgcolor: "action.hover", color: "primary.main", fontWeight: 600 },
-              },
-              "& .MuiTabs-indicator": { width: 3, borderRadius: "0 2px 2px 0", right: 0 },
-            }}
-          >
-            <Tab label="Public Profile" icon={<PersonOutline sx={{ mr: 1 }} />} iconPosition="start" />
-            <Tab label="Account Settings" icon={<SecurityOutlined sx={{ mr: 1 }} />} iconPosition="start" />
-            <Tab label="Security" icon={<Lock sx={{ mr: 1 }} />} iconPosition="start" />
-            <Tab label="Privacy" icon={<PrivacyTip sx={{ mr: 1 }} />} iconPosition="start" />
-            <Divider sx={{ my: 2 }} />
-            <Tab label="Preferences" icon={<Tune sx={{ mr: 1 }} />} iconPosition="start" />
-            {/* <Tab label="Report Issue" icon={<BugReport sx={{ mr: 1 }} />} iconPosition="start" /> */}
-            <Tab label="Support" icon={<HelpOutline sx={{ mr: 1 }} />} iconPosition="start" />
-          </Tabs>
+      <Paper elevation={0} sx={{
+        borderRadius: 4,
+        bgcolor: isDark ? alpha(theme.palette.background.paper, 0.6) : alpha('#ffffff', 0.9),
+        backdropFilter: "blur(20px)",
+        border: "1px solid",
+        borderColor: isDark ? alpha(theme.palette.common.white, 0.05) : alpha(theme.palette.common.black, 0.05),
+        boxShadow: isDark ? '0 16px 40px rgba(0,0,0,0.5)' : '0 16px 40px rgba(0,0,0,0.08)',
+        position: 'relative',
+        zIndex: 1,
+        overflow: 'hidden'
+      }}>
+        <Box sx={{ display: "flex", flexDirection: isMobile ? "column" : "row" }}>
 
-          <Box sx={{ flexGrow: 1 }}>
+          {/* Custom Tabs Sidebar */}
+          <Box sx={{
+            minWidth: 260,
+            bgcolor: isDark ? alpha(theme.palette.background.default, 0.3) : alpha(theme.palette.grey[50], 0.5),
+            borderRight: isMobile ? 0 : `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+            borderBottom: isMobile ? `1px solid ${alpha(theme.palette.divider, 0.5)}` : 0,
+            p: 2
+          }}>
+            <Tabs
+              orientation={isMobile ? "horizontal" : "vertical"}
+              variant="scrollable"
+              scrollButtons={isMobile ? "auto" : false}
+              value={activeTab}
+              onChange={handleTabChange}
+              TabIndicatorProps={{
+                style: {
+                  width: isMobile ? '100%' : 4,
+                  height: isMobile ? 4 : 'auto',
+                  borderRadius: 4,
+                  background: uiConfigs.style.mainGradient.color
+                }
+              }}
+              sx={{
+                "& .MuiTab-root": {
+                  alignItems: "center",
+                  justifyContent: "flex-start",
+                  textAlign: "left",
+                  borderRadius: 2,
+                  minHeight: 48,
+                  my: 0.5,
+                  p: 2,
+                  color: "text.secondary",
+                  fontWeight: 600,
+                  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                  "&:hover": {
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    color: "primary.main"
+                  },
+                  "&.Mui-selected": {
+                    color: "primary.main",
+                    bgcolor: alpha(theme.palette.primary.main, 0.12)
+                  },
+                },
+              }}
+            >
+              <Tab label="Public Profile" icon={<PersonOutline sx={{ mr: 1.5 }} />} iconPosition="start" />
+              <Tab label="Account Data" icon={<SecurityOutlined sx={{ mr: 1.5 }} />} iconPosition="start" />
+              <Tab label="Security" icon={<Lock sx={{ mr: 1.5 }} />} iconPosition="start" />
+              <Tab label="Privacy" icon={<PrivacyTip sx={{ mr: 1.5 }} />} iconPosition="start" />
+              <Tab label="Preferences" icon={<Tune sx={{ mr: 1.5 }} />} iconPosition="start" />
+              <Tab label="Support" icon={<HelpOutline sx={{ mr: 1.5 }} />} iconPosition="start" />
+            </Tabs>
+          </Box>
+
+          {/* Main Content Area */}
+          <Box sx={{ flexGrow: 1, minHeight: 600 }}>
+
             {/* Tab 0: PUBLIC PROFILE */}
             <TabPanel value={activeTab} index={0}>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-                Public Profile
-              </Typography>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2, mb: 3 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Account Information</Typography>
-                <Stack spacing={1.5}>
-                  <Box>
-                    <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Username</Typography>
-                    <Typography variant="body2" sx={{ color: "primary.contrastText" }}>@{profile.username}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Email</Typography>
-                    <Typography variant="body2" sx={{ color: "primary.contrastText" }}>{profile.email || user?.email}</Typography>
-                  </Box>
-                </Stack>
+              <Typography variant="h5" sx={{ mb: 4, fontWeight: 700 }}>Public Profile</Typography>
+
+              <Paper elevation={0} sx={sectionPaperStyle}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 3 }}>Account Information</Typography>
+                <Grid container spacing={4}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Username</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 600, mt: 0.5 }}>@{profile.username}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 600, mt: 0.5 }}>{profile.email || user?.email}</Typography>
+                  </Grid>
+                </Grid>
               </Paper>
-              <Divider sx={{ my: 3 }} />
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Edit Profile Information</Typography>
+
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, mt: 4 }}>Profile Details</Typography>
+
               {!isEditingProfile ? (
-                <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2 }}>
-                  <Stack spacing={2}>
+                <Paper elevation={0} sx={sectionPaperStyle}>
+                  <Stack spacing={3}>
                     <Box>
-                      <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Full Name</Typography>
-                      <Typography variant="body2" sx={{ color: "primary.contrastText" }}>{profile.first_name} {profile.last_name}</Typography>
+                      <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600, textTransform: 'uppercase' }}>Full Name</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 600, mt: 0.5 }}>{profile.first_name} {profile.last_name}</Typography>
                     </Box>
                     <Box>
-                      <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Bio</Typography>
-                      <Typography variant="body2" sx={{ color: "primary.contrastText", whiteSpace: "pre-wrap" }}>{profile.bio || "Not set"}</Typography>
+                      <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600, textTransform: 'uppercase' }}>Bio</Typography>
+                      <Typography variant="body1" sx={{ mt: 0.5, color: profile.bio ? 'text.primary' : 'text.disabled' }}>
+                        {profile.bio || "No biography provided yet."}
+                      </Typography>
                     </Box>
                     <Box>
-                      <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Tagline</Typography>
-                      <Typography variant="body2" sx={{ color: "primary.contrastText" }}>{profile.tagline || "Not set"}</Typography>
+                      <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600, textTransform: 'uppercase' }}>Tagline</Typography>
+                      <Typography variant="body1" sx={{ mt: 0.5, color: profile.tagline ? 'text.primary' : 'text.disabled' }}>
+                        {profile.tagline || "No tagline set."}
+                      </Typography>
                     </Box>
                   </Stack>
-                  <Button startIcon={<Edit />} onClick={() => setIsEditingProfile(true)} variant="outlined" sx={{ borderColor: "graycolor.two", color: "primary.main", mt: 2 }}>Edit Profile</Button>
+                  <Box sx={{ mt: 4 }}>
+                    <Button
+                      startIcon={<Edit />}
+                      onClick={() => setIsEditingProfile(true)}
+                      variant="contained"
+                      sx={{
+                        borderRadius: 8,
+                        bgcolor: alpha(theme.palette.primary.main, 1),
+                        color: 'primary.contrastText',
+                        py: 1, px: 3
+                      }}
+                    >
+                      Edit Profile
+                    </Button>
+                  </Box>
                 </Paper>
               ) : (
-                <Stack spacing={2.5}>
-                  <TextField label="First Name" name="first_name" value={editData.first_name || ""} onChange={handleProfileChange} fullWidth variant="outlined" size="small" />
-                  <TextField label="Last Name" name="last_name" value={editData.last_name || ""} onChange={handleProfileChange} fullWidth variant="outlined" size="small" />
-                  <TextField label="Bio" name="bio" value={editData.bio || ""} onChange={handleProfileChange} fullWidth multiline rows={3} variant="outlined" placeholder="Tell about yourself..." />
-                  <TextField label="Tagline" name="tagline" value={editData.tagline || ""} onChange={handleProfileChange} fullWidth variant="outlined" size="small" placeholder="e.g., Passionate learner" />
-                  <Box sx={{ display: "flex", gap: 2 }}>
-                    <LoadingButton variant="contained" startIcon={<Save />} onClick={handleSaveProfile} loading={isSubmitting} sx={{ background: uiConfigs.style.mainGradient.color, color: "secondary.contrastText" }}>Save Changes</LoadingButton>
-                    <Button variant="outlined" startIcon={<Close />} onClick={() => { setIsEditingProfile(false); setEditData(profile); }} sx={{ borderColor: "graycolor.two", color: "primary.main" }}>Cancel</Button>
-                  </Box>
-                </Stack>
+                <Paper elevation={0} sx={{ ...sectionPaperStyle, borderColor: 'primary.main', boxShadow: `0 8px 32px ${alpha(theme.palette.primary.main, 0.15)}` }}>
+                  <Stack spacing={3}>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={6}>
+                        <TextField label="First Name" name="first_name" value={editData.first_name || ""} onChange={handleProfileChange} fullWidth variant="outlined" />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <TextField label="Last Name" name="last_name" value={editData.last_name || ""} onChange={handleProfileChange} fullWidth variant="outlined" />
+                      </Grid>
+                    </Grid>
+                    <TextField label="Tagline" name="tagline" value={editData.tagline || ""} onChange={handleProfileChange} fullWidth variant="outlined" placeholder="e.g., Passionate learner" />
+                    <TextField label="Bio" name="bio" value={editData.bio || ""} onChange={handleProfileChange} fullWidth multiline rows={4} variant="outlined" placeholder="Tell us about yourself..." />
+
+                    <Box sx={{ display: "flex", gap: 2, pt: 2 }}>
+                      <LoadingButton
+                        variant="contained"
+                        startIcon={<Save />}
+                        onClick={handleSaveProfile}
+                        loading={isSubmitting}
+                        sx={{ background: uiConfigs.style.mainGradient.color, color: "white", borderRadius: 8, px: 4 }}
+                      >
+                        Save Changes
+                      </LoadingButton>
+                      <Button
+                        variant="outlined"
+                        startIcon={<Close />}
+                        onClick={() => { setIsEditingProfile(false); setEditData(profile); }}
+                        sx={{ borderRadius: 8, px: 3 }}
+                      >
+                        Cancel
+                      </Button>
+                    </Box>
+                  </Stack>
+                </Paper>
               )}
             </TabPanel>
 
-            {/* Tab 1: ACCOUNT SETTINGS */}
+            {/* Tab 1: ACCOUNT DATA */}
             <TabPanel value={activeTab} index={1}>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>Account Settings</Typography>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2, mb: 3 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Change Username</Typography>
-                <Box sx={{ display: "flex", gap: 2 }}>
-                  <TextField label="Current Username" value={profile.username} disabled fullWidth size="small" variant="outlined" />
-                  <Button variant="outlined" sx={{ borderColor: "graycolor.two", color: "primary.main" }}>Change</Button>
+              <Typography variant="h5" sx={{ mb: 4, fontWeight: 700 }}>Account Data & Learning Styles</Typography>
+
+              <Paper elevation={0} sx={sectionPaperStyle}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>Email Address</Typography>
+                    <Typography variant="body2" sx={{ color: "text.secondary" }}>{profile.email || user?.email}</Typography>
+                  </Box>
+                  <Chip label="Verified" color="success" size="small" variant="outlined" icon={<VerifiedUser />} />
                 </Box>
+                <Typography variant="caption" sx={{ color: "text.disabled", display: "block", mt: 2 }}>
+                  Email addresses cannot be changed for security reasons. Contact support if needed.
+                </Typography>
               </Paper>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2, mb: 3 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Email Address</Typography>
-                <TextField label="Email" value={profile.email || user?.email} disabled fullWidth size="small" variant="outlined" />
-                <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mt: 1 }}>Email cannot be changed for security reasons</Typography>
-              </Paper>
-              <Divider sx={{ my: 3 }} />
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Your Learning Styles</Typography>
-              {(profile.learning_styles || learningStyleAdjustments) && (
-                <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2, mb: 3 }}>
-                  <Box sx={{ mb: 2, pb: 1.5, borderBottom: 1, borderColor: "graycolor.two" }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <CheckCircle sx={{ fontSize: 16, color: "success.main" }} />
-                      <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
-                        Source: {learningStyleSource === "manual" ? "📝 Manual Adjustments (from Settings)" : learningStyleSource === "questionnaire" ? "📋 Questionnaire-based" : "🔍 Interaction-based"}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Stack spacing={2}>
-                    <Box>
-                      <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Active vs Reflective</Typography>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={((
-                          (learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.active_reflective || 0
-                        ) + 11) / 22 * 100} 
-                        sx={{ height: 6, borderRadius: 3, "& .MuiLinearProgress-bar": { background: uiConfigs.style.mainGradient.color } }} 
-                      />
-                      <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem", mt: 0.5, display: "block" }}>
-                        Value: {(learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.active_reflective || 0}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Sensing vs Intuitive</Typography>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={((
-                          (learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.sensing_intuitive || 0
-                        ) + 11) / 22 * 100} 
-                        sx={{ height: 6, borderRadius: 3, "& .MuiLinearProgress-bar": { background: uiConfigs.style.mainGradient.color } }} 
-                      />
-                      <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem", mt: 0.5, display: "block" }}>
-                        Value: {(learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.sensing_intuitive || 0}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Visual vs Verbal</Typography>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={((
-                          (learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.visual_verbal || 0
-                        ) + 11) / 22 * 100} 
-                        sx={{ height: 6, borderRadius: 3, "& .MuiLinearProgress-bar": { background: uiConfigs.style.mainGradient.color } }} 
-                      />
-                      <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem", mt: 0.5, display: "block" }}>
-                        Value: {(learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.visual_verbal || 0}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Sequential vs Global</Typography>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={((
-                          (learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.sequential_global || 0
-                        ) + 11) / 22 * 100} 
-                        sx={{ height: 6, borderRadius: 3, "& .MuiLinearProgress-bar": { background: uiConfigs.style.mainGradient.color } }} 
-                      />
-                      <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem", mt: 0.5, display: "block" }}>
-                        Value: {(learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.sequential_global || 0}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Paper>
-              )}
-              <Divider sx={{ my: 3 }} />
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>⚙️ Adjust Learning Style Preferences</Typography>
-              <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 2 }}>Manually customize your learning style preferences from the settings page. These adjustments will be prioritized over questionnaire and interaction-based learning styles.</Typography>
-              
+
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, mt: 4 }}>Learning Style Preferences</Typography>
+
               {!isEditingLearningStyle ? (
-                <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2 }}>
-                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                <Paper elevation={0} sx={sectionPaperStyle}>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'space-between', alignItems: 'flex-start', mb: 4 }}>
                     <Box>
-                      <Typography variant="body2" sx={{ color: "text.secondary" }}>Current source of learning style:</Typography>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
-                        <CheckCircle sx={{ fontSize: 18, color: "success.main" }} />
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          {learningStyleSource === "manual" ? "📝 Manual Adjustments (from Settings)" : learningStyleSource === "questionnaire" ? "📋 Questionnaire-based" : "🔍 Interaction-based"}
-                        </Typography>
-                      </Box>
+                      <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>Current Active Profile Type</Typography>
+                      <Chip
+                        icon={<CheckCircle />}
+                        label={learningStyleSource === "manual" ? "Manual Adjustments" : learningStyleSource === "questionnaire" ? "Questionnaire Profile" : "Interactive Profile"}
+                        color="success"
+                        sx={{ fontWeight: 600, bgcolor: alpha(theme.palette.success.main, 0.1) }}
+                      />
                     </Box>
+                    <Button
+                      startIcon={<Edit />}
+                      onClick={() => setIsEditingLearningStyle(true)}
+                      variant="outlined"
+                      color="primary"
+                      sx={{ borderRadius: 8 }}
+                    >
+                      Calibrate Values
+                    </Button>
                   </Box>
-                  <Button 
-                    startIcon={<Edit />} 
-                    onClick={() => setIsEditingLearningStyle(true)} 
-                    variant="outlined" 
-                    sx={{ borderColor: "graycolor.two", color: "primary.main" }}
-                  >
-                    Customize Learning Style
-                  </Button>
+
+                  <Grid container spacing={3}>
+                    {['active_reflective', 'sensing_intuitive', 'visual_verbal', 'sequential_global'].map((dim) => {
+                      const value = (learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.[dim] || 0;
+                      const progress = ((value + 11) / 22) * 100;
+                      const labels = {
+                        active_reflective: ["Active", "Reflective"],
+                        sensing_intuitive: ["Sensing", "Intuitive"],
+                        visual_verbal: ["Visual", "Verbal"],
+                        sequential_global: ["Sequential", "Global"]
+                      }[dim];
+
+                      return (
+                        <Grid item xs={12} sm={6} key={dim}>
+                          <Box sx={{ p: 2, borderRadius: 3, bgcolor: alpha(theme.palette.background.default, 0.5) }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 700 }}>{labels[0]}</Typography>
+                              <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main' }}>Val: {value}</Typography>
+                              <Typography variant="caption" sx={{ fontWeight: 700 }}>{labels[1]}</Typography>
+                            </Box>
+                            <LinearProgress
+                              variant="determinate"
+                              value={progress}
+                              sx={{
+                                height: 8, borderRadius: 4,
+                                bgcolor: alpha(theme.palette.divider, 0.5),
+                                "& .MuiLinearProgress-bar": { background: uiConfigs.style.mainGradient.color }
+                              }}
+                            />
+                          </Box>
+                        </Grid>
+                      );
+                    })}
+                  </Grid>
                 </Paper>
               ) : (
-                <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2 }}>
-                  <Stack spacing={3}>
-                    <Alert severity="info">
-                      Use the sliders below to adjust your learning style preferences. Values range from -11 to +11. These custom adjustments will be your primary learning style profile.
-                    </Alert>
-                    
-                    {/* Active vs Reflective */}
-                    <Box>
-                      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>Active Learning ←→ Reflective Learning</Typography>
-                        <Typography variant="body2" sx={{ color: "primary.main", fontWeight: 600 }}>{learningStyleAdjustments.active_reflective}</Typography>
-                      </Box>
-                      <Typography variant="caption" sx={{ color: "text.secondary" }}>Negative = Active (do-ers), Positive = Reflective (thinkers)</Typography>
-                      <input 
-                        type="range" 
-                        min="-11" 
-                        max="11" 
-                        value={learningStyleAdjustments.active_reflective}
-                        onChange={(e) => handleLearningStyleChange("active_reflective", parseInt(e.target.value))}
-                        style={{ width: "100%", marginTop: 8 }}
-                      />
-                    </Box>
+                <Paper elevation={0} sx={{ ...sectionPaperStyle, borderColor: 'primary.main', boxShadow: `0 8px 32px ${alpha(theme.palette.primary.main, 0.15)}` }}>
+                  <Alert severity="info" sx={{ mb: 4, borderRadius: 3 }}>
+                    Use the sliders below to manually override your learning style. Values range from -11 to +11.
+                  </Alert>
 
-                    {/* Sensing vs Intuitive */}
-                    <Box>
-                      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>Sensing (Practical) ←→ Intuitive (Conceptual)</Typography>
-                        <Typography variant="body2" sx={{ color: "primary.main", fontWeight: 600 }}>{learningStyleAdjustments.sensing_intuitive}</Typography>
+                  <Stack spacing={4}>
+                    {[
+                      { key: 'active_reflective', left: 'Active (Do-ers)', right: 'Reflective (Thinkers)' },
+                      { key: 'sensing_intuitive', left: 'Sensing (Facts)', right: 'Intuitive (Concepts)' },
+                      { key: 'visual_verbal', left: 'Visual (Diagrams)', right: 'Verbal (Words)' },
+                      { key: 'sequential_global', left: 'Sequential (Linear)', right: 'Global (Big Picture)' }
+                    ].map(({ key, left, right }) => (
+                      <Box key={key} sx={{ p: 2, borderRadius: 3, bgcolor: alpha(theme.palette.background.default, 0.5) }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{left}</Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 800, color: "primary.main" }}>{learningStyleAdjustments[key]}</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{right}</Typography>
+                        </Box>
+                        <input
+                          type="range" min="-11" max="11"
+                          value={learningStyleAdjustments[key]}
+                          onChange={(e) => handleLearningStyleChange(key, parseInt(e.target.value))}
+                          style={{
+                            width: "100%", accentColor: theme.palette.primary.main,
+                            height: '6px', cursor: 'grab'
+                          }}
+                        />
                       </Box>
-                      <Typography variant="caption" sx={{ color: "text.secondary" }}>Negative = Sensing (facts, examples), Positive = Intuitive (theories, concepts)</Typography>
-                      <input 
-                        type="range" 
-                        min="-11" 
-                        max="11" 
-                        value={learningStyleAdjustments.sensing_intuitive}
-                        onChange={(e) => handleLearningStyleChange("sensing_intuitive", parseInt(e.target.value))}
-                        style={{ width: "100%", marginTop: 8 }}
-                      />
-                    </Box>
+                    ))}
 
-                    {/* Visual vs Verbal */}
-                    <Box>
-                      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>Visual (Diagrams) ←→ Verbal (Words)</Typography>
-                        <Typography variant="body2" sx={{ color: "primary.main", fontWeight: 600 }}>{learningStyleAdjustments.visual_verbal}</Typography>
-                      </Box>
-                      <Typography variant="caption" sx={{ color: "text.secondary" }}>Negative = Visual (pictures, diagrams), Positive = Verbal (text, explanations)</Typography>
-                      <input 
-                        type="range" 
-                        min="-11" 
-                        max="11" 
-                        value={learningStyleAdjustments.visual_verbal}
-                        onChange={(e) => handleLearningStyleChange("visual_verbal", parseInt(e.target.value))}
-                        style={{ width: "100%", marginTop: 8 }}
-                      />
-                    </Box>
-
-                    {/* Sequential vs Global */}
-                    <Box>
-                      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>Sequential (Step-by-step) ←→ Global (Big Picture)</Typography>
-                        <Typography variant="body2" sx={{ color: "primary.main", fontWeight: 600 }}>{learningStyleAdjustments.sequential_global}</Typography>
-                      </Box>
-                      <Typography variant="caption" sx={{ color: "text.secondary" }}>Negative = Sequential (linear progression), Positive = Global (overview first)</Typography>
-                      <input 
-                        type="range" 
-                        min="-11" 
-                        max="11" 
-                        value={learningStyleAdjustments.sequential_global}
-                        onChange={(e) => handleLearningStyleChange("sequential_global", parseInt(e.target.value))}
-                        style={{ width: "100%", marginTop: 8 }}
-                      />
-                    </Box>
-
-                    {/* Action Buttons */}
-                    <Box sx={{ display: "flex", gap: 2, pt: 2 }}>
-                      <LoadingButton 
-                        variant="contained" 
-                        startIcon={<Save />} 
-                        onClick={handleSaveLearningStyleAdjustments} 
+                    <Box sx={{ display: "flex", gap: 2, pt: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
+                      <LoadingButton
+                        variant="contained"
+                        startIcon={<Save />}
+                        onClick={handleSaveLearningStyleAdjustments}
                         loading={isSubmitting}
-                        sx={{ background: uiConfigs.style.mainGradient.color, color: "secondary.contrastText" }}
+                        sx={{ background: uiConfigs.style.mainGradient.color, color: "white", borderRadius: 8, px: 4 }}
                       >
                         Save Adjustments
                       </LoadingButton>
-                      <Button 
-                        variant="outlined" 
-                        startIcon={<Close />} 
-                        onClick={handleResetLearningStyleAdjustments}
-                        sx={{ borderColor: "graycolor.two", color: "primary.main" }}
+                      <Button
+                        variant="outlined"
+                        startIcon={<Close />}
+                        onClick={() => setIsEditingLearningStyle(false)}
+                        sx={{ borderRadius: 8, px: 3 }}
                       >
                         Cancel
                       </Button>
@@ -606,187 +600,189 @@ const DashboardSettingsPage = () => {
 
             {/* Tab 2: SECURITY */}
             <TabPanel value={activeTab} index={2}>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>Security</Typography>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2, mb: 3 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>🔐 Change Password</Typography>
-                <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>Keep your account secure with a strong password. Change it regularly.</Typography>
-                <LoadingButton variant="contained" startIcon={<Lock />} onClick={handleResetPassword} loading={isSubmitting} sx={{ background: uiConfigs.style.mainGradient.color, color: "secondary.contrastText" }}>Send Password Reset Email</LoadingButton>
+              <Typography variant="h5" sx={{ mb: 4, fontWeight: 700 }}>Security Settings</Typography>
+
+              <Paper elevation={0} sx={sectionPaperStyle}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Password</Typography>
+                <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>
+                  Ensure your account is using a long, random password to stay secure.
+                </Typography>
+                <LoadingButton
+                  variant="outlined"
+                  startIcon={<Lock />}
+                  onClick={handleResetPassword}
+                  loading={isSubmitting}
+                  sx={{ borderRadius: 8 }}
+                >
+                  Send Reset Link
+                </LoadingButton>
               </Paper>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2, mb: 3 }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "start", mb: 2 }}>
+
+              <Paper elevation={0} sx={sectionPaperStyle}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                   <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>✓ Two-Factor Authentication</Typography>
-                    <Typography variant="body2" sx={{ color: "text.secondary" }}>Add an extra layer of security to your account</Typography>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Two-Factor Authentication</Typography>
+                    <Typography variant="body2" sx={{ color: "text.secondary", maxWidth: 400 }}>
+                      Protect your account against unauthorized access with an additional layer of security.
+                    </Typography>
                   </Box>
-                  <CheckCircle sx={{ color: "success.main" }} />
+                  <Box sx={{ p: 2, borderRadius: '50%', bgcolor: alpha(theme.palette.warning.main, 0.1) }}>
+                    <SecurityOutlined sx={{ color: "warning.main", fontSize: 32 }} />
+                  </Box>
                 </Box>
-                <Alert severity="info" sx={{ mb: 2 }}>Status: <strong>Not Enabled</strong></Alert>
-                <Button variant="outlined" sx={{ borderColor: "graycolor.two", color: "primary.main" }} onClick={handleEnable2FA}>Enable 2FA</Button>
-              </Paper>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>�� Active Sessions</Typography>
-                <List>
-                  <ListItem sx={{ borderBottom: 1, borderColor: "graycolor.two" }}>
-                    <ListItemIcon><VerifiedUser sx={{ color: "primary.main" }} /></ListItemIcon>
-                    <ListItemText primary="Current Device" secondary={`Last active: ${new Date().toLocaleString()}`} />
-                  </ListItem>
-                </List>
+                <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>Status: Not Configured</Alert>
+                <Button variant="contained" color="primary" sx={{ borderRadius: 8, px: 3 }} onClick={handleEnable2FA}>
+                  Setup 2FA
+                </Button>
               </Paper>
             </TabPanel>
 
             {/* Tab 3: PRIVACY */}
             <TabPanel value={activeTab} index={3}>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>Privacy Controls</Typography>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2, mb: 3 }}>
-                <FormControlLabel control={<Switch checked={privacy.profilePublic} onChange={() => handlePrivacyChange("profilePublic")} />} label={<Box><Typography variant="subtitle2" sx={{ fontWeight: 600 }}>👤 Public Profile</Typography><Typography variant="caption" sx={{ color: "text.secondary" }}>Allow others to view your profile</Typography></Box>} />
-              </Paper>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2, mb: 3 }}>
-                <FormControlLabel control={<Switch checked={privacy.showLearningStats} onChange={() => handlePrivacyChange("showLearningStats")} />} label={<Box><Typography variant="subtitle2" sx={{ fontWeight: 600 }}>📊 Show Learning Statistics</Typography><Typography variant="caption" sx={{ color: "text.secondary" }}>Display your learning progress and stats</Typography></Box>} />
-              </Paper>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2, mb: 3 }}>
-                <FormControlLabel control={<Switch checked={privacy.showAchievements} onChange={() => handlePrivacyChange("showAchievements")} />} label={<Box><Typography variant="subtitle2" sx={{ fontWeight: 600 }}>🏆 Show Achievements</Typography><Typography variant="caption" sx={{ color: "text.secondary" }}>Display earned badges and achievements</Typography></Box>} />
-              </Paper>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2 }}>
-                <FormControlLabel control={<Switch checked={privacy.allowMessages} onChange={() => handlePrivacyChange("allowMessages")} />} label={<Box><Typography variant="subtitle2" sx={{ fontWeight: 600 }}>💬 Allow Direct Messages</Typography><Typography variant="caption" sx={{ color: "text.secondary" }}>Let others send you messages</Typography></Box>} />
-              </Paper>
+              <Typography variant="h5" sx={{ mb: 4, fontWeight: 700 }}>Privacy Settings</Typography>
+
+              <Stack spacing={3}>
+                <Paper elevation={0} sx={{ ...sectionPaperStyle, mb: 0 }}>
+                  <FormControlLabel
+                    control={<Switch checked={privacy.profilePublic} onChange={() => handlePrivacyChange("profilePublic")} color="primary" />}
+                    label={
+                      <Box sx={{ ml: 1 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Public Profile</Typography>
+                        <Typography variant="body2" sx={{ color: "text.secondary" }}>Make your profile visible to other users in the platform.</Typography>
+                      </Box>
+                    }
+                  />
+                </Paper>
+                <Paper elevation={0} sx={{ ...sectionPaperStyle, mb: 0 }}>
+                  <FormControlLabel
+                    control={<Switch checked={privacy.showLearningStats} onChange={() => handlePrivacyChange("showLearningStats")} color="primary" />}
+                    label={
+                      <Box sx={{ ml: 1 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Show Learning Statistics</Typography>
+                        <Typography variant="body2" sx={{ color: "text.secondary" }}>Display your learning style matrix to other users.</Typography>
+                      </Box>
+                    }
+                  />
+                </Paper>
+                <Paper elevation={0} sx={{ ...sectionPaperStyle, mb: 0 }}>
+                  <FormControlLabel
+                    control={<Switch checked={privacy.allowMessages} onChange={() => handlePrivacyChange("allowMessages")} color="primary" />}
+                    label={
+                      <Box sx={{ ml: 1 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Direct Messaging</Typography>
+                        <Typography variant="body2" sx={{ color: "text.secondary" }}>Allow other users to send you direct messages.</Typography>
+                      </Box>
+                    }
+                  />
+                </Paper>
+              </Stack>
             </TabPanel>
 
             {/* Tab 4: PREFERENCES */}
             <TabPanel value={activeTab} index={4}>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>Preferences</Typography>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2, mb: 3 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>🌐 Primary Language</Typography>
-                <TextField select value={settings.language} onChange={(e) => setSettings({ ...settings, language: e.target.value })} fullWidth size="small" variant="outlined">
+              <Typography variant="h5" sx={{ mb: 4, fontWeight: 700 }}>App Preferences</Typography>
+
+              <Paper elevation={0} sx={sectionPaperStyle}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Language</Typography>
+                <TextField select value={settings.language} onChange={(e) => setSettings({ ...settings, language: e.target.value })} fullWidth variant="outlined" sx={{ maxWidth: 300 }}>
                   <MenuItem value="en">🇬🇧 English</MenuItem>
                   <MenuItem value="es">🇪🇸 Español</MenuItem>
                   <MenuItem value="fr">🇫🇷 Français</MenuItem>
-                  <MenuItem value="de">🇩🇪 Deutsch</MenuItem>
-                  <MenuItem value="zh">🇨🇳 中文</MenuItem>
                 </TextField>
               </Paper>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2, mb: 3 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>💬 Chat History Management</Typography>
-                <FormControlLabel control={<Switch checked={settings.chatHistory} onChange={() => handleSettingsChange("chatHistory")} />} label={<Typography variant="body2">Save chat conversations for future reference</Typography>} />
-                <Button variant="outlined" color="warning" size="small" onClick={() => setOpenClearHistoryDialog(true)} sx={{ borderColor: "graycolor.two", mt: 2 }}>Clear Chat History</Button>
-              </Paper>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2, mb: 3 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>📚 Lesson Management</Typography>
-                <FormControlLabel control={<Switch checked={settings.learningHistory} onChange={() => handleSettingsChange("learningHistory")} />} label={<Typography variant="body2">Track your lesson progress and history</Typography>} />
-                <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mt: 1 }}>Download your lesson history and certificates</Typography>
-                <Button variant="outlined" size="small" sx={{ borderColor: "graycolor.two", color: "primary.main", mt: 1 }}>Download Lessons Data</Button>
-              </Paper>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2, mb: 3 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>📄 Documents & Storage</Typography>
-                <Stack spacing={1.5}>
-                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <Typography variant="body2">Storage Used</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>2.4 GB / 10 GB</Typography>
+
+              <Paper elevation={0} sx={sectionPaperStyle}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 3 }}>Data Management</Typography>
+                <Stack spacing={3}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box>
+                      <Typography variant="body1" sx={{ fontWeight: 600 }}>Chat History</Typography>
+                      <Typography variant="body2" sx={{ color: "text.secondary" }}>Clear all previous conversations with AI agents.</Typography>
+                    </Box>
+                    <Button variant="outlined" color="error" sx={{ borderRadius: 8 }} onClick={() => setOpenClearHistoryDialog(true)}>Clear Chats</Button>
                   </Box>
-                  <LinearProgress variant="determinate" value={24} sx={{ height: 8, borderRadius: 4, "& .MuiLinearProgress-bar": { background: uiConfigs.style.mainGradient.color } }} />
-                  <Box sx={{ display: "flex", gap: 2 }}>
-                    <Button variant="outlined" size="small" sx={{ borderColor: "graycolor.two", color: "primary.main" }}>Upload Documents</Button>
-                    <Button variant="outlined" color="warning" size="small" onClick={() => setOpenClearCacheDialog(true)} sx={{ borderColor: "graycolor.two" }}>Clear Cache</Button>
+                  <Divider />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box>
+                      <Typography variant="body1" sx={{ fontWeight: 600 }}>Application Cache</Typography>
+                      <Typography variant="body2" sx={{ color: "text.secondary" }}>Clear document and asset cache to free up space.</Typography>
+                    </Box>
+                    <Button variant="outlined" color="warning" sx={{ borderRadius: 8 }} onClick={() => setOpenClearCacheDialog(true)}>Clear Cache</Button>
                   </Box>
                 </Stack>
               </Paper>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>📊 Data & Analytics</Typography>
-                <FormControlLabel control={<Switch checked={settings.dataCollection} onChange={() => handleSettingsChange("dataCollection")} />} label={<Typography variant="body2">Allow us to collect usage data for improvements</Typography>} />
-                <FormControlLabel control={<Switch checked={settings.thirdParty} onChange={() => handleSettingsChange("thirdParty")} />} label={<Typography variant="body2">Allow third-party integrations</Typography>} />
-              </Paper>
             </TabPanel>
 
-            {/* Tab 5: REPORT ISSUE */}
+            {/* Tab 5: SUPPORT */}
             <TabPanel value={activeTab} index={5}>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>Report & Feedback</Typography>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>Report a Problem</Typography>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2, mb: 3 }}>
-                <Alert severity="info" sx={{ mb: 2 }}>Help us improve by reporting bugs or issues you encounter</Alert>
-                <Stack spacing={2}>
-                  <TextField label="Issue Title" placeholder="Brief title of the problem" fullWidth variant="outlined" size="small" value={issueReport.title} onChange={(e) => setIssueReport({ ...issueReport, title: e.target.value })} />
-                  <TextField label="Description" placeholder="Provide detailed information about the issue..." fullWidth multiline rows={4} variant="outlined" value={issueReport.description} onChange={(e) => setIssueReport({ ...issueReport, description: e.target.value })} />
-                  <TextField select label="Category" value={issueReport.category} onChange={(e) => setIssueReport({ ...issueReport, category: e.target.value })} fullWidth variant="outlined" size="small">
-                    <MenuItem value="bug">🐛 Bug Report</MenuItem>
-                    <MenuItem value="ui">🎨 UI/UX Issue</MenuItem>
-                    <MenuItem value="performance">⚡ Performance Issue</MenuItem>
-                    <MenuItem value="other">📝 Other</MenuItem>
+              <Typography variant="h5" sx={{ mb: 4, fontWeight: 700 }}>Support & Feedback</Typography>
+
+              <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12} sm={6}>
+                  <Paper elevation={0} sx={{ ...sectionPaperStyle, cursor: "pointer", display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: alpha(theme.palette.info.main, 0.1), color: "info.main" }}>
+                      <HelpOutline fontSize="medium" />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Help Center</Typography>
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>Read the manuals</Typography>
+                    </Box>
+                    <OpenInNew sx={{ color: "text.disabled", fontSize: 20 }} />
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Paper elevation={0} sx={{ ...sectionPaperStyle, cursor: "pointer", display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: alpha(theme.palette.success.main, 0.1), color: "success.main" }}>
+                      <CheckCircle fontSize="medium" />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>System Status</Typography>
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>All systems operational</Typography>
+                    </Box>
+                    <OpenInNew sx={{ color: "text.disabled", fontSize: 20 }} />
+                  </Paper>
+                </Grid>
+              </Grid>
+
+              <Paper elevation={0} sx={sectionPaperStyle}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Submit an Issue</Typography>
+                <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>Have you encountered a bug or error? Let us know below.</Typography>
+
+                <Stack spacing={3}>
+                  <TextField label="Issue Title" fullWidth variant="outlined" value={issueReport.title} onChange={(e) => setIssueReport({ ...issueReport, title: e.target.value })} />
+                  <TextField label="Description" fullWidth multiline rows={4} variant="outlined" value={issueReport.description} onChange={(e) => setIssueReport({ ...issueReport, description: e.target.value })} />
+                  <TextField select label="Category" value={issueReport.category} onChange={(e) => setIssueReport({ ...issueReport, category: e.target.value })} fullWidth variant="outlined">
+                    <MenuItem value="bug">Bug Report</MenuItem>
+                    <MenuItem value="ui">UI/UX Issue</MenuItem>
+                    <MenuItem value="performance">Performance Issue</MenuItem>
                   </TextField>
-                  <Button variant="contained" onClick={handleSubmitReport} sx={{ background: uiConfigs.style.mainGradient.color, color: "secondary.contrastText" }}>Submit Report</Button>
-                </Stack>
-              </Paper>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, mt: 3 }}>Raise a Feature Request</Typography>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2 }}>
-                <Alert severity="success" sx={{ mb: 2 }}>Suggest new features you'd like to see in EduWingz</Alert>
-                <Stack spacing={2}>
-                  <TextField label="Feature Title" placeholder="What would you like to see?" fullWidth variant="outlined" size="small" />
-                  <TextField label="Description" placeholder="Explain how this feature would help..." fullWidth multiline rows={3} variant="outlined" />
-                  <Button variant="contained" sx={{ background: uiConfigs.style.mainGradient.color, color: "secondary.contrastText" }}>Submit Feature Request</Button>
+                  <Button variant="contained" onClick={handleSubmitReport} sx={{ background: uiConfigs.style.mainGradient.color, color: "white", borderRadius: 8, py: 1.5 }}>
+                    Submit Report
+                  </Button>
                 </Stack>
               </Paper>
             </TabPanel>
 
-            {/* Tab 6: SUPPORT */}
-            <TabPanel value={activeTab} index={6}>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>Help & Support</Typography>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2, mb: 3, cursor: "pointer", transition: "all 0.3s", "&:hover": { boxShadow: 2, borderColor: "primary.main" } }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>📖 Documentation</Typography>
-                    <Typography variant="caption" sx={{ color: "text.secondary" }}>Browse guides, tutorials, and technical documentation</Typography>
-                  </Box>
-                  <OpenInNew sx={{ color: "primary.main" }} />
-                </Box>
-              </Paper>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2, mb: 3, cursor: "pointer", transition: "all 0.3s", "&:hover": { boxShadow: 2, borderColor: "primary.main" } }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>💡 Help Center</Typography>
-                    <Typography variant="caption" sx={{ color: "text.secondary" }}>Get answers to common questions and troubleshooting</Typography>
-                  </Box>
-                  <OpenInNew sx={{ color: "primary.main" }} />
-                </Box>
-              </Paper>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2, mb: 3 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>ℹ️ About EduWingz</Typography>
-                <Stack spacing={1.5}>
-                  <Box>
-                    <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Version</Typography>
-                    <Typography variant="body2" sx={{ color: "primary.contrastText" }}>v2.0.1</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>Build</Typography>
-                    <Typography variant="body2" sx={{ color: "primary.contrastText" }}>Build 2025.11.26</Typography>
-                  </Box>
-                </Stack>
-              </Paper>
-              <Paper sx={{ p: 2.5, border: 1, borderColor: "graycolor.two", borderRadius: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>📧 Contact Support</Typography>
-                <Stack spacing={1}>
-                  <Typography variant="body2" sx={{ color: "text.secondary" }}>Need additional help? Reach out to our support team:</Typography>
-                  <Typography variant="body2" sx={{ color: "primary.main", fontWeight: 600 }}>support@eduwingz.com</Typography>
-                  <Button variant="outlined" size="small" sx={{ borderColor: "graycolor.two", color: "primary.main", mt: 1 }}>Send Email</Button>
-                </Stack>
-              </Paper>
-            </TabPanel>
           </Box>
         </Box>
       </Paper>
 
-      <Dialog open={openClearHistoryDialog} onClose={() => setOpenClearHistoryDialog(false)}>
-        <DialogTitle>Clear Chat History</DialogTitle>
-        <DialogContent><DialogContentText sx={{ mt: 2 }}>Are you sure you want to clear all chat history? This action cannot be undone.</DialogContentText></DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenClearHistoryDialog(false)}>Cancel</Button>
-          <LoadingButton onClick={handleClearChatHistory} color="warning" variant="contained" loading={isSubmitting}>Clear History</LoadingButton>
+      {/* Dialogs */}
+      <Dialog open={openClearHistoryDialog} onClose={() => setOpenClearHistoryDialog(false)} PaperProps={{ sx: { borderRadius: 4, p: 1 } }}>
+        <DialogTitle sx={{ fontWeight: 700 }}>Clear Chat History</DialogTitle>
+        <DialogContent><DialogContentText>Are you sure you want to clear all chat history? This action cannot be undone.</DialogContentText></DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setOpenClearHistoryDialog(false)} sx={{ borderRadius: 8 }}>Cancel</Button>
+          <LoadingButton onClick={handleClearChatHistory} color="error" variant="contained" loading={isSubmitting} sx={{ borderRadius: 8 }}>Clear History</LoadingButton>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={openClearCacheDialog} onClose={() => setOpenClearCacheDialog(false)}>
-        <DialogTitle>Clear Cache</DialogTitle>
-        <DialogContent><DialogContentText sx={{ mt: 2 }}>Clearing cache will free up storage space. This may affect performance temporarily.</DialogContentText></DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenClearCacheDialog(false)}>Cancel</Button>
-          <LoadingButton onClick={handleClearCache} color="warning" variant="contained" loading={isSubmitting}>Clear Cache</LoadingButton>
+      <Dialog open={openClearCacheDialog} onClose={() => setOpenClearCacheDialog(false)} PaperProps={{ sx: { borderRadius: 4, p: 1 } }}>
+        <DialogTitle sx={{ fontWeight: 700 }}>Clear Cache</DialogTitle>
+        <DialogContent><DialogContentText>Clearing cache will free up storage space, but resources may take longer to load initially.</DialogContentText></DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setOpenClearCacheDialog(false)} sx={{ borderRadius: 8 }}>Cancel</Button>
+          <LoadingButton onClick={handleClearCache} color="warning" variant="contained" loading={isSubmitting} sx={{ borderRadius: 8 }}>Clear Cache</LoadingButton>
         </DialogActions>
       </Dialog>
     </Box>

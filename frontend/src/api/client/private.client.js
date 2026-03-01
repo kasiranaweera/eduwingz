@@ -1,14 +1,14 @@
 import axios from "axios";
 import queryString from "query-string";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://eduwingz-backend.onrender.com" || "http://localhost:8000";
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
 const baseURL = BACKEND_URL;
 
 console.log("🔌 Private Client initialized with baseURL:", baseURL);
 
 const privateClient = axios.create({
   baseURL,
-  timeout: 30000, // 30 second timeout
+  timeout: 180000, // 180 second timeout to match backend's FastAPI forwarding timeout for LLM processing
   withCredentials: true, // Allow cookies and CORS credentials
   paramsSerializer: {
     encode: params => queryString.stringify(params)
@@ -17,23 +17,26 @@ const privateClient = axios.create({
 
 privateClient.interceptors.request.use(async config => {
   // Attach headers safely. Only add Authorization when a token exists.
-  let token = localStorage.getItem("actkn");
+  let token = null;
 
-  // If `actkn` is not set, try to extract token from stored `user` object
-  if (!token) {
-    const userRaw = localStorage.getItem("user");
-    if (userRaw) {
-      try {
-        let userObj = JSON.parse(userRaw);
-        // sometimes `user` is double-stringified
-        if (typeof userObj === 'string') {
-          userObj = JSON.parse(userObj);
-        }
-        token = userObj?.token || userObj?.access || userObj?.actkn || null;
-      } catch (e) {
-        // ignore parse errors
+  // First, try to extract token from stored `user` object (set by successful login)
+  const userRaw = localStorage.getItem("user");
+  if (userRaw) {
+    try {
+      let userObj = JSON.parse(userRaw);
+      // sometimes `user` is double-stringified
+      if (typeof userObj === 'string') {
+        userObj = JSON.parse(userObj);
       }
+      token = userObj?.token || userObj?.access || userObj?.actkn || null;
+    } catch (e) {
+      // ignore parse errors
     }
+  }
+
+  // Fallback to legacy `actkn` only if user object token is missing
+  if (!token) {
+    token = localStorage.getItem("actkn");
   }
 
   const headers = {
@@ -47,7 +50,8 @@ privateClient.interceptors.request.use(async config => {
 
   // Mutate and return the config object as expected by axios
   config.headers = headers;
-  console.log("📤 [Private API Request]", config.method.toUpperCase(), baseURL + config.url, token ? "[Authenticated]" : "[Public]");
+  console.log("📤 [Private API Request Header Debug]", headers);
+  console.log("📤 [Private API Request]", config.method.toUpperCase(), baseURL + config.url, token ? `[Authenticated: ${token.substring(0, 10)}...]` : "[Public]");
   return config;
 });
 
@@ -72,11 +76,11 @@ privateClient.interceptors.response.use((response) => {
       statusText: err.response.statusText,
       data: err.response.data,
     });
-    
+
     if (err.response.data) throw err.response.data;
     throw err;
   }
-  
+
   // Network error or no response from server (includes CORS errors)
   if (!err.response) {
     console.error("❌ [Network/CORS Error - No Server Response]", {
@@ -85,10 +89,10 @@ privateClient.interceptors.response.use((response) => {
       baseURL: baseURL,
       errorMessage: err.message,
     });
-    
+
     // Handle different network error codes
     let errorMessage = "Unable to connect to server. Checking connection...";
-    
+
     if (err.code === "ECONNABORTED") {
       errorMessage = "Request timeout. Server is slow. Try again.";
     } else if (err.code === "ERR_NETWORK" || err.code === "ENOTFOUND") {
@@ -99,7 +103,7 @@ privateClient.interceptors.response.use((response) => {
     } else if (err.message && err.message.includes("CORS")) {
       errorMessage = "CORS error. Server configuration issue.";
     }
-    
+
     const networkError = new Error(errorMessage);
     networkError.code = err.code;
     networkError.originalError = err;

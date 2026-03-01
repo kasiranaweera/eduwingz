@@ -6,6 +6,7 @@ urlpatterns = [
     path('notifications/', views.NotificationListCreateAPIView.as_view(), name='notification-list-create'),
     path('notifications/<int:pk>/', views.NotificationDetailAPIView.as_view(), name='notification-detail'),
     path('user/<str:user_id>/notifications/', views.UserNotificationAPIView.as_view(), name='user-notifications'),
+    path('search/', views.GlobalSearchAPIView.as_view(), name='global-search'),
     path('analytics/student/<str:user_id>/', views.StudentAnalyticsAPIView.as_view(), name='student-analytics'),
     path('analytics/overview/', views.AnalyticsOverviewAPIView.as_view(), name='analytics-overview'),
 ]

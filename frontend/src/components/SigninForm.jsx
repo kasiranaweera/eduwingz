@@ -1,5 +1,5 @@
 import { LoadingButton } from "@mui/lab";
-import { Alert, Box, Stack, TextField, Typography, FormControlLabel, Checkbox, Link} from "@mui/material";
+import { Alert, Box, Stack, TextField, Typography, FormControlLabel, Checkbox, Link } from "@mui/material";
 import { useFormik } from "formik";
 import { toast } from "react-toastify";
 import * as Yup from "yup";
@@ -48,9 +48,9 @@ const SigninForm = ({ switchAuthState }) => {
     onSubmit: async values => {
       setErrorMessage(undefined);
       setIsLoginRequest(true);
-      
+
       console.log("🔄 [LOGIN] Attempting to login with:", values.email);
-      
+
       const { response, err } = await userApi.signin(values);
       setIsLoginRequest(false);
 
@@ -61,16 +61,18 @@ const SigninForm = ({ switchAuthState }) => {
       if (response && response.access) {
         console.log("✅ [LOGIN] Login successful!");
         signinForm.resetForm();
-        
+
         try {
           const decodedToken = jwtDecode(response.access);
           const userObject = {
             username: decodedToken.username,
             email: decodedToken.email,
-            id: decodedToken.user_id,
+            id: decodedToken.sub, // Use 'sub' which contains the DB ID from SimpleJWT
             token: response.access
           };
           console.log("👤 [LOGIN] User object created:", userObject)
+          // Clear any stale legacy token so privateClient doesn't use it
+          localStorage.removeItem('actkn');
           dispatch(setUser(userObject));
           dispatch(setAuthModalOpen(false));
           toast.success("Sign in successful");
@@ -84,9 +86,9 @@ const SigninForm = ({ switchAuthState }) => {
       // Handle errors
       if (err) {
         console.error("❌ [LOGIN] Error occurred:", err);
-        
+
         let errorMsg = "Login failed. Please try again.";
-        
+
         // Check error message content first (more specific)
         if (err.message) {
           if (err.message.includes("Cannot reach")) {
@@ -112,7 +114,7 @@ const SigninForm = ({ switchAuthState }) => {
         } else if (err.password && Array.isArray(err.password)) {
           errorMsg = err.password[0];
         }
-        
+
         setErrorMessage(errorMsg);
       } else {
         // No response and no error - unusual case
@@ -123,7 +125,7 @@ const SigninForm = ({ switchAuthState }) => {
   });
 
   return (
-    <Box component="form" onSubmit={signinForm.handleSubmit} sx={{width:'100%'}}>
+    <Box component="form" onSubmit={signinForm.handleSubmit} sx={{ width: '100%' }}>
       <Box sx={{ textAlign: "center", marginBottom: "3rem", mt: 3 }}>
         <Typography sx={{ textAlign: 'center', fontWeight: 500 }} variant="h4">Sign In</Typography>
         <Typography sx={{ textAlign: 'center', color: 'inherit' }} variant="body2">Unlock Your Knowledge, Ignite Your Fun!</Typography>
@@ -149,7 +151,7 @@ const SigninForm = ({ switchAuthState }) => {
           placeholder="Min. 8 Characters"
           name="password"
           label="Password"
-          sx={{color:'primary.main'}}
+          sx={{ color: 'primary.main' }}
           fullWidth
           value={signinForm.values.password}
           onChange={signinForm.handleChange}
@@ -169,16 +171,16 @@ const SigninForm = ({ switchAuthState }) => {
         size="large"
         variant="contained"
         sx={{
-          background:uiConfig.style.mainGradient.color,
+          background: uiConfig.style.mainGradient.color,
           mt: 4,
-          borderRadius:100,
-          color:'secondary.contrastText'
+          borderRadius: 100,
+          color: 'secondary.contrastText'
         }}
         loading={isLoginRequest}
       >
         sign in
       </LoadingButton>
-      <Typography sx={{ marginTop: 1,  }} variant="body2">Not registered yet? <Link onClick={() => switchAuthState()} sx={{ cursor: 'pointer', color: 'primary.main' }} underline="none">Create New Account</Link></Typography>
+      <Typography sx={{ marginTop: 1, }} variant="body2">Not registered yet? <Link onClick={() => switchAuthState()} sx={{ cursor: 'pointer', color: 'primary.main' }} underline="none">Create New Account</Link></Typography>
 
       {errorMessage && (
         <Box sx={{ marginTop: 2 }}>

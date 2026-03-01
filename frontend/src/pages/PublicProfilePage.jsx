@@ -13,28 +13,32 @@ import {
   Tooltip,
   LinearProgress,
   Chip,
-  Stack,
+  useTheme,
+  alpha,
 } from "@mui/material";
 import {
   Share,
   Edit,
   Mail,
-  MenuBook,
   EmojiEvents,
-  Quiz,
   ArrowBack,
   Twitter,
   LinkedIn,
   GitHub,
+  Link as LinkIcon,
+  Psychology,
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import profileApi from "../api/modules/profile.api";
+import uiConfigs from "../configs/ui.config";
 
 const PublicProfilePage = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
+  const theme = useTheme();
   const { user: currentUser } = useSelector((state) => state.user);
+  const { themeMode } = useSelector((state) => state.themeMode);
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -62,24 +66,32 @@ const PublicProfilePage = () => {
   };
 
   const isOwnProfile = currentUser?.user_id === parseInt(userId) || currentUser?.id === parseInt(userId);
+  const isDark = themeMode === "dark";
+
+  // Common styles for premium paper/card
+  const premiumPaperStyle = {
+    p: 3,
+    borderRadius: 4,
+    bgcolor: isDark ? alpha(theme.palette.background.paper, 0.4) : alpha('#ffffff', 0.8),
+    backdropFilter: "blur(20px)",
+    border: "1px solid",
+    borderColor: isDark ? alpha(theme.palette.common.white, 0.05) : alpha(theme.palette.common.black, 0.05),
+    boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.05)',
+  };
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", p: 6 }}>
-        <CircularProgress />
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: '60vh' }}>
+        <CircularProgress sx={{ color: uiConfigs.style.mainGradient.color }} />
       </Box>
     );
   }
 
   if (error || !profile) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error">{error || "Profile not found"}</Alert>
-        <Button
-          startIcon={<ArrowBack />}
-          onClick={() => navigate(-1)}
-          sx={{ mt: 2 }}
-        >
+      <Box sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+        <Alert severity="error" sx={{ borderRadius: 3, width: '100%', maxWidth: 400 }}>{error || "Profile not found"}</Alert>
+        <Button startIcon={<ArrowBack />} onClick={() => navigate(-1)} variant="outlined" sx={{ borderRadius: 8 }}>
           Go Back
         </Button>
       </Box>
@@ -95,387 +107,302 @@ const PublicProfilePage = () => {
 
   const getLearningStyleLabel = (dimension) => {
     const labels = {
-      active_reflective: { left: "Active", right: "Reflective" },
-      sensing_intuitive: { left: "Sensing", right: "Intuitive" },
-      visual_verbal: { left: "Visual", right: "Verbal" },
-      sequential_global: { left: "Sequential", right: "Global" },
+      active_reflective: ["Active", "Reflective"],
+      sensing_intuitive: ["Sensing", "Intuitive"],
+      visual_verbal: ["Visual", "Verbal"],
+      sequential_global: ["Sequential", "Global"],
     };
-    return labels[dimension] || { left: "", right: "" };
-  };
-
-  const getSocialIcon = (platform) => {
-    const icons = {
-      twitter: <Twitter sx={{ fontSize: 18 }} />,
-      linkedin: <LinkedIn sx={{ fontSize: 18 }} />,
-      github: <GitHub sx={{ fontSize: 18 }} />,
-    };
-    return icons[platform] || null;
+    return labels[dimension] || ["Left", "Right"];
   };
 
   return (
-    <Box sx={{ pb: 4 }}>
+    <Box sx={{ pb: 6, position: 'relative' }}>
+      {/* Background Decorative Elements */}
+      <Box sx={{
+        position: 'absolute',
+        top: -100,
+        left: -100, // Positioned on left for variety
+        width: 400,
+        height: 400,
+        borderRadius: '50%',
+        background: `radial-gradient(circle, ${alpha(theme.palette.secondary.main, 0.1)} 0%, transparent 70%)`,
+        zIndex: 0,
+        pointerEvents: 'none'
+      }} />
+
       {/* Header */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-        }}
-      >
+      <Box sx={{ position: 'relative', zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
         <Button
           startIcon={<ArrowBack />}
           onClick={() => navigate(-1)}
-          sx={{ color: "text.secondary" }}
+          sx={{ color: "text.primary", borderRadius: 8, px: 2, '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) } }}
         >
           Back
         </Button>
-        <Box sx={{ display: "flex", gap: 1 }}>
+        <Box sx={{ display: "flex", gap: 1, bgcolor: premiumPaperStyle.bgcolor, backdropFilter: premiumPaperStyle.backdropFilter, borderRadius: 8, p: 0.5, border: premiumPaperStyle.border }}>
           <Tooltip title="Share Profile">
-            <IconButton
-              size="small"
-              sx={{ color: "text.secondary", "&:hover": { color: "primary.main" } }}
-            >
-              <Share />
+            <IconButton sx={{ color: "text.primary", "&:hover": { color: "primary.main", bgcolor: alpha(theme.palette.primary.main, 0.1) } }}>
+              <Share fontSize="small" />
             </IconButton>
           </Tooltip>
           {isOwnProfile && (
             <Tooltip title="Edit Profile">
-              <IconButton
-                size="small"
-                onClick={() => navigate("/dashboard/settings")}
-                sx={{ color: "text.secondary", "&:hover": { color: "primary.main" } }}
-              >
-                <Edit />
+              <IconButton onClick={() => navigate("/dashboard/settings")} sx={{ color: "text.primary", "&:hover": { color: "primary.main", bgcolor: alpha(theme.palette.primary.main, 0.1) } }}>
+                <Edit fontSize="small" />
               </IconButton>
             </Tooltip>
           )}
         </Box>
       </Box>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={4} sx={{ position: 'relative', zIndex: 1 }}>
         {/* LEFT SIDEBAR - PROFILE INFO */}
-        <Grid item xs={12} md={4}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              border: 1,
-              borderColor: "graycolor.two",
+        <Grid item xs={12} md={4} lg={3.5}>
+          <Paper elevation={0} sx={{ ...premiumPaperStyle, position: "sticky", top: 24 }}>
+            {/* Header/Cover Area inside Card */}
+            <Box sx={{
+              height: 100,
               borderRadius: 3,
-              position: "sticky",
-              top: 20,
-            }}
-          >
-            {/* Profile Image and Basic Info */}
-            <Box
-              sx={{
-                textAlign: "center",
-                mb: 3,
-                display: "flex",
-                flexDirection: "column",
-                gap: 2,
-                alignItems: "center",
-              }}
-            >
+              mb: -6,
+              background: `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.primary.main} 100%)`,
+              opacity: 0.8
+            }} />
+
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", position: 'relative' }}>
               <Avatar
                 src={getImageUrl(profile.profile_image)}
                 sx={{
-                  width: 140,
-                  height: 140,
-                  bgcolor: !getImageUrl(profile.profile_image) ? "action.hover" : "transparent",
-                  fontSize: "3rem",
-                  color: "primary.contrastText",
+                  width: 120, height: 120,
+                  border: `4px solid ${theme.palette.background.paper}`,
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                  bgcolor: theme.palette.background.default,
+                  color: "text.primary",
+                  fontSize: "2.5rem",
+                  fontWeight: 700
                 }}
               >
-                {!getImageUrl(profile.profile_image) && (
-                  `${(profile.first_name?.charAt(0) || "").toUpperCase()}${(profile.last_name?.charAt(0) || "").toUpperCase()}`
-                )}
+                {!getImageUrl(profile.profile_image) && `${(profile.first_name?.charAt(0) || "").toUpperCase()}${(profile.last_name?.charAt(0) || "").toUpperCase()}`}
               </Avatar>
 
-              <Box sx={{ textAlign: "center" }}>
-                <Box sx={{ display: "flex", gap: 1, justifyContent: "center", mb: 1 }}>
-                  <Typography
-                    variant="h6"
-                    sx={{ fontWeight: 700, color: "primary.contrastText" }}
-                  >
-                    {profile.first_name}
-                  </Typography>
-                  <Typography
-                    variant="h6"
-                    sx={{ fontWeight: 700, color: "primary.contrastText" }}
-                  >
-                    {profile.last_name}
-                  </Typography>
-                </Box>
-                <Typography
-                  variant="body2"
-                  sx={{ color: "text.secondary", mb: 1 }}
-                >
+              <Box sx={{ textAlign: "center", mt: 2, width: '100%' }}>
+                <Typography variant="h5" sx={{ fontWeight: 800, color: "text.primary", letterSpacing: '-0.5px' }}>
+                  {profile.first_name} {profile.last_name}
+                </Typography>
+                <Typography variant="body2" sx={{ color: "primary.main", fontWeight: 600, mb: 1 }}>
                   @{profile.username}
                 </Typography>
 
-                {/* Email Display */}
-                {profile.email && (
-                  <Box sx={{ display: "flex", gap: 1, justifyContent: "center", alignItems: "center", mb: 2 }}>
-                    <Mail sx={{ fontSize: 16, color: "text.secondary" }} />
-                    <Typography
-                      variant="body2"
-                      sx={{ color: "text.secondary", fontSize: "0.85rem" }}
-                    >
-                      {profile.email}
-                    </Typography>
-                  </Box>
+                {profile?.tagline && (
+                  <Typography variant="body2" sx={{ color: "text.secondary", fontStyle: 'italic', mb: 2 }}>
+                    "{profile.tagline}"
+                  </Typography>
                 )}
 
                 {profile.status && (
-                  <Chip label={profile.status} size="small" sx={{ mb: 2 }} />
+                  <Chip
+                    label={profile.status}
+                    size="small"
+                    sx={{
+                      fontWeight: 600,
+                      bgcolor: alpha(theme.palette.info.main, 0.1),
+                      color: theme.palette.info.main,
+                      border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`
+                    }}
+                  />
                 )}
               </Box>
             </Box>
 
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 3, opacity: 0.5 }} />
 
-            {/* Bio Section */}
-            {profile.bio && (
-              <Box sx={{ mb: 3 }}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "primary.contrastText",
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {profile.bio}
-                </Typography>
-                <Divider sx={{ mt: 2, mb: 0 }} />
-              </Box>
-            )}
-
-            {/* Learning Styles Section */}
-            {profile.learning_styles && (
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-                  <MenuBook sx={{ color: "primary.main", fontSize: 20 }} />
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 600, color: "primary.contrastText" }}
-                  >
-                    Learning Styles
+            {/* Contact & Bio */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {profile?.email && (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: alpha(theme.palette.primary.main, 0.1), color: "primary.main", display: 'flex' }}>
+                    <Mail fontSize="small" />
+                  </Box>
+                  <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 500 }}>
+                    {profile.email}
                   </Typography>
                 </Box>
-                <Stack spacing={1.5}>
-                  {Object.entries(profile.learning_styles).map(([dimension, value]) => {
-                    const labels = getLearningStyleLabel(dimension);
-                    const percentage = Math.max(0, Math.min(100, ((value + 11) / 22) * 100));
-                    return (
-                      <Box key={dimension}>
-                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.3 }}>
-                          <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem" }}>
-                            {labels.left}
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem" }}>
-                            {labels.right}
-                          </Typography>
-                        </Box>
-                        <LinearProgress
-                          variant="determinate"
-                          value={percentage}
-                          sx={{ height: 5, borderRadius: 3 }}
-                        />
-                      </Box>
-                    );
-                  })}
-                </Stack>
-                <Divider sx={{ mt: 2, mb: 0 }} />
-              </Box>
-            )}
-
-            {/* Achievements Section */}
-            {profile.achievements && profile.achievements.length > 0 && (
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-                  <EmojiEvents sx={{ color: "primary.main", fontSize: 20 }} />
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 600, color: "primary.contrastText" }}
-                  >
-                    Achievements
+              )}
+              {profile?.bio && (
+                <Box sx={{ p: 2, borderRadius: 3, bgcolor: alpha(theme.palette.background.default, 0.5) }}>
+                  <Typography variant="body2" sx={{ color: "text.primary", lineHeight: 1.6 }}>
+                    {profile.bio}
                   </Typography>
                 </Box>
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
-                  {profile.achievements.map((achievement) => (
-                    <Tooltip key={achievement.id} title={achievement.description}>
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          p: 1.5,
-                          border: 1,
-                          borderColor: "graycolor.two",
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          width: 56,
-                          height: 56,
-                          cursor: "pointer",
-                          transition: "all 0.2s",
-                          "&:hover": {
-                            transform: "scale(1.1)",
-                            borderColor: "primary.main",
-                          },
-                        }}
-                      >
-                        <Typography sx={{ fontSize: "1.8rem", textAlign: "center" }}>
-                          ⭐
-                        </Typography>
-                      </Paper>
-                    </Tooltip>
-                  ))}
-                </Box>
-                <Divider sx={{ mt: 2, mb: 0 }} />
-              </Box>
-            )}
+              )}
+            </Box>
+
+            <Divider sx={{ my: 3, opacity: 0.5 }} />
 
             {/* Social Links */}
             {profile.social_links && Object.keys(profile.social_links).length > 0 && (
-              <Box sx={{ mb: 2 }}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{ fontWeight: 600, color: "primary.contrastText", mb: 2 }}
-                >
-                  Connect
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.75rem', color: 'text.secondary' }}>
+                  Social Profiles
                 </Typography>
-                <Box sx={{ display: "flex", gap: 1 }}>
-                  {Object.entries(profile.social_links).map(([platform, link]) => (
-                    <Tooltip key={platform} title={`Visit ${platform}`}>
-                      <IconButton
-                        size="small"
-                        href={link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        sx={{
-                          color: "text.secondary",
-                          "&:hover": { color: "primary.main" },
-                        }}
-                      >
-                        {getSocialIcon(platform)}
-                      </IconButton>
-                    </Tooltip>
-                  ))}
+                <Box sx={{ display: "flex", gap: 1, flexWrap: 'wrap' }}>
+                  {['twitter', 'linkedin', 'github', 'website'].map((platform) => {
+                    const link = profile.social_links[platform];
+                    if (!link) return null;
+                    const Icon = platform === 'twitter' ? Twitter : platform === 'linkedin' ? LinkedIn : platform === 'github' ? GitHub : LinkIcon;
+                    return (
+                      <Tooltip key={platform} title={platform.charAt(0).toUpperCase() + platform.slice(1)}>
+                        <IconButton
+                          href={link} target="_blank" rel="noopener noreferrer"
+                          sx={{
+                            bgcolor: alpha(theme.palette.text.primary, 0.05),
+                            "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.1), color: "primary.main", transform: 'translateY(-2px)' },
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          <Icon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    );
+                  })}
                 </Box>
               </Box>
             )}
           </Paper>
         </Grid>
 
-        {/* RIGHT SIDE - LESSONS & QUIZZES */}
-        <Grid item xs={12} md={8}>
-          {/* Lessons by Grade */}
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              border: 1,
-              borderColor: "graycolor.two",
-              borderRadius: 3,
-              mb: 3,
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3 }}>
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: 600, color: "primary.contrastText" }}
-              >
-                📚 Learning Progress
+        {/* RIGHT SIDE - CONTENT */}
+        <Grid item xs={12} md={8} lg={8.5}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+
+            {/* Learning Profile Overview */}
+            {profile.learning_styles && (
+              <Paper elevation={0} sx={{ ...premiumPaperStyle }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
+                  <Box sx={{ p: 1, borderRadius: 2, background: `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.primary.main} 100%)`, color: "white", display: 'flex', boxShadow: `0 4px 12px ${alpha(theme.palette.secondary.main, 0.3)}` }}>
+                    <Psychology fontSize="small" />
+                  </Box>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>Learning Style Matrix</Typography>
+                </Box>
+
+                <Grid container spacing={3}>
+                  {Object.entries(profile.learning_styles).map(([dimension, value]) => {
+                    const labels = getLearningStyleLabel(dimension);
+                    const percentage = Math.max(0, Math.min(100, ((value + 11) / 22) * 100));
+                    return (
+                      <Grid item xs={12} sm={6} key={dimension}>
+                        <Box sx={{ p: 2, borderRadius: 3, bgcolor: alpha(theme.palette.background.default, 0.4), border: `1px solid ${alpha(theme.palette.divider, 0.5)}` }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                            <Typography variant="caption" sx={{ fontWeight: 600, color: percentage < 50 ? 'primary.main' : 'text.secondary' }}>{labels[0]}</Typography>
+                            <Typography variant="caption" sx={{ fontWeight: 600, color: percentage >= 50 ? 'secondary.main' : 'text.secondary' }}>{labels[1]}</Typography>
+                          </Box>
+                          <LinearProgress
+                            variant="determinate"
+                            value={percentage}
+                            sx={{
+                              height: 8,
+                              borderRadius: 4,
+                              bgcolor: alpha(theme.palette.text.primary, 0.05),
+                              '& .MuiLinearProgress-bar': {
+                                background: percentage < 50 ? `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.info.main} 100%)` : `linear-gradient(90deg, ${theme.palette.info.main} 0%, ${theme.palette.secondary.main} 100%)`
+                              }
+                            }}
+                          />
+                        </Box>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              </Paper>
+            )}
+
+            {/* Achievements Section */}
+            {profile.achievements && profile.achievements.length > 0 && (
+              <Paper elevation={0} sx={{ ...premiumPaperStyle }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
+                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: alpha(theme.palette.warning.main, 0.1), color: "warning.main", display: 'flex' }}>
+                    <EmojiEvents fontSize="small" />
+                  </Box>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>Achievements</Typography>
+                </Box>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+                  {profile.achievements.map((achievement) => (
+                    <Tooltip key={achievement.id} title={achievement.description} arrow placement="top">
+                      <Box sx={{
+                        width: 70, height: 70,
+                        borderRadius: '50%',
+                        bgcolor: alpha(theme.palette.background.default, 0.6),
+                        border: `2px solid ${alpha(theme.palette.warning.main, 0.3)}`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        cursor: "pointer",
+                        transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                        "&:hover": {
+                          transform: "scale(1.15) translateY(-5px)",
+                          borderColor: "warning.main",
+                          boxShadow: `0 10px 20px ${alpha(theme.palette.warning.main, 0.2)}`,
+                        }
+                      }}>
+                        <Typography sx={{ fontSize: "2rem" }}>⭐</Typography>
+                      </Box>
+                    </Tooltip>
+                  ))}
+                </Box>
+              </Paper>
+            )}
+
+            {/* About (Account Details) */}
+            {(profile.tagline || profile.other) && (
+              <Paper elevation={0} sx={{ ...premiumPaperStyle }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>
+                  📋 About the Learner
+                </Typography>
+
+                <Grid container spacing={3}>
+                  {profile.other?.subject && (
+                    <Grid item xs={12} sm={6}>
+                      <Box sx={{ p: 2, borderRadius: 3, bgcolor: alpha(theme.palette.background.default, 0.4), border: `1px solid ${alpha(theme.palette.divider, 0.5)}` }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "text.secondary", mb: 0.5 }}>Field of Study</Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 600, color: "primary.contrastText" }}>{profile.other.subject}</Typography>
+                      </Box>
+                    </Grid>
+                  )}
+                  {profile.other?.strength && (
+                    <Grid item xs={12} sm={6}>
+                      <Box sx={{ p: 2, borderRadius: 3, bgcolor: alpha(theme.palette.background.default, 0.4), border: `1px solid ${alpha(theme.palette.divider, 0.5)}` }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "text.secondary", mb: 0.5 }}>Strengths</Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 600, color: "primary.contrastText" }}>{profile.other.strength}</Typography>
+                      </Box>
+                    </Grid>
+                  )}
+                  {profile.other?.avg_hours && (
+                    <Grid item xs={12} sm={6}>
+                      <Box sx={{ p: 2, borderRadius: 3, bgcolor: alpha(theme.palette.background.default, 0.4), border: `1px solid ${alpha(theme.palette.divider, 0.5)}` }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "text.secondary", mb: 0.5 }}>Study Commitment</Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 600, color: "primary.contrastText" }}>{profile.other.avg_hours} per day</Typography>
+                      </Box>
+                    </Grid>
+                  )}
+                </Grid>
+              </Paper>
+            )}
+
+            {/* Private Learning Info Card */}
+            <Paper elevation={0} sx={{
+              ...premiumPaperStyle,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              py: 6,
+              bgcolor: alpha(theme.palette.background.default, 0.8),
+              border: `1px dashed ${alpha(theme.palette.divider, 0.5)}`
+            }}>
+              <Box sx={{ p: 2, borderRadius: '50%', bgcolor: alpha(theme.palette.text.disabled, 0.1), mb: 2 }}>
+                <Typography sx={{ fontSize: '2rem' }}>🔒</Typography>
+              </Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>Learning Content Private</Typography>
+              <Typography variant="body2" sx={{ color: "text.secondary", textAlign: 'center', maxWidth: 400 }}>
+                This user's active lessons and detailed quiz performances are private.
               </Typography>
-            </Box>
-
-            <Typography
-              variant="body2"
-              sx={{ color: "text.secondary", mb: 2 }}
-            >
-              This user's learning content is private. View their public profile information above.
-            </Typography>
-          </Paper>
-
-          {/* Account Details (visible to all) */}
-          {(profile.tagline || profile.other) && (
-            <Paper
-              elevation={0}
-              sx={{
-                p: 3,
-                border: 1,
-                borderColor: "graycolor.two",
-                borderRadius: 3,
-              }}
-            >
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: 600, color: "primary.contrastText", mb: 3 }}
-              >
-                📋 About
-              </Typography>
-
-              <Stack spacing={2}>
-                {profile.tagline && (
-                  <Box>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ fontWeight: 600, color: "text.secondary", mb: 0.5 }}
-                    >
-                      Tagline
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: "primary.contrastText" }}>
-                      {profile.tagline}
-                    </Typography>
-                  </Box>
-                )}
-
-                {profile.other?.subject && (
-                  <Box>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ fontWeight: 600, color: "text.secondary", mb: 0.5 }}
-                    >
-                      Field of Study
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: "primary.contrastText" }}>
-                      {profile.other.subject}
-                    </Typography>
-                  </Box>
-                )}
-
-                {profile.other?.strength && (
-                  <Box>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ fontWeight: 600, color: "text.secondary", mb: 0.5 }}
-                    >
-                      Strengths
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: "primary.contrastText" }}>
-                      {profile.other.strength}
-                    </Typography>
-                  </Box>
-                )}
-
-                {profile.other?.avg_hours && (
-                  <Box>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ fontWeight: 600, color: "text.secondary", mb: 0.5 }}
-                    >
-                      Study Commitment
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: "primary.contrastText" }}>
-                      {profile.other.avg_hours} per day
-                    </Typography>
-                  </Box>
-                )}
-              </Stack>
             </Paper>
-          )}
+
+          </Box>
         </Grid>
       </Grid>
     </Box>

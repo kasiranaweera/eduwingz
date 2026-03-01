@@ -138,7 +138,7 @@ const PlatformLessons = () => {
 
   const handleGenerateLesson = async () => {
     const finalTopic = customTopic || topic;
-    
+
     if (!grade || !subject || !finalTopic) {
       setSnackbar({
         open: true,
@@ -271,7 +271,7 @@ const PlatformLessons = () => {
       )}
 
       <Grid sx={{ mt: 2 }} container spacing={3}>
-        <Grid size={9} spacing={3} container direction="column">
+        <Grid size={{ xs: 12, md: 9 }} spacing={3} container direction="column">
           {/* Recent Lessons */}
           <Paper
             elevation={0}
@@ -349,9 +349,8 @@ const PlatformLessons = () => {
                           />
                         )}
                         <Chip
-                          label={`${lesson.topics_count || 0} ${
-                            lesson.topics_count === 1 ? "Topic" : "Topics"
-                          }`}
+                          label={`${lesson.topics_count || 0} ${lesson.topics_count === 1 ? "Topic" : "Topics"
+                            }`}
                           size="small"
                           variant="outlined"
                         />
@@ -447,7 +446,7 @@ const PlatformLessons = () => {
                         sx={{
                           display: "flex",
                           mt: 1,
-                          gap:1
+                          gap: 1
                         }}
                       >
                         {subj.grade_name && (
@@ -458,9 +457,8 @@ const PlatformLessons = () => {
                           />
                         )}
                         <Chip
-                          label={`${subjects.length || 0} ${
-                            subjects.length === 1 ? "Topic" : "Topics"
-                          }`}
+                          label={`${subjects.length || 0} ${subjects.length === 1 ? "Topic" : "Topics"
+                            }`}
                           size="small"
                           variant="outlined"
                         />
@@ -538,9 +536,8 @@ const PlatformLessons = () => {
                           />
                         )}
                         <Chip
-                          label={`${lesson.topics_count || 0} ${
-                            lesson.topics_count === 1 ? "Topic" : "Topics"
-                          }`}
+                          label={`${lesson.topics_count || 0} ${lesson.topics_count === 1 ? "Topic" : "Topics"
+                            }`}
                           size="small"
                           variant="outlined"
                         />
@@ -570,7 +567,7 @@ const PlatformLessons = () => {
         </Grid>
 
         {/* Sidebar - Generate New Lesson & Today's Goals */}
-        <Grid item size={3}>
+        <Grid item size={{ xs: 12, md: 3 }}>
           <Box
             sx={{
               display: "flex",
@@ -722,8 +719,8 @@ const PlatformLessons = () => {
                 topic !== ""
                   ? "Clear the selected topic to enable custom input"
                   : customTopic.trim() !== ""
-                  ? "Menu selection is disabled"
-                  : ""
+                    ? "Menu selection is disabled"
+                    : ""
               }
             />        <Divider />
 
@@ -784,7 +781,7 @@ const PlatformLessons = () => {
               </Box>
             )}
 
-            
+
 
 
             {/* Topic Selection Dropdown - Disabled if custom topic is filled */}
@@ -810,7 +807,7 @@ const PlatformLessons = () => {
               </Select>
             </FormControl>
 
-            
+
           </Box>
         </DialogContent>
         <Divider />
@@ -840,7 +837,7 @@ const PlatformLessons = () => {
       {/* Lesson Generation Loading Dialog */}
       <Dialog
         open={isGenerating}
-        onClose={() => {}}
+        onClose={() => { }}
         maxWidth="sm"
         fullWidth
         disableEscapeKeyDown
@@ -1167,8 +1164,8 @@ const MiniCalendar = ({ markedDates = [] }) => {
                 ? isToday(day)
                   ? "primary.main"
                   : isMarkedDate(day)
-                  ? "success.light"
-                  : "transparent"
+                    ? "success.light"
+                    : "transparent"
                 : "transparent",
               color: day
                 ? isToday(day)

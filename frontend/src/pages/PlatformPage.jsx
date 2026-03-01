@@ -63,9 +63,9 @@ const DashboardPlatformPage = () => {
 
   return (
     <Grid container spacing={3}>
-      <Grid size={9} spacing={2} container direction="column">
+      <Grid size={{ xs: 12, md: 9 }} spacing={2} container direction="column">
         <Grid container size={12} spacing={2}>
-          <Grid item size={9}>
+          <Grid item size={{ xs: 12, md: 9 }}>
             <Box
               sx={{
                 p: 3,
@@ -89,7 +89,7 @@ const DashboardPlatformPage = () => {
             </Box>
           </Grid>
 
-          <Grid item size={3}>
+          <Grid item size={{ xs: 12, md: 3 }}>
             <Paper
               elevation={0}
               sx={{
@@ -113,7 +113,7 @@ const DashboardPlatformPage = () => {
         </Grid>
         <Grid container ize={12} spacing={2}>
           {/* My Lessons */}
-          <Grid item size={8}>
+          <Grid item size={{ xs: 12, md: 8 }}>
             <Paper
               elevation={0}
               sx={{
@@ -130,12 +130,13 @@ const DashboardPlatformPage = () => {
                 flexItem
               />{" "}
               <Typography variant="paragraph">Popular Lessons</Typography>
-              <Box sx={{ display: "flex", gap: 1, mt: 1, mb:3}}>
+              <Box sx={{ display: "flex", gap: 1, mt: 1, mb: 3, flexWrap: 'wrap' }}>
                 {popularLesson.map((lesson) => (
                   <Box
                     key={lesson}
                     sx={{
-                      width: "100%",
+                      flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)', md: '1 1 calc(33.33% - 8px)' },
+                      minWidth: 0,
                       border: 1,
                       borderColor: "graycolor.two",
                       borderRadius: 2,
@@ -179,12 +180,13 @@ const DashboardPlatformPage = () => {
                 ))}
               </Box>
               <Typography sx={{}} variant="paragraph">Recent Lessons</Typography>
-              <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
+              <Box sx={{ display: "flex", gap: 1, mt: 1, flexWrap: 'wrap' }}>
                 {resentLesson.map((lesson) => (
                   <Box
                     key={lesson}
                     sx={{
-                      width: "100%",
+                      flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)', md: '1 1 calc(33.33% - 8px)' },
+                      minWidth: 0,
                       border: 1,
                       borderColor: "graycolor.two",
                       borderRadius: 2,
@@ -230,7 +232,7 @@ const DashboardPlatformPage = () => {
             </Paper>
           </Grid>
           {/* Notes & Community Tabs */}
-          <Grid item size={4}>
+          <Grid item size={{ xs: 12, md: 4 }}>
             <Paper
               elevation={0}
               sx={{
@@ -261,7 +263,7 @@ const DashboardPlatformPage = () => {
       </Grid>
 
       {/* RIGHT SIDEBAR */}
-      <Grid item size={3}>
+      <Grid item size={{ xs: 12, md: 3 }}>
         <Paper
           elevation={0}
           sx={{

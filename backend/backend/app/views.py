@@ -138,6 +138,33 @@ class StudentAnalyticsAPIView(APIView):
         })
 
 
+class GlobalSearchAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        query = request.query_params.get('q', '')
+        if not query:
+            return Response({"results": []})
+        
+        from lessons.models import Lesson, Topic
+        from django.db.models import Q
+        
+        lessons = Lesson.objects.filter(
+            Q(title__icontains=query) | 
+            Q(description__icontains=query)
+        )[:10]
+        
+        topics = Topic.objects.filter(
+            Q(title__icontains=query) | 
+            Q(content__icontains=query)
+        )[:10]
+        
+        lesson_data = [{"id": str(l.id), "title": l.title, "type": "lesson", "url": f"/dashboard/platform/lessons/{l.id}"} for l in lessons]
+        topic_data = [{"id": str(t.id), "title": t.title, "lesson_title": t.lesson.title if getattr(t, 'lesson', None) else "", "type": "topic", "url": getattr(t, 'lesson', None) and f"/dashboard/platform/lessons/{t.lesson.id}/topics/{t.id}" or ""} for t in topics]
+        
+        return Response({"results": lesson_data + topic_data})
+
+
 class AnalyticsOverviewAPIView(APIView):
     """Return class-level aggregates and system metrics for dashboard."""
     permission_classes = [IsAuthenticated]
@@ -154,15 +181,47 @@ class AnalyticsOverviewAPIView(APIView):
             if latest:
                 sys_metrics[mtype] = SystemMetricSerializer(latest).data
 
-        # Simple competency distribution aggregated across students for top subjects
-        # We'll compute average competency per subject from Competency table
         from django.db.models import Avg
+        from .models import Competency, PerformanceTrend, Profile
+
+        # Simple competency distribution aggregated across students for top subjects
         avg_by_subject = Competency.objects.values('subject').annotate(avg_level=Avg('level')).order_by('-avg_level')[:20]
+
+        students = []
+        all_profiles = Profile.objects.all()
+        for p in all_profiles:
+            comps = Competency.objects.filter(profile=p)
+            overall = comps.aggregate(Avg('level'))['level__avg']
+            if overall is None:
+                overall = 0
+            students.append({
+                'id': p.id,
+                'name': p.first_name + " " + p.last_name if p.first_name and p.last_name else p.username,
+                'overall_score': round(overall, 1)
+            })
+
+        quiz_performance = {}
+        curr_profile = getattr(request.user, 'app_profile', None)
+        if curr_profile:
+            trends = PerformanceTrend.objects.filter(profile=curr_profile).order_by('recorded_at')
+            for t in trends:
+                subj = t.subject
+                if subj not in quiz_performance:
+                    quiz_performance[subj] = []
+                avg_val = PerformanceTrend.objects.filter(subject=subj, recorded_at=t.recorded_at).aggregate(Avg('score'))['score__avg']
+                quiz_performance[subj].append({
+                    'date': t.recorded_at.strftime('%Y-%m-%d'),
+                    'score': t.score,
+                    'avg_class': round(avg_val, 1) if avg_val is not None else 0,
+                    'topic': t.topic
+                })
 
         return Response({
             'class_snapshots': class_data,
             'system_metrics': sys_metrics,
-            'competency_averages': list(avg_by_subject)
+            'competency_averages': list(avg_by_subject),
+            'students': students,
+            'quiz_performance': quiz_performance
         })
 
     def post(self, request, user_id):

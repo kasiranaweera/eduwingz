@@ -34,29 +34,29 @@ const DashboardMainPage = () => {
             return;
         }
 
-    const interval = setInterval(() => {
-      setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
-    }, 2000);
+        const interval = setInterval(() => {
+            setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+        }, 2000);
 
-    return () => clearInterval(interval);
-  }, [isLoading, loadingMessages.length]);
+        return () => clearInterval(interval);
+    }, [isLoading, loadingMessages.length]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    // Set a welcome message when component mounts
-    const welcomeMessage = `Welcome back, ${user.username}! How can I assist you with your learning today?`;
-    console.log(welcomeMessage);
-    // autoMessage can be used to display welcome greeting
-    // setAutoMessage(welcomeMessage);        // You could also fetch some initial data here if needed
-    // fetchInitialData().then(data => setAutoMessage(data.message));
-  }, [user.username]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        // Set a welcome message when component mounts
+        const welcomeMessage = `Welcome back, ${user.username}! How can I assist you with your learning today?`;
+        console.log(welcomeMessage);
+        // autoMessage can be used to display welcome greeting
+        // setAutoMessage(welcomeMessage);        // You could also fetch some initial data here if needed
+        // fetchInitialData().then(data => setAutoMessage(data.message));
+    }, [user.username]);
 
     const handleSendMessage = async (messageText, attachments = []) => {
         const trimmed = messageText?.trim();
         if (!trimmed) return false;
 
         setIsLoading(true);
-        
+
         // Create a new chat session on the backend, post initial message, then open session page
         try {
             const title = trimmed ? trimmed.slice(0, 80) : 'New Chat';
@@ -70,7 +70,7 @@ const DashboardMainPage = () => {
             }
 
             const sessionId = session?.id || session?.session_id || session?.uuid || session?.pk || session?.id;
-            
+
             if (!sessionId) {
                 console.error('No session ID received');
                 navigate('/dashboard/chat');
@@ -106,7 +106,7 @@ const DashboardMainPage = () => {
 
             // Try to send the first message if we have a session id and a message
             if (sessionId && trimmed) {
-                const { err: msgErr } = await chatApi.postMessage(sessionId, { 
+                const { err: msgErr } = await chatApi.postMessage(sessionId, {
                     content: trimmed,
                     document_ids: documentIds,
                 });
@@ -136,19 +136,21 @@ const DashboardMainPage = () => {
                 alignItems: "center",
                 display: "flex",
                 justifyContent: "center",
-                height: "80vh",
+                minHeight: { xs: "auto", md: "80vh" },
                 width: "100%",
+                px: { xs: 1, sm: 2, md: 3 },
+                py: { xs: 3, md: 0 },
             }}
         >
             <Stack spacing={10}>
                 <Typography
                     variant="h3"
-                    sx={{ textAlign: "center", fontWeight: "500" }}
+                    sx={{ textAlign: "center", fontWeight: "500", fontSize: { xs: '1.5rem', sm: '2rem', md: '3rem' } }}
                 >{`How's it going, ${user.username} ?`}</Typography>
-                <Box sx={{width:'100%'}}>
+                <Box sx={{ width: '100%' }}>
                     {isLoading && (
                         <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-                            <List sx={{ width: "50vw" }}>
+                            <List sx={{ width: { xs: '90vw', sm: '70vw', md: '50vw' } }}>
                                 <ListItem sx={{ justifyContent: "center", alignItems: "center", gap: 2 }}>
                                     <ShinyText variant="body2" sx={{ ml: 1 }}>
                                         <TextType
@@ -166,20 +168,21 @@ const DashboardMainPage = () => {
                         </Box>
                     )}
                     <Box sx={{ justifyContent: "center", display: "flex" }}>
-                        <ChatSection 
-                            sx={{ width: "50vw" }} 
+                        <ChatSection
+                            sx={{ width: { xs: '95%', sm: '80vw', md: '50vw' } }}
                             handleSendMessage={handleSendMessage}
                         />
                     </Box>
 
                     {/* Rest of your component remains the same */}
-                    <Divider sx={{ my: 3, width:'75vw' }} />
+                    <Divider sx={{ my: 3, width: '100%' }} />
                     <Box
                         sx={{
                             display: "flex",
                             gap: 2,
                             justifyContent: "center",
                             alignItems: "center",
+                            flexWrap: "wrap",
                         }}
                     >
                         <Link
@@ -192,7 +195,7 @@ const DashboardMainPage = () => {
                                     backgroundColor: "background.paper",
                                     display: "flex",
                                     gap: 2,
-                                    width: "20vw",
+                                    width: { xs: '100%', sm: '45%', md: '20vw' },
                                     p: 2,
                                     borderRadius: 5,
                                     borderBottom: 1,
@@ -236,7 +239,7 @@ const DashboardMainPage = () => {
                                     backgroundColor: "background.paper",
                                     display: "flex",
                                     gap: 2,
-                                    width: "20vw",
+                                    width: { xs: '100%', sm: '45%', md: '20vw' },
                                     p: 2,
                                     borderRadius: 5,
                                     borderBottom: 1,

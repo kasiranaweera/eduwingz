@@ -56,12 +56,12 @@ const ChatHistoryPage = () => {
     const load = async () => {
       try {
         const { response } = await chatApi.listSessions();
-        setSessions(response);
-
-        // if (!err && response && response.data && Array.isArray(response.data)) {
-        //   if (mounted) {
-        //     setSessions(response);
-        //   }
+        if (response && Array.isArray(response)) {
+          setSessions(response);
+        } else {
+          // If response is undefined/null or not an array, set to empty
+          setSessions([]);
+        }
         // }
       } catch (e) {
         console.error("Failed to load sessions:", e);
@@ -89,7 +89,7 @@ const ChatHistoryPage = () => {
       }
 
       // Treat a non-error response as success. Optimistically remove the session.
-      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+      setSessions((prev) => (prev ? prev.filter((s) => s.id !== sessionId) : []));
       console.log("Session deleted successfully", response);
       toast.success("Session deleted successfully");
     } catch (e) {
@@ -115,8 +115,8 @@ const ChatHistoryPage = () => {
             overflow: "hidden",
           }}
         >
-          <List sx={{  }} disablePadding>
-            {sessions.length === 0 ? (
+          <List sx={{}} disablePadding>
+            {!sessions || sessions.length === 0 ? (
               <Box sx={{ p: 3 }}>
                 <Typography color="text.secondary">No chats yet.</Typography>
               </Box>
@@ -128,7 +128,7 @@ const ChatHistoryPage = () => {
                       backgroundColor: "background.paper",
                       mb: 1,
                       alignItems: "center",
-                     
+
                     }}
                     alignItems="flex-start"
                   >
@@ -149,9 +149,9 @@ const ChatHistoryPage = () => {
                           Last updated:{" "}
                           {formatDateTime(
                             s.lastUpdated ||
-                              s.updated_at ||
-                              s.last_modified ||
-                              ""
+                            s.updated_at ||
+                            s.last_modified ||
+                            ""
                           )}
                         </Typography>
                       }

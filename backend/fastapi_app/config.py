@@ -6,9 +6,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "21444d310f654572d297c5b2b6363273d5ab6754580c26a846858a9702f61a10"
     ALGORITHM: str = "HS256"
     OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "llama3.2:1b"
-    LLM_MODEL: str = "Qwen/Qwen3-0.6B"  # Non-gated reasoning model
-    # LLM_MODEL: str = "Qwen/Qwen2.5-0.5B-Instruct"  # Non-gated reasoning model
+    OLLAMA_MODEL: str = "qwen3-vl:2b"
+    LLM_MODEL: str = "qwen3-vl:2b"  # Qwen3 Vision-Language model via Ollama
     LLM_BACKEND: str = "gemini"  # "ollama", "huggingface", "openrouter", or "gemini"
     EMBEDDING_MODEL: str = "sentence-transformers/all-mpnet-base-v2"
     CHUNK_SIZE: int = 1000
@@ -17,7 +16,7 @@ class Settings(BaseSettings):
     MAX_TOKENS: int = 2048  # Maximum tokens for LLM response (DeepSeek can handle more)
     HUGGINGFACE_TOKEN: str | None = None  # Optional, for HuggingFace authentication if needed
     DEBUG: bool = True  # Optional, for debugging
-    FASTAPI_URL: str = "http://localhost:8000"  # For Django-FastAPI communication (can be overridden by env)
+    FASTAPI_URL: str = "http://localhost:8001"  # For Django-FastAPI communication
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8001,http://127.0.0.1:3000,http://127.0.0.1:8001"
     
     # ==================== API KEYS FOR TOOLS ====================
@@ -36,14 +35,20 @@ class Settings(BaseSettings):
     # =========================================================
 
     class Config:
-        env_file = "../.env"
+        env_file = "../backend/.env"
         env_file_encoding = "utf-8"
         extra = "allow"  # Allow extra environment variables to avoid validation errors
 
 # Create settings instance with explicit .env loading
-_env_file_path = Path(__file__).parent.parent / ".env"
+_env_file_path = Path(__file__).parent.parent / "backend" / ".env"
 if _env_file_path.exists():
     from dotenv import load_dotenv
     load_dotenv(_env_file_path, override=True)
+else:
+    # Fallback to current behavior if it's placed in project root
+    _fallback_env = Path(__file__).parent.parent / ".env"
+    if _fallback_env.exists():
+        from dotenv import load_dotenv
+        load_dotenv(_fallback_env, override=True)
 
 settings = Settings()
