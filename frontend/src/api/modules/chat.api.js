@@ -35,6 +35,15 @@ const chatApi = {
     }
   },
 
+  updateSession: async (sessionId, data = {}) => {
+    try {
+      const response = await privateClient.patch(chatEndpoints.sessions(sessionId), data);
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+
   // list all sessions
   listSessions: async () => {
     try {

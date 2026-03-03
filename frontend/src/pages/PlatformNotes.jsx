@@ -63,7 +63,7 @@ const PlatformNotes = () => {
 
   const colors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8", "#F7DC6F"];
 
-  // Fetch notes from all lessons
+  // Fetch notes from all lessons + global
   useEffect(() => {
     const fetchNotes = async () => {
       if (!user) {
@@ -73,33 +73,23 @@ const PlatformNotes = () => {
 
       try {
         setLoading(true);
-        // Get all lessons
-        const { response: lessonsResponse, err: lessonsErr } =
-          await lessonsApi.listLessons();
+        const { response: notesResponse, err } = await lessonsApi.getAllNotes();
 
-        if (lessonsErr || !lessonsResponse) {
+        if (err || !notesResponse) {
           setLoading(false);
           return;
         }
 
-        // Fetch notes from each lesson
-        let allCollectedNotes = [];
-        for (const lesson of lessonsResponse) {
-          const { response: notesResponse } = await lessonsApi.getNotes(
-            lesson.id
-          );
-          if (notesResponse && Array.isArray(notesResponse)) {
-            const notesWithLesson = notesResponse.map((note) => ({
-              ...note,
-              lessonId: lesson.id,
-              lessonTitle: lesson.title,
-            }));
-            allCollectedNotes = [...allCollectedNotes, ...notesWithLesson];
-          }
-        }
+        const formattedNotes = notesResponse.map((note) => ({
+          ...note,
+          lessonId: note.lesson || null,
+          lessonTitle: note.lesson ? "Lesson Note" : "Standalone Note",
+          archived: false, // You could add backend support for archive later if needed
+          color: colors[Math.floor(Math.random() * colors.length)],
+        }));
 
-        setAllNotes(allCollectedNotes);
-        setNotes(allCollectedNotes);
+        setAllNotes(formattedNotes);
+        setNotes(formattedNotes);
         setLoading(false);
       } catch (err) {
         console.error("Error fetching notes:", err);
@@ -148,47 +138,51 @@ const PlatformNotes = () => {
       return;
     }
 
-    // For demo purposes, add locally
-    const note = {
-      id: `note-${Date.now()}`,
-      ...newNoteData,
-      lessonId: null,
-      lessonTitle: "Standalone Note",
-      archived: false,
-      created_at: new Date().toISOString(),
-      color: colors[Math.floor(Math.random() * colors.length)],
-    };
+    try {
+      const { response: newNote, err } = await lessonsApi.addGlobalNote(newNoteData);
 
-    setAllNotes([note, ...allNotes]);
-    setNewNoteData({ title: "", content: "", description: "" });
-    setOpenNewNote(false);
-    setSnackbar({
-      open: true,
-      message: "Note created successfully",
-      severity: "success",
-    });
+      if (err) throw new Error("Failed");
+
+      const note = {
+        ...newNote,
+        lessonId: null,
+        lessonTitle: "Standalone Note",
+        archived: false,
+        color: colors[Math.floor(Math.random() * colors.length)],
+      };
+
+      setAllNotes([note, ...allNotes]);
+      setNewNoteData({ title: "", content: "", description: "" });
+      setOpenNewNote(false);
+      setSnackbar({ open: true, message: "Note created successfully", severity: "success" });
+    } catch {
+      setSnackbar({ open: true, message: "Failed to create note", severity: "error" });
+    }
   };
 
   const handleUpdateNote = async () => {
     if (!editingNote.title.trim()) {
-      setSnackbar({
-        open: true,
-        message: "Please enter a note title",
-        severity: "warning",
-      });
+      setSnackbar({ open: true, message: "Please enter a note title", severity: "warning" });
       return;
     }
 
-    setAllNotes(
-      allNotes.map((n) => (n.id === editingNote.id ? editingNote : n))
-    );
-    setEditingNote(null);
-    setOpenEditNote(false);
-    setSnackbar({
-      open: true,
-      message: "Note updated successfully",
-      severity: "success",
-    });
+    try {
+      const payload = {
+        title: editingNote.title,
+        content: editingNote.content,
+        description: editingNote.description,
+      };
+      const { response: updated, err } = await lessonsApi.updateNote(editingNote.id, payload);
+
+      if (err) throw new Error("Failed");
+
+      setAllNotes(allNotes.map((n) => (n.id === editingNote.id ? { ...n, ...updated } : n)));
+      setEditingNote(null);
+      setOpenEditNote(false);
+      setSnackbar({ open: true, message: "Note updated successfully", severity: "success" });
+    } catch {
+      setSnackbar({ open: true, message: "Failed to update note", severity: "error" });
+    }
   };
 
   const handleDeleteNote = async (noteId) => {
@@ -201,11 +195,10 @@ const PlatformNotes = () => {
         severity: "success",
       });
     } catch (err) {
-      setAllNotes(allNotes.filter((n) => n.id !== noteId));
       setSnackbar({
         open: true,
-        message: "Note deleted",
-        severity: "success",
+        message: "Failed to delete note",
+        severity: "error",
       });
     }
     setAnchorEl(null);

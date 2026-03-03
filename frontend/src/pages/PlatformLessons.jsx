@@ -27,6 +27,8 @@ import {
   Chip,
   LinearProgress,
   TextField,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 import ArrowRightAltIcon from "@mui/icons-material/ArrowRightAlt";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -34,6 +36,9 @@ import uiConfigs from "../configs/ui.config";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import lessonsApi from "../api/modules/lessons.api";
 import lessonGeneratorData from "../assets/data/lessonGeneratorData.json";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import BookOutlinedIcon from "@mui/icons-material/BookOutlined";
+import NoteOutlinedIcon from "@mui/icons-material/NoteOutlined";
 
 const PlatformLessons = () => {
   const navigate = useNavigate();
@@ -57,9 +62,9 @@ const PlatformLessons = () => {
   const [customTopic, setCustomTopic] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingMessage, setGeneratingMessage] = useState("");
-  // markedDates kept for future calendar functionality
   const [markedDates, setMarkedDates] = useState([]);
-  // Dummy use to avoid eslint warning
+  const [deletingLessonId, setDeletingLessonId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   void setMarkedDates;
 
   // Get subjects for selected grade
@@ -256,7 +261,28 @@ const PlatformLessons = () => {
     setSelectedSubject(null);
   };
 
-  console.log("subjects", subjects);
+  const handleDeleteLesson = async (lessonId, e) => {
+    e.stopPropagation();
+    if (confirmDeleteId !== lessonId) {
+      setConfirmDeleteId(lessonId);
+      return;
+    }
+    try {
+      setDeletingLessonId(lessonId);
+      const { err } = await lessonsApi.deleteLesson(lessonId);
+      if (err) {
+        setSnackbar({ open: true, message: "Failed to delete lesson", severity: "error" });
+      } else {
+        setLessons(lessons.filter((l) => l.id !== lessonId));
+        setSnackbar({ open: true, message: "Lesson deleted", severity: "success" });
+      }
+    } catch {
+      setSnackbar({ open: true, message: "Error deleting lesson", severity: "error" });
+    } finally {
+      setDeletingLessonId(null);
+      setConfirmDeleteId(null);
+    }
+  };
 
   return (
     <>
@@ -319,7 +345,7 @@ const PlatformLessons = () => {
                   gap: 2,
                 }}
               >
-                {lessons.slice(0, 4).map((lesson) => (
+                {lessons.slice(0, 6).map((lesson) => (
                   <Card
                     key={lesson.id}
                     onClick={() => handleLessonClick(lesson.id)}
@@ -327,34 +353,63 @@ const PlatformLessons = () => {
                       cursor: "pointer",
                       border: 1,
                       borderRadius: 3,
-                      borderColor: "graycolor.two",
+                      borderColor: confirmDeleteId === lesson.id ? "error.main" : "graycolor.two",
                       backgroundColor: "background.paper",
-                      transition: "all 0.3s ease",
-                      "&:hover": {
-                        transform: "scale(1.05)",
-                        boxShadow: 3,
-                      },
+                      transition: "all 0.25s ease",
+                      "&:hover": { transform: "translateY(-3px)", boxShadow: 4 },
+                      position: "relative",
                     }}
                   >
-                    <CardContent sx={{}}>
-                      <Typography variant="body1" title={lesson.title}>
-                        {lesson.title}
-                      </Typography>
-                      <Box sx={{ gap: 1, display: "flex", mt: 1 }}>
+                    <CardContent>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 0.5 }}>
+                        <Typography variant="subtitle2" fontWeight={700} noWrap sx={{ maxWidth: "80%" }} title={lesson.title}>
+                          {lesson.title}
+                        </Typography>
+                        <Tooltip title={confirmDeleteId === lesson.id ? "Click again to confirm" : "Delete lesson"}>
+                          <IconButton
+                            size="small"
+                            color={confirmDeleteId === lesson.id ? "error" : "default"}
+                            onClick={(e) => handleDeleteLesson(lesson.id, e)}
+                            disabled={deletingLessonId === lesson.id}
+                          >
+                            {deletingLessonId === lesson.id
+                              ? <CircularProgress size={14} />
+                              : <DeleteOutlineIcon fontSize="small" />}
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+
+                      {lesson.description && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1, lineHeight: 1.4 }} noWrap>
+                          {lesson.description}
+                        </Typography>
+                      )}
+
+                      <Box sx={{ gap: 0.5, display: "flex", flexWrap: "wrap", mt: 1 }}>
                         {lesson.subject_name && (
+                          <Chip label={lesson.subject_name} size="small" variant="outlined" color="primary" />
+                        )}
+                        <Chip
+                          icon={<BookOutlinedIcon sx={{ fontSize: 12 }} />}
+                          label={`${lesson.topics_count ?? 0} Topics`}
+                          size="small"
+                          variant="outlined"
+                        />
+                        {lesson.notes_count > 0 && (
                           <Chip
-                            label={lesson.subject_name}
+                            icon={<NoteOutlinedIcon sx={{ fontSize: 12 }} />}
+                            label={`${lesson.notes_count} Notes`}
                             size="small"
                             variant="outlined"
                           />
                         )}
-                        <Chip
-                          label={`${lesson.topics_count || 0} ${lesson.topics_count === 1 ? "Topic" : "Topics"
-                            }`}
-                          size="small"
-                          variant="outlined"
-                        />
                       </Box>
+
+                      {lesson.created_at && (
+                        <Typography variant="caption" color="text.disabled" sx={{ display: "block", mt: 1 }}>
+                          {new Date(lesson.created_at).toLocaleDateString()}
+                        </Typography>
+                      )}
 
                       <Button
                         size="small"
@@ -366,7 +421,7 @@ const PlatformLessons = () => {
                           border: 1,
                           borderRadius: 3,
                           borderColor: "divider",
-                          mt: 2,
+                          mt: 1.5,
                         }}
                       >
                         Open
@@ -456,12 +511,13 @@ const PlatformLessons = () => {
                             variant="outlined"
                           />
                         )}
-                        <Chip
-                          label={`${subjects.length || 0} ${subjects.length === 1 ? "Topic" : "Topics"
-                            }`}
-                          size="small"
-                          variant="outlined"
-                        />
+                        {subj.description && (
+                          <Chip
+                            label={subj.description.substring(0, 20)}
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
                       </Box>
                     </CardContent>
                   </Card>
@@ -514,34 +570,63 @@ const PlatformLessons = () => {
                       cursor: "pointer",
                       border: 1,
                       borderRadius: 3,
-                      borderColor: "graycolor.two",
+                      borderColor: confirmDeleteId === lesson.id ? "error.main" : "graycolor.two",
                       backgroundColor: "background.paper",
-                      transition: "all 0.3s ease",
-                      "&:hover": {
-                        transform: "scale(1.05)",
-                        boxShadow: 3,
-                      },
+                      transition: "all 0.25s ease",
+                      "&:hover": { transform: "translateY(-3px)", boxShadow: 4 },
+                      position: "relative",
                     }}
                   >
-                    <CardContent sx={{}}>
-                      <Typography variant="body1" title={lesson.title}>
-                        {lesson.title}
-                      </Typography>
-                      <Box sx={{ gap: 1, display: "flex", mt: 1 }}>
+                    <CardContent>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 0.5 }}>
+                        <Typography variant="subtitle2" fontWeight={700} noWrap sx={{ maxWidth: "80%" }} title={lesson.title}>
+                          {lesson.title}
+                        </Typography>
+                        <Tooltip title={confirmDeleteId === lesson.id ? "Click again to confirm" : "Delete"}>
+                          <IconButton
+                            size="small"
+                            color={confirmDeleteId === lesson.id ? "error" : "default"}
+                            onClick={(e) => handleDeleteLesson(lesson.id, e)}
+                            disabled={deletingLessonId === lesson.id}
+                          >
+                            {deletingLessonId === lesson.id
+                              ? <CircularProgress size={14} />
+                              : <DeleteOutlineIcon fontSize="small" />}
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+
+                      {lesson.description && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }} noWrap>
+                          {lesson.description}
+                        </Typography>
+                      )}
+
+                      <Box sx={{ gap: 0.5, display: "flex", flexWrap: "wrap", mt: 0.5 }}>
                         {lesson.subject_name && (
+                          <Chip label={lesson.subject_name} size="small" variant="outlined" color="primary" />
+                        )}
+                        <Chip
+                          icon={<BookOutlinedIcon sx={{ fontSize: 12 }} />}
+                          label={`${lesson.topics_count ?? 0} Topics`}
+                          size="small"
+                          variant="outlined"
+                        />
+                        {lesson.notes_count > 0 && (
                           <Chip
-                            label={lesson.subject_name}
+                            icon={<NoteOutlinedIcon sx={{ fontSize: 12 }} />}
+                            label={`${lesson.notes_count} Notes`}
                             size="small"
                             variant="outlined"
                           />
                         )}
-                        <Chip
-                          label={`${lesson.topics_count || 0} ${lesson.topics_count === 1 ? "Topic" : "Topics"
-                            }`}
-                          size="small"
-                          variant="outlined"
-                        />
                       </Box>
+
+                      {lesson.created_at && (
+                        <Typography variant="caption" color="text.disabled" sx={{ display: "block", mt: 0.75 }}>
+                          {new Date(lesson.created_at).toLocaleDateString()}
+                        </Typography>
+                      )}
 
                       <Button
                         size="small"
@@ -553,10 +638,10 @@ const PlatformLessons = () => {
                           border: 1,
                           borderRadius: 3,
                           borderColor: "divider",
-                          mt: 2,
+                          mt: 1.5,
                         }}
                       >
-                        Open
+                        Open Lesson
                       </Button>
                     </CardContent>
                   </Card>

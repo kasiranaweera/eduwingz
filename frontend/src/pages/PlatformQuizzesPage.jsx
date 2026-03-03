@@ -38,135 +38,10 @@ import SchoolIcon from "@mui/icons-material/School";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import TimerIcon from "@mui/icons-material/Timer";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import lessonsApi from "../api/modules/lessons.api";
+import { toast } from "react-toastify";
 
-// Mock quiz data
-const MOCK_QUIZZES = [
-    {
-      id: 1,
-      title: "Algebra Fundamentals",
-      description: "Test your knowledge of algebraic equations and expressions",
-      category: "Mathematics",
-      timeLimit: 30,
-      questions: 10,
-      difficulty: "Medium",
-      attempts: 2,
-      bestScore: 85,
-      lastAttempt: "3 days ago",
-      completed: true,
-      questions_data: [
-        {
-          id: 1,
-          question: "What is the value of x in the equation 2x + 5 = 13?",
-          options: ["2", "4", "6", "8"],
-          correct: 1,
-        },
-        {
-          id: 2,
-          question: "Simplify: 3x² + 2x² - 5x²",
-          options: ["10x²", "0", "x²", "-x²"],
-          correct: 1,
-        },
-        {
-          id: 3,
-          question: "What is the slope of the line y = 3x + 2?",
-          options: ["2", "3", "-3", "1/3"],
-          correct: 1,
-        },
-      ],
-    },
-    {
-      id: 2,
-      title: "World History Quiz",
-      description: "Questions about major historical events",
-      category: "History",
-      timeLimit: 45,
-      questions: 15,
-      difficulty: "Hard",
-      attempts: 0,
-      bestScore: null,
-      lastAttempt: null,
-      completed: false,
-      questions_data: [
-        {
-          id: 1,
-          question: "In which year did World War II end?",
-          options: ["1943", "1944", "1945", "1946"],
-          correct: 2,
-        },
-        {
-          id: 2,
-          question: "Who was the first President of the United States?",
-          options: [
-            "Thomas Jefferson",
-            "George Washington",
-            "John Adams",
-            "Benjamin Franklin",
-          ],
-          correct: 1,
-        },
-        {
-          id: 3,
-          question: "In which century did the Renaissance occur?",
-          options: ["14th-17th", "16th-18th", "17th-19th", "18th-20th"],
-          correct: 0,
-        },
-      ],
-    },
-    {
-      id: 3,
-      title: "Science Basics",
-      description: "Fundamental concepts in biology, chemistry, and physics",
-      category: "Science",
-      timeLimit: 40,
-      questions: 12,
-      difficulty: "Easy",
-      attempts: 1,
-      bestScore: 92,
-      lastAttempt: "1 week ago",
-      completed: true,
-      questions_data: [
-        {
-          id: 1,
-          question: "What is the chemical formula for water?",
-          options: ["H2O", "O2H", "H2O2", "HO2"],
-          correct: 0,
-        },
-        {
-          id: 2,
-          question: "Which planet is known as the Red Planet?",
-          options: ["Venus", "Mars", "Jupiter", "Saturn"],
-          correct: 1,
-        },
-        {
-          id: 3,
-          question: "What is the process by which plants make food?",
-          options: ["Respiration", "Photosynthesis", "Fermentation", "Digestion"],
-          correct: 1,
-        },
-      ],
-    },
-    {
-      id: 4,
-      title: "Python Programming",
-      description: "Test your Python coding knowledge",
-      category: "Programming",
-      timeLimit: 60,
-      questions: 20,
-      difficulty: "Medium",
-      attempts: 3,
-      bestScore: 78,
-      lastAttempt: "2 days ago",
-      completed: true,
-      questions_data: [
-        {
-          id: 1,
-          question: "What is the output of print(5 * 2)?",
-          options: ["10", "52", "Error", "None"],
-          correct: 0,
-        },
-      ],
-    },
-  ];
+
 
 const PlatformQuizzesPage = () => {
   const [quizzes, setQuizzes] = useState([]);
@@ -181,6 +56,7 @@ const PlatformQuizzesPage = () => {
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState({});
   const [quizResults, setQuizResults] = useState(null);
+  const [showHint, setShowHint] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -193,12 +69,35 @@ const PlatformQuizzesPage = () => {
     timeLimit: 30,
   });
 
-  useEffect(() => {
-    setLoading(true);
-    setTimeout(() => {
-      setQuizzes(MOCK_QUIZZES);
+  const loadQuizzes = async () => {
+    try {
+      setLoading(true);
+      const { response, err } = await lessonsApi.getQuizzes();
+      if (response && !err) {
+        // Map backend response format to frontend expected format
+        const fetchedQuizzes = response.map(q => ({
+          ...q,
+          questions: q.question_count || 0,
+          completed: q.attempt_count > 0,
+          attempts: q.attempt_count || 0,
+          bestScore: q.best_attempt,
+          lastAttempt: q.attempt_count > 0 ? "Previously" : "Never",
+          questions_data: q.questions || []
+        }));
+        setQuizzes(fetchedQuizzes);
+      } else {
+        toast.error("Failed to load quizzes");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Error loading quizzes");
+    } finally {
       setLoading(false);
-    }, 500);
+    }
+  };
+
+  useEffect(() => {
+    loadQuizzes();
   }, []);
 
   // Filter quizzes
@@ -217,40 +116,8 @@ const PlatformQuizzesPage = () => {
   });
 
   const handleCreateQuiz = () => {
-    if (!newQuizData.title.trim()) {
-      setSnackbar({
-        open: true,
-        message: "Please enter a quiz title",
-        severity: "warning",
-      });
-      return;
-    }
-
-    const newQuiz = {
-      id: quizzes.length + 1,
-      ...newQuizData,
-      questions: 0,
-      difficulty: "Medium",
-      attempts: 0,
-      bestScore: null,
-      lastAttempt: null,
-      completed: false,
-      questions_data: [],
-    };
-
-    setQuizzes([newQuiz, ...quizzes]);
-    setNewQuizData({
-      title: "",
-      description: "",
-      category: "general",
-      timeLimit: 30,
-    });
+    toast.info("Quiz creation requires AI generator backend (Coming Soon!)");
     setOpenNewQuiz(false);
-    setSnackbar({
-      open: true,
-      message: "Quiz created successfully",
-      severity: "success",
-    });
   };
 
   const handleDeleteQuiz = (quizId) => {
@@ -267,6 +134,7 @@ const PlatformQuizzesPage = () => {
     setSelectedQuizId(quizId);
     setCurrentQuizIndex(0);
     setUserAnswers({});
+    setShowHint(false);
     setOpenTakeQuiz(true);
   };
 
@@ -287,43 +155,52 @@ const PlatformQuizzesPage = () => {
     });
   };
 
-  const handleSubmitQuiz = () => {
+  const handleSubmitQuiz = async () => {
     const quiz = quizzes.find((q) => q.id === selectedQuizId);
     let correctCount = 0;
 
     quiz.questions_data.forEach((question) => {
-      if (userAnswers[question.id] === question.correct) {
+      // Find the ID of the option that is marked correct
+      const correctOptionIndex = question.options.findIndex((opt) => opt.is_correct);
+      // userAnswers stores the index of the selected option
+      if (userAnswers[question.id] === correctOptionIndex) {
         correctCount++;
       }
     });
 
-    const score = Math.round(
-      (correctCount / quiz.questions_data.length) * 100
-    );
+    const score = quiz.questions_data.length > 0
+      ? Math.round((correctCount / quiz.questions_data.length) * 100)
+      : 0;
+
+    const timeSpent = Math.floor(Math.random() * (quiz.timeLimit - 5)) + 5; // Mock time spent
 
     setQuizResults({
       quizTitle: quiz.title,
       totalQuestions: quiz.questions_data.length,
       correctAnswers: correctCount,
       score: score,
-      timeSpent: Math.floor(Math.random() * (quiz.timeLimit - 5)) + 5,
+      timeSpent: timeSpent,
     });
 
-    // Update quiz data
-    const updatedQuizzes = quizzes.map((q) =>
-      q.id === selectedQuizId
-        ? {
-            ...q,
-            attempts: q.attempts + 1,
-            bestScore: q.bestScore
-              ? Math.max(q.bestScore, score)
-              : score,
-            lastAttempt: "just now",
-            completed: true,
-          }
-        : q
-    );
-    setQuizzes(updatedQuizzes);
+    // Submit to backend
+    try {
+      const { err } = await lessonsApi.submitQuiz(quiz.id, {
+        score: score,
+        total_questions: quiz.questions_data.length,
+        correct_answers: correctCount,
+        time_taken: timeSpent * 60, // backend expects seconds
+      });
+
+      if (err) {
+        toast.error("Failed to save quiz score");
+      } else {
+        toast.success("Quiz completed successfully!");
+        // Reload quizzes to update scores
+        loadQuizzes();
+      }
+    } catch (e) {
+      toast.error("Error saving quiz score");
+    }
 
     setOpenTakeQuiz(false);
     setOpenQuizResults(true);
@@ -372,8 +249,8 @@ const PlatformQuizzesPage = () => {
               quiz.difficulty === "Easy"
                 ? "success"
                 : quiz.difficulty === "Medium"
-                ? "warning"
-                : "error"
+                  ? "warning"
+                  : "error"
             }
             variant="filled"
           />
@@ -633,18 +510,36 @@ const PlatformQuizzesPage = () => {
                   />
                 </Box>
 
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                  {quizzes.find((q) => q.id === selectedQuizId)?.questions_data[
-                    currentQuizIndex
-                  ]?.question}
-                </Typography>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    {quizzes.find((q) => q.id === selectedQuizId)?.questions_data[
+                      currentQuizIndex
+                    ]?.question}
+                  </Typography>
+                  {quizzes.find((q) => q.id === selectedQuizId)?.questions_data[currentQuizIndex]?.explanation && (
+                    <Button
+                      size="small"
+                      onClick={() => setShowHint(!showHint)}
+                      sx={{ minWidth: "auto", textTransform: "none" }}
+                    >
+                      {showHint ? "Hide Hint" : "💡 Need a hint?"}
+                    </Button>
+                  )}
+                </Box>
+
+                <Collapse in={showHint}>
+                  <Alert severity="info" sx={{ mb: 3 }}>
+                    {/* The explanation acts as a hint/reasoning */}
+                    {quizzes.find((q) => q.id === selectedQuizId)?.questions_data[currentQuizIndex]?.explanation}
+                  </Alert>
+                </Collapse>
 
                 <FormControl fullWidth>
                   <RadioGroup
                     value={
                       userAnswers[
-                        quizzes.find((q) => q.id === selectedQuizId)
-                          ?.questions_data[currentQuizIndex]?.id
+                      quizzes.find((q) => q.id === selectedQuizId)
+                        ?.questions_data[currentQuizIndex]?.id
                       ] ?? ""
                     }
                     onChange={(e) =>
@@ -698,12 +593,13 @@ const PlatformQuizzesPage = () => {
             </Button>
             <Box sx={{ flex: 1 }} />
             {currentQuizIndex <
-            quizzes.find((q) => q.id === selectedQuizId)?.questions_data
-              .length -
+              quizzes.find((q) => q.id === selectedQuizId)?.questions_data
+                .length -
               1 ? (
               <Button
                 onClick={() => {
                   setCurrentQuizIndex(currentQuizIndex + 1);
+                  setShowHint(false);
                 }}
                 variant="contained"
               >

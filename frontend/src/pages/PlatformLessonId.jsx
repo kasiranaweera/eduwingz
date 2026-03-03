@@ -4,12 +4,15 @@ import {
   AccordionSummary,
   Box,
   Button,
+  Chip,
   Divider,
   Drawer,
   Grid,
   IconButton,
   Paper,
   Tooltip,
+  Card,
+  CardContent,
   Typography,
   CircularProgress,
   Alert,
@@ -19,12 +22,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Collapse,
 } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import uiConfigs from "../configs/ui.config";
-import menuConfigs from "../configs/menu.configs";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import SubjectIcon from "@mui/icons-material/Subject";
 import CloseIcon from "@mui/icons-material/Close";
@@ -34,313 +37,231 @@ import FormatBoldIcon from "@mui/icons-material/FormatBold";
 import FormatItalicIcon from "@mui/icons-material/FormatItalic";
 import FormatUnderlinedIcon from "@mui/icons-material/FormatUnderlined";
 import HighlightIcon from "@mui/icons-material/Highlight";
+import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
+import CodeIcon from "@mui/icons-material/Code";
+import InsertLinkIcon from "@mui/icons-material/InsertLink";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import OpenInFullIcon from "@mui/icons-material/OpenInFull";
+import CloseFullscreenIcon from "@mui/icons-material/CloseFullscreen";
+import FormatStrikethroughIcon from "@mui/icons-material/FormatStrikethrough";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import AttachmentIcon from "@mui/icons-material/Attachment";
+import { ShareOutlined, MoreHorizOutlined, GroupOutlined } from "@mui/icons-material";
 import ChatSection from "../components/ChatSection";
 import lessonsApi from "../api/modules/lessons.api";
-import { MoreHorizOutlined, ShareOutlined } from "@mui/icons-material";
+import chatApi from "../api/modules/chat.api";
+import PlatformBottomNav from "../components/PlatformBottomNav";
 
+// ─── Formatting toolbar helper ────────────────────────────────────────────────
+const FormattingToolbar = ({ textareaRef, value, onChange, compact = false }) => {
+  const wrapText = (prefix, suffix = "") => {
+    const el = textareaRef?.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const selected = value.substring(start, end);
+    const newVal =
+      value.substring(0, start) + prefix + selected + suffix + value.substring(end);
+    onChange(newVal);
+    // re-focus & restore selection
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(
+        start + prefix.length,
+        end + prefix.length
+      );
+    });
+  };
+
+  const btnSize = compact ? "small" : "small";
+  const tools = [
+    { title: "Bold", action: () => wrapText("**", "**"), icon: <FormatBoldIcon fontSize={btnSize} /> },
+    { title: "Italic", action: () => wrapText("*", "*"), icon: <FormatItalicIcon fontSize={btnSize} /> },
+    { title: "Underline", action: () => wrapText("<u>", "</u>"), icon: <FormatUnderlinedIcon fontSize={btnSize} /> },
+    { title: "Strikethrough", action: () => wrapText("~~", "~~"), icon: <FormatStrikethroughIcon fontSize={btnSize} /> },
+    { title: "Highlight ★", action: () => wrapText('<mark style="background-color:yellow">', "</mark>"), icon: <HighlightIcon fontSize={btnSize} sx={{ color: "#f9c74f" }} /> },
+    { title: "Highlight ✦", action: () => wrapText('<mark style="background-color:#90ee90">', "</mark>"), icon: <HighlightIcon fontSize={btnSize} sx={{ color: "#52b788" }} /> },
+    { title: "Bullet List", action: () => wrapText("\n- ", ""), icon: <FormatListBulletedIcon fontSize={btnSize} /> },
+    { title: "Code", action: () => wrapText("`", "`"), icon: <CodeIcon fontSize={btnSize} /> },
+    { title: "Link", action: () => wrapText("[", "](url)"), icon: <InsertLinkIcon fontSize={btnSize} /> },
+    { title: "Image", action: () => wrapText("![alt text](", "image_url)"), icon: <InsertLinkIcon fontSize={btnSize} /> }, // Can replace with better icon
+    { title: "Embed Video/Lab", action: () => wrapText('<iframe width="560" height="315" src="', 'video_or_lab_url" frameborder="0" allowfullscreen></iframe>'), icon: <CodeIcon fontSize={btnSize} sx={{ color: "primary.main" }} /> },
+  ];
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 0.25,
+        p: 0.75,
+        borderRadius: 2,
+        border: 1,
+        borderColor: "divider",
+        bgcolor: "background.default",
+      }}
+    >
+      {tools.map((t) => (
+        <Tooltip key={t.title} title={t.title} placement="top" arrow>
+          <IconButton size="small" onClick={t.action} sx={{ borderRadius: 1.5 }}>
+            {t.icon}
+          </IconButton>
+        </Tooltip>
+      ))}
+    </Box>
+  );
+};
+
+// ─── Resize handle ────────────────────────────────────────────────────────────
+const ResizeHandle = ({ onMouseDown, isResizing }) => (
+  <Box
+    onMouseDown={onMouseDown}
+    sx={{
+      position: "absolute",
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: "16px",
+      cursor: "ew-resize",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 1,
+      "&::before": {
+        content: '""',
+        position: "absolute",
+        left: "7px",
+        top: "20%",
+        bottom: "20%",
+        width: "2px",
+        bgcolor: isResizing ? "primary.main" : "divider",
+        borderRadius: 2,
+        transition: "background-color 0.2s",
+      },
+      "&:hover::before": { bgcolor: "primary.main" },
+    }}
+  />
+);
+
+// ─── Panel header ─────────────────────────────────────────────────────────────
+const PanelHeader = ({ title, subtitle, onClose, extraAction }) => (
+  <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: 1, borderColor: "divider" }}>
+    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <Box>
+        <Typography variant="h6" fontWeight={700}>{title}</Typography>
+        {subtitle && (
+          <Typography variant="caption" color="text.secondary">{subtitle}</Typography>
+        )}
+      </Box>
+      <Box sx={{ display: "flex", gap: 0.5 }}>
+        {extraAction}
+        <IconButton size="small" onClick={onClose}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </Box>
+    </Box>
+  </Box>
+);
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 const PlatformLessonId = () => {
-  const { appState } = useSelector((state) => state.appState);
   const { user } = useSelector((state) => state.user);
   const { lessonId } = useParams();
   const navigate = useNavigate();
 
-  // State management
+  // ── Data state ──────────────────────────────────────────────────────────────
   const [lesson, setLesson] = useState(null);
   const [topics, setTopics] = useState([]);
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "info",
-  });
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "info" });
 
-  // Drawer states
-  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
-  const [notesDrawerOpen, setNotesDrawerOpen] = useState(false);
-  const [resourcesDrawerOpen, setResourcesDrawerOpen] = useState(false);
-  const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
-  const [drawerWidth, setDrawerWidth] = useState(500);
+  // ── Panel state ──────────────────────────────────────────────────────────────
+  // null = closed, 1 = Edit, 2 = Notes, 3 = Resources, 4 = Mini Chat
+  const [activePanel, setActivePanel] = useState(null);
+  const [drawerWidth, setDrawerWidth] = useState(480);
   const [isResizing, setIsResizing] = useState(false);
 
-  // Edit mode state
+  // ── Chat expand state ────────────────────────────────────────────────────────
+  const [chatExpanded, setChatExpanded] = useState(false);
+
+  // ── Topic / edit state ───────────────────────────────────────────────────────
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [editingContent, setEditingContent] = useState("");
-  const [editingResources, setEditingResources] = useState("");
   const [isGeneratingTopicContent, setIsGeneratingTopicContent] = useState(false);
 
-  // Note creation state
-  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  // ── Notes state ───────────────────────────────────────────────────────────────
+  const [showNoteForm, setShowNoteForm] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState("");
   const [newNoteContent, setNewNoteContent] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [editingNoteTitle, setEditingNoteTitle] = useState("");
+  const [editingNoteContent, setEditingNoteContent] = useState("");
 
-  const minWidth = 300;
-  const maxWidth = 800;
+  // ── Mini Chat state ───────────────────────────────────────────────────────────
+  const [miniChatSessionId, setMiniChatSessionId] = useState(null);
+  const [isMiniChatLoading, setIsMiniChatLoading] = useState(false);
 
-  // Fetch lesson, topics, and notes on mount
+  // ── Discussions state ─────────────────────────────────────────────────────────
+  const [discussions, setDiscussions] = useState([]);
+  const [newDiscussionContent, setNewDiscussionContent] = useState("");
+  const [replyingTo, setReplyingTo] = useState(null);
+
+  // ── Refs for formatting toolbar ───────────────────────────────────────────────
+  const editContentRef = useRef(null);
+  const newNoteContentRef = useRef(null);
+  const editNoteContentRef = useRef(null);
+
+  const minWidth = 320;
+  const maxWidth = 860;
+
+  // ── Fetch data ────────────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchLessonData = async () => {
-      if (!lessonId) {
-        setLoading(false);
-        navigate("/dashboard/platform/lessons");
-        return;
-      }
-
+      if (!lessonId) { setLoading(false); navigate("/dashboard/platform/lessons"); return; }
       try {
         setLoading(true);
-
-        // Get lesson by UUID
-        const { response: lessonData, err: lessonErr } =
-          await lessonsApi.getLesson(lessonId);
+        const { response: lessonData, err: lessonErr } = await lessonsApi.getLesson(lessonId);
         if (lessonErr) {
           setError("Lesson not found");
-          setSnackbar({
-            open: true,
-            message: "Failed to load lesson",
-            severity: "error",
-          });
+          setSnackbar({ open: true, message: "Failed to load lesson", severity: "error" });
           setLoading(false);
           return;
         }
-
         setLesson(lessonData);
 
-        // Get all topics for this lesson
-        const { response: topicsData, err: topicsErr } =
-          await lessonsApi.getTopics(lessonId);
-        if (!topicsErr && topicsData) {
+        const { response: topicsData } = await lessonsApi.getTopics(lessonId);
+        if (topicsData) {
           setTopics(topicsData);
           if (topicsData.length > 0) {
-            setSelectedTopic(topicsData[0]);
-            setEditingContent(topicsData[0].content || "");
-            setEditingResources(topicsData[0].resources || "");
+            handleSelectTopic(topicsData[0]);
           }
         }
 
-        // Get all notes for this lesson
-        const { response: notesData, err: notesErr } =
-          await lessonsApi.getNotes(lessonId);
-        if (!notesErr && notesData) {
-          setNotes(notesData);
-        }
-
-        setLoading(false);
+        const { response: notesData } = await lessonsApi.getNotes(lessonId);
+        if (notesData) setNotes(notesData);
       } catch (err) {
         console.error("Error fetching lesson:", err);
         setError("An unexpected error occurred");
+      } finally {
         setLoading(false);
       }
     };
-
-    if (user) {
-      fetchLessonData();
-    } else {
-      setLoading(false);
-    }
+    if (user) fetchLessonData();
+    else setLoading(false);
   }, [lessonId, user, navigate]);
 
-  // Handle topic selection
-  const handleSelectTopic = (topic) => {
-    setSelectedTopic(topic);
-    setEditingContent(topic.content || "");
-    setEditingResources(topic.resources || "");
-  };
-
-  const handleGenerateAndSaveContent = async () => {
-    if (!selectedTopic) return;
-    try {
-      setIsGeneratingTopicContent(true);
-      const { response, err } = await lessonsApi.generateTopicContent(selectedTopic.id, true);
-      if (err || !response) {
-        setSnackbar({ open: true, message: 'Failed to generate content', severity: 'error' });
-      } else {
-        const data = response.data || response;
-        const content = data.content || '';
-        // Update selectedTopic and topics list
-        const updated = { ...selectedTopic, content };
-        setSelectedTopic(updated);
-        setTopics(topics.map((t) => (t.id === updated.id ? updated : t)));
-        setSnackbar({ open: true, message: 'Content generated and saved', severity: 'success' });
-      }
-    } catch (e) {
-      console.error('Generate content error', e);
-      setSnackbar({ open: true, message: 'Error generating content', severity: 'error' });
-    } finally {
-      setIsGeneratingTopicContent(false);
-    }
-  };
-
-  // Handle save topic
-  const handleSaveTopic = async () => {
-    if (!selectedTopic) return;
-
-    try {
-      const { response: updated, err } = await lessonsApi.updateTopic(
-        selectedTopic.id,
-        {
-          content: editingContent,
-          resources: editingResources,
-        }
-      );
-
-      if (err) {
-        setSnackbar({
-          open: true,
-          message: "Failed to update topic",
-          severity: "error",
-        });
-        return;
-      }
-
-      setSelectedTopic(updated);
-      setTopics(topics.map((t) => (t.id === updated.id ? updated : t)));
-      setSnackbar({
-        open: true,
-        message: "Topic updated successfully",
-        severity: "success",
-      });
-      setEditDrawerOpen(false);
-    } catch (err) {
-      console.error("Error updating topic:", err);
-      setSnackbar({
-        open: true,
-        message: "Error updating topic",
-        severity: "error",
-      });
-    }
-  };
-
-  // Formatting toolbar functions
-  const wrapText = (prefix, suffix) => {
-    const textarea = document.activeElement;
-    if (textarea.name === "content") {
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const selectedText = editingContent.substring(start, end);
-      const newContent =
-        editingContent.substring(0, start) +
-        prefix +
-        selectedText +
-        suffix +
-        editingContent.substring(end);
-      setEditingContent(newContent);
-    } else if (textarea.name === "resources") {
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const selectedText = editingResources.substring(start, end);
-      const newResources =
-        editingResources.substring(0, start) +
-        prefix +
-        selectedText +
-        suffix +
-        editingResources.substring(end);
-      setEditingResources(newResources);
-    }
-  };
-
-  const handleMouseDown = (e) => {
-    setIsResizing(true);
-    e.preventDefault();
-  };
-
-  // Handle add note
-  const handleAddNote = async (noteData) => {
-    try {
-      const { response: newNote, err } = await lessonsApi.addNote(
-        lessonId,
-        noteData
-      );
-
-      if (err) {
-        setSnackbar({
-          open: true,
-          message: "Failed to add note",
-          severity: "error",
-        });
-        return;
-      }
-
-      setNotes([newNote, ...notes]);
-      setSnackbar({
-        open: true,
-        message: "Note added successfully",
-        severity: "success",
-      });
-    } catch (err) {
-      console.error("Error adding note:", err);
-      setSnackbar({
-        open: true,
-        message: "Error adding note",
-        severity: "error",
-      });
-    }
-  };
-
-  // Handle create and save new note
-  const handleCreateNote = async () => {
-    if (!newNoteTitle.trim() || !newNoteContent.trim()) {
-      setSnackbar({
-        open: true,
-        message: "Please fill in both title and content",
-        severity: "warning",
-      });
-      return;
-    }
-
-    await handleAddNote({
-      title: newNoteTitle,
-      content: newNoteContent,
-    });
-
-    // Reset form
-    setNewNoteTitle("");
-    setNewNoteContent("");
-    setNoteDialogOpen(false);
-  };
-
-  // Handle delete note
-  const handleDeleteNote = async (noteId) => {
-    try {
-      const { err } = await lessonsApi.deleteNote(noteId);
-
-      if (err) {
-        setSnackbar({
-          open: true,
-          message: "Failed to delete note",
-          severity: "error",
-        });
-        return;
-      }
-
-      setNotes(notes.filter((n) => n.id !== noteId));
-      setSnackbar({ open: true, message: "Note deleted", severity: "success" });
-    } catch (err) {
-      console.error("Error deleting note:", err);
-      setSnackbar({
-        open: true,
-        message: "Error deleting note",
-        severity: "error",
-      });
-    }
-  };
-
+  // ── Resize logic ───────────────────────────────────────────────────────────────
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (!isResizing) return;
-
-      const containerWidth = window.innerWidth;
-      const newWidth = containerWidth - e.clientX;
-
-      if (newWidth >= minWidth && newWidth <= maxWidth) {
-        setDrawerWidth(newWidth);
-      }
+      const newWidth = window.innerWidth - e.clientX;
+      if (newWidth >= minWidth && newWidth <= maxWidth) setDrawerWidth(newWidth);
     };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-    };
-
+    const handleMouseUp = () => { setIsResizing(false); };
     if (isResizing) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
@@ -350,7 +271,6 @@ const PlatformLessonId = () => {
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
     }
-
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
@@ -359,16 +279,201 @@ const PlatformLessonId = () => {
     };
   }, [isResizing]);
 
+  // ── Handlers ───────────────────────────────────────────────────────────────────
+  const handleSelectTopic = async (topic) => {
+    setSelectedTopic(topic);
+    setEditingContent(topic.content || "");
+
+    // Load discussions for this topic
+    try {
+      const { response: discData } = await lessonsApi.getTopicDiscussions(topic.id);
+      if (discData) {
+        setDiscussions(discData);
+      }
+    } catch (err) {
+      console.error("Failed to load discussions", err);
+    }
+  };
+
+  const handleBottomMenu = (index) => {
+    // Toggle: clicking active panel closes it
+    if (activePanel === index) {
+      setActivePanel(null);
+    } else {
+      setActivePanel(index);
+    }
+  };
+
+  const handleSaveTopic = async () => {
+    if (!selectedTopic) return;
+    try {
+      const { response: updated, err } = await lessonsApi.partialUpdateTopic(selectedTopic.id, {
+        content: editingContent,
+      });
+      if (err) { setSnackbar({ open: true, message: "Failed to update topic", severity: "error" }); return; }
+      const updatedTopic = updated || { ...selectedTopic, content: editingContent };
+      setSelectedTopic(updatedTopic);
+      setTopics(topics.map((t) => (t.id === updatedTopic.id ? updatedTopic : t)));
+      setSnackbar({ open: true, message: "Topic updated successfully", severity: "success" });
+    } catch (err) {
+      setSnackbar({ open: true, message: "Error updating topic", severity: "error" });
+    }
+  };
+
+  const handleGenerateAndSaveContent = async () => {
+    if (!selectedTopic) return;
+    try {
+      setIsGeneratingTopicContent(true);
+      const { response, err } = await lessonsApi.generateTopicContent(selectedTopic.id, true);
+      if (err || !response) {
+        setSnackbar({ open: true, message: "Failed to generate content", severity: "error" });
+      } else {
+        // privateClient already returns response.data — response IS the data object
+        const content = response.content || response.data?.content || "";
+        const updated = { ...selectedTopic, content };
+        setSelectedTopic(updated);
+        setEditingContent(content);
+        setTopics(topics.map((t) => (t.id === updated.id ? updated : t)));
+        setSnackbar({ open: true, message: "Content generated and saved", severity: "success" });
+      }
+    } finally {
+      setIsGeneratingTopicContent(false);
+    }
+  };
+
+  // Notes handlers
+  const handleCreateNote = async () => {
+    if (!newNoteTitle.trim() || !newNoteContent.trim()) {
+      setSnackbar({ open: true, message: "Please fill in title and content", severity: "warning" });
+      return;
+    }
+    try {
+      const { response: newNote, err } = await lessonsApi.addNote(lessonId, {
+        title: newNoteTitle,
+        content: newNoteContent,
+      });
+      if (err) { setSnackbar({ open: true, message: "Failed to add note", severity: "error" }); return; }
+      setNotes([newNote, ...notes]);
+      setNewNoteTitle("");
+      setNewNoteContent("");
+      setShowNoteForm(false);
+      setSnackbar({ open: true, message: "Note added", severity: "success" });
+    } catch {
+      setSnackbar({ open: true, message: "Error adding note", severity: "error" });
+    }
+  };
+
+  const handleDeleteNote = async (noteId) => {
+    try {
+      const { err } = await lessonsApi.deleteNote(noteId);
+      if (err) { setSnackbar({ open: true, message: "Failed to delete note", severity: "error" }); return; }
+      setNotes(notes.filter((n) => n.id !== noteId));
+      setSnackbar({ open: true, message: "Note deleted", severity: "info" });
+    } catch {
+      setSnackbar({ open: true, message: "Error deleting note", severity: "error" });
+    }
+  };
+
+  const handleStartEditNote = (note) => {
+    setEditingNoteId(note.id);
+    setEditingNoteTitle(note.title || "");
+    setEditingNoteContent(note.content || "");
+  };
+
+  const handleSaveEditNote = async () => {
+    if (!editingNoteId) return;
+    try {
+      const { response: updated, err } = await lessonsApi.updateNote
+        ? await lessonsApi.updateNote(editingNoteId, { title: editingNoteTitle, content: editingNoteContent })
+        : { response: null, err: null };
+      if (!err && updated) {
+        setNotes(notes.map((n) => (n.id === editingNoteId ? updated : n)));
+        setSnackbar({ open: true, message: "Note updated", severity: "success" });
+      } else {
+        // Optimistic local update if API missing
+        setNotes(notes.map((n) =>
+          n.id === editingNoteId
+            ? { ...n, title: editingNoteTitle, content: editingNoteContent }
+            : n
+        ));
+        setSnackbar({ open: true, message: "Note updated locally", severity: "info" });
+      }
+      setEditingNoteId(null);
+    } catch {
+      setSnackbar({ open: true, message: "Error updating note", severity: "error" });
+    }
+  };
+
+  // Mini Chat
+  const handleRedirectToFullChat = () => {
+    if (!selectedTopic) return;
+    navigate("/dashboard/chat/new", {
+      state: {
+        initialMessage: `I'm learning about "${selectedTopic.title}" in the lesson "${lesson?.title}". Can you help me understand: \n\n${selectedTopic.content?.substring(0, 500)}...`,
+        autoSend: false,
+      },
+    });
+  };
+
+  const handleMiniChatSendMessage = async (content) => {
+    if (!content.trim()) return false;
+    try {
+      setIsMiniChatLoading(true);
+      let sessionId = miniChatSessionId;
+      if (!sessionId) {
+        const { response, err } = await chatApi.createSession({
+          title: `Mini Chat: ${selectedTopic?.title || "Lesson Help"}`,
+        });
+        if (err || !response) throw err || new Error("Failed to create session");
+        sessionId = response.id;
+        setMiniChatSessionId(sessionId);
+      }
+      const contextPrefix = miniChatSessionId ? "" :
+        `[SYSTEM: Provide only clarifications about lesson content. Do NOT answer quiz or assignment questions.]\n\n`;
+      const { err: msgErr } = await chatApi.postMessage(sessionId, {
+        content: contextPrefix + content,
+        document_ids: [],
+      });
+      if (msgErr) throw msgErr;
+      return true;
+    } catch (err) {
+      console.error("Mini Chat Error:", err);
+      setSnackbar({ open: true, message: "Mini Chat failed to send", severity: "error" });
+      return false;
+    } finally {
+      setIsMiniChatLoading(false);
+    }
+  };
+
+  // Discussions
+  const handlePostDiscussion = async () => {
+    if (!newDiscussionContent.trim() || !selectedTopic) return;
+    try {
+      const { response: newPost, err } = await lessonsApi.addTopicDiscussion({
+        topicId: selectedTopic.id,
+        content: newDiscussionContent,
+        parentId: replyingTo
+      });
+      if (err) throw err;
+
+      setSnackbar({ open: true, message: "Posted successfully", severity: "success" });
+      setNewDiscussionContent("");
+      setReplyingTo(null);
+
+      // Refresh discussions
+      const { response: discData } = await lessonsApi.getTopicDiscussions(selectedTopic.id);
+      if (discData) {
+        setDiscussions(discData);
+      }
+    } catch (err) {
+      setSnackbar({ open: true, message: "Failed to post comment", severity: "error" });
+    }
+  };
+
+  // ── Early returns ────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "80vh",
-        }}
-      >
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "80vh" }}>
         <CircularProgress />
       </Box>
     );
@@ -379,11 +484,7 @@ const PlatformLessonId = () => {
       <Box sx={{ p: 3 }}>
         <Alert
           severity="error"
-          action={
-            <Button onClick={() => navigate("/dashboard/platform/lessons")}>
-              Go Back
-            </Button>
-          }
+          action={<Button onClick={() => navigate("/dashboard/platform/lessons")}>Go Back</Button>}
         >
           {error}
         </Alert>
@@ -391,677 +492,740 @@ const PlatformLessonId = () => {
     );
   }
 
-  const handleBottomMenu = (index) => {
-    if (index === 1) {
-      setEditDrawerOpen((prev) => !prev);
-    } else if (index === 2) {
-      setNotesDrawerOpen((prev) => !prev);
-    } else if (index === 3) {
-      setResourcesDrawerOpen((prev) => !prev);
-    } else if (index === 4) {
-      setChatDrawerOpen((prev) => !prev);
-    }
-  };
+  const panelOpen = activePanel !== null;
 
-  return (
-    <>
-      {/* Edit Drawer */}
-      <Drawer
-        sx={{
-          width: editDrawerOpen ? drawerWidth : 0,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: drawerWidth,
-            backgroundColor: "background.paper",
-            boxSizing: "border-box",
-            transition: isResizing ? "none" : "width 0.3s ease",
-          },
-        }}
-        variant="persistent"
-        anchor="right"
-        open={editDrawerOpen}
-      >
-        {/* Resize Handle */}
-        <Box
-          onMouseDown={handleMouseDown}
-          sx={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: "20px",
-            cursor: "ew-resize",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1300,
-            "&:hover": {
-              "&::before": {
-                bgcolor: "primary.main",
-                opacity: 0.5,
-              },
-            },
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              left: "0px",
-              top: 0,
-              bottom: 0,
-              width: "1px",
-              bgcolor: isResizing ? "primary.main" : "divider",
-              borderRadius: 1,
-              transition: "background-color 0.2s",
-            },
-          }}
-        ></Box>
+  // ────────────────────────────────────────────────────────────────────────────
+  // Panel content renderers
+  // ────────────────────────────────────────────────────────────────────────────
 
-        {/* Drawer Content */}
-        <Box sx={{ p: 3, mt: 8, overflowY: "auto", height: "100%", display: "flex", flexDirection: "column" }}>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 3,
-            }}
-          >
-            <Typography variant="h6">Edit Content</Typography>
-            <IconButton onClick={() => setEditDrawerOpen(false)}>
-              <CloseIcon />
-            </IconButton>
+  const renderEditPanel = () => (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, flex: 1 }}>
+      {selectedTopic ? (
+        <>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+            <Chip label={selectedTopic.title} size="small" color="primary" variant="outlined" />
           </Box>
-          <Divider sx={{ mb: 3 }} />
 
-          {selectedTopic ? (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 3, flex: 1 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                Topic: {selectedTopic.title}
-              </Typography>
+          <Box>
+            <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
+              Formatting Tools
+            </Typography>
+            <FormattingToolbar
+              textareaRef={editContentRef}
+              value={editingContent}
+              onChange={setEditingContent}
+            />
+          </Box>
 
-              {/* Formatting Toolbar */}
-              <Box>
-                <Typography variant="body2" sx={{ mb: 2, fontWeight: 600 }}>
-                  Formatting Tools
-                </Typography>
-                <Box
-                  sx={{
-                    display: "flex",
-                    gap: 1,
-                    p: 1,
-                    borderRadius: 1,
-                    border: 1,
-                    borderColor: "divider",
-                  }}
-                >
-                  <Tooltip title="Bold">
-                    <IconButton size="small" onClick={() => wrapText("**", "**")}>
-                      <FormatBoldIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Italic">
-                    <IconButton size="small" onClick={() => wrapText("*", "*")}>
-                      <FormatItalicIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Underline">
-                    <IconButton
-                      size="small"
-                      onClick={() => wrapText("<u>", "</u>")}
-                    >
-                      <FormatUnderlinedIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Highlight">
-                    <IconButton
-                      size="small"
-                      onClick={() => wrapText("<mark>", "</mark>")}
-                    >
-                      <HighlightIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+          <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+            <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
+              Content
+            </Typography>
+            <TextField
+              inputRef={editContentRef}
+              name="edit-content"
+              fullWidth
+              multiline
+              minRows={12}
+              value={editingContent}
+              onChange={(e) => setEditingContent(e.target.value)}
+              variant="outlined"
+              size="small"
+              placeholder="Write or edit the topic content here…"
+              sx={{ "& .MuiOutlinedInput-root": { bgcolor: "background.default", borderRadius: 2 } }}
+            />
+          </Box>
+
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            <Button
+              variant="outlined"
+              onClick={handleGenerateAndSaveContent}
+              disabled={isGeneratingTopicContent}
+              sx={{ flex: 1 }}
+            >
+              {isGeneratingTopicContent ? <CircularProgress size={18} color="inherit" /> : "✨ Generate"}
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<SaveIcon />}
+              onClick={handleSaveTopic}
+              sx={{ flex: 1 }}
+            >
+              Save
+            </Button>
+          </Box>
+        </>
+      ) : (
+        <Typography color="text.secondary">
+          Select a topic from the sidebar to start editing.
+        </Typography>
+      )}
+    </Box>
+  );
+
+  const renderNotesPanel = () => (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
+      {/* New Note Toggle Button */}
+      {!showNoteForm ? (
+        <Button
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={() => setShowNoteForm(true)}
+          fullWidth
+        >
+          New Note
+        </Button>
+      ) : (
+        <Paper
+          elevation={0}
+          sx={{ p: 2, border: 1, borderColor: "primary.main", borderRadius: 2, bgcolor: "background.default" }}
+        >
+          <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
+            New Note
+          </Typography>
+          <TextField
+            label="Title"
+            fullWidth
+            size="small"
+            value={newNoteTitle}
+            onChange={(e) => setNewNoteTitle(e.target.value)}
+            sx={{ mb: 1.5 }}
+          />
+          <Box sx={{ mb: 1 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: "block" }}>
+              Formatting
+            </Typography>
+            <FormattingToolbar
+              textareaRef={newNoteContentRef}
+              value={newNoteContent}
+              onChange={setNewNoteContent}
+              compact
+            />
+          </Box>
+          <TextField
+            inputRef={newNoteContentRef}
+            name="new-note-content"
+            label="Content"
+            fullWidth
+            multiline
+            minRows={5}
+            size="small"
+            value={newNoteContent}
+            onChange={(e) => setNewNoteContent(e.target.value)}
+            placeholder="Write your note here…"
+            sx={{ mb: 1.5 }}
+          />
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button size="small" onClick={() => { setShowNoteForm(false); setNewNoteTitle(""); setNewNoteContent(""); }} sx={{ flex: 1 }}>
+              Cancel
+            </Button>
+            <Button size="small" variant="contained" onClick={handleCreateNote} sx={{ flex: 1 }}>
+              Add Note
+            </Button>
+          </Box>
+        </Paper>
+      )}
+
+      <Divider />
+
+      {/* Notes list */}
+      {notes.length === 0 ? (
+        <Box sx={{ textAlign: "center", py: 3 }}>
+          <Typography variant="body2" color="text.secondary">
+            No notes yet. Create your first note above!
+          </Typography>
+        </Box>
+      ) : (
+        <Box sx={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 1 }}>
+          <Typography variant="body2" color="text.secondary" fontWeight={600}>
+            {notes.length} Note{notes.length !== 1 ? "s" : ""}
+          </Typography>
+          {notes.map((note, index) => (
+            <Accordion
+              key={note.id}
+              disableGutters
+              elevation={0}
+              sx={{ border: 1, borderColor: "divider", borderRadius: "8px !important", "&:before": { display: "none" } }}
+              defaultExpanded={index === 0}
+            >
+              <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 48 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, overflow: "hidden" }}>
+                  <SubjectIcon sx={{ fontSize: 16, color: "primary.main", flexShrink: 0 }} />
+                  <Typography variant="subtitle2" noWrap>
+                    {note.title || `Note ${index + 1}`}
+                  </Typography>
                 </Box>
-              </Box>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0 }}>
+                {editingNoteId === note.id ? (
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    <TextField
+                      label="Title"
+                      fullWidth
+                      size="small"
+                      value={editingNoteTitle}
+                      onChange={(e) => setEditingNoteTitle(e.target.value)}
+                    />
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: "block" }}>
+                        Formatting
+                      </Typography>
+                      <FormattingToolbar
+                        textareaRef={editNoteContentRef}
+                        value={editingNoteContent}
+                        onChange={setEditingNoteContent}
+                        compact
+                      />
+                    </Box>
+                    <TextField
+                      inputRef={editNoteContentRef}
+                      name="edit-note-content"
+                      label="Content"
+                      fullWidth
+                      multiline
+                      minRows={4}
+                      size="small"
+                      value={editingNoteContent}
+                      onChange={(e) => setEditingNoteContent(e.target.value)}
+                    />
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                      <Button size="small" onClick={() => setEditingNoteId(null)} sx={{ flex: 1 }}>Cancel</Button>
+                      <Button size="small" variant="contained" onClick={handleSaveEditNote} sx={{ flex: 1 }}>Save</Button>
+                    </Box>
+                  </Box>
+                ) : (
+                  <>
+                    <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", mb: 1.5 }}>
+                      {note.content}
+                    </Typography>
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                      <Button
+                        size="small"
+                        startIcon={<EditOutlinedIcon />}
+                        onClick={() => handleStartEditNote(note)}
+                        sx={{ flex: 1 }}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="small"
+                        color="error"
+                        startIcon={<DeleteOutlineIcon />}
+                        onClick={() => handleDeleteNote(note.id)}
+                        sx={{ flex: 1 }}
+                      >
+                        Delete
+                      </Button>
+                    </Box>
+                  </>
+                )}
+              </AccordionDetails>
+            </Accordion>
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
 
-              {/* Content Editor */}
-              <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                <Typography variant="body2" sx={{ mb: 2, fontWeight: 600 }}>
-                  Content
-                </Typography>
-                <TextField
-                  name="content"
-                  fullWidth
-                  multiline
-                  rows={10}
-                  value={editingContent}
-                  onChange={(e) => setEditingContent(e.target.value)}
-                  variant="outlined"
-                  size="small"
-                  placeholder="Enter topic content here..."
-                  sx={{
-                    mb: 3,
-                    "& .MuiOutlinedInput-root": {
-                      backgroundColor: "background.default",
-                    }
-                  }}
-                />
-              </Box>
-
-
-              {/* Save Button */}
-              <Button
-                variant="contained"
-                fullWidth
-                startIcon={<SaveIcon />}
-                onClick={handleSaveTopic}
-                sx={{ mt: "auto" }}
-              >
-                Save Changes
-              </Button>
+  const renderResourcesPanel = () => (
+    <Box sx={{ flex: 1, overflowY: "auto" }}>
+      {selectedTopic ? (
+        <>
+          <Chip label={selectedTopic.title} size="small" color="primary" variant="outlined" sx={{ mb: 2 }} />
+          {selectedTopic.resources ? (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+              {selectedTopic.resources
+                .split("\n")
+                .filter((r) => r.trim())
+                .map((res, i) => {
+                  const urlMatch = res.match(/https?:\/\/[^\s]+/);
+                  const label = res.replace(/https?:\/\/[^\s]+/, "").trim() || `Resource ${i + 1}`;
+                  return (
+                    <Card
+                      key={i}
+                      variant="outlined"
+                      sx={{
+                        cursor: "pointer",
+                        borderRadius: 2,
+                        transition: "all 0.15s",
+                        "&:hover": { borderColor: "primary.main", bgcolor: "action.hover", transform: "translateX(2px)" },
+                      }}
+                      onClick={() => window.open(urlMatch ? urlMatch[0] : "#", "_blank")}
+                    >
+                      <CardContent sx={{ p: "12px !important" }}>
+                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <Typography variant="body2" noWrap sx={{ maxWidth: "82%" }}>
+                            {label}
+                          </Typography>
+                          <OpenInNewIcon fontSize="small" color="action" />
+                        </Box>
+                        {urlMatch && (
+                          <Typography variant="caption" color="text.secondary" noWrap sx={{ display: "block", mt: 0.25 }}>
+                            {urlMatch[0]}
+                          </Typography>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
             </Box>
           ) : (
-            <Typography color="text.secondary">
-              No topic selected. Select a topic from the list to edit.
-            </Typography>
+            <Paper
+              elevation={0}
+              sx={{ p: 3, borderRadius: 2, border: 1, borderColor: "divider", textAlign: "center" }}
+            >
+              <AttachmentIcon sx={{ fontSize: 36, color: "text.disabled", mb: 1 }} />
+              <Typography variant="body2" color="text.secondary">
+                No resources available for this topic yet.
+              </Typography>
+              <Typography variant="caption" color="text.disabled">
+                Use the Edit panel to add resource links to this topic.
+              </Typography>
+            </Paper>
           )}
-        </Box>
-      </Drawer>
+        </>
+      ) : (
+        <Typography color="text.secondary">
+          Select a topic from the sidebar to see its resources.
+        </Typography>
+      )}
+    </Box>
+  );
 
-      {/* Notes Drawer */}
-      <Drawer
+  const MiniChatContent = () => (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
+      {/* Clarification notice */}
+      <Paper
+        elevation={0}
         sx={{
-          width: notesDrawerOpen ? drawerWidth : 0,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: drawerWidth,
-            backgroundColor: "background.paper",
-            boxSizing: "border-box",
-            transition: isResizing ? "none" : "width 0.3s ease",
-          },
+          p: 2,
+          borderRadius: 2,
+          border: 1,
+          borderColor: "warning.main",
+          bgcolor: "warning.main",
+          backgroundImage: "none",
+          opacity: 0.85,
         }}
-        variant="persistent"
-        anchor="right"
-        open={notesDrawerOpen}
       >
-        {/* Resize Handle */}
-        <Box
-          onMouseDown={handleMouseDown}
-          sx={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: "20px",
-            cursor: "ew-resize",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1300,
-            "&:hover": {
-              "&::before": {
-                bgcolor: "primary.main",
-                opacity: 0.5,
-              },
-            },
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              left: "0px",
-              top: 0,
-              bottom: 0,
-              width: "1px",
-              bgcolor: isResizing ? "primary.main" : "divider",
-              borderRadius: 1,
-              transition: "background-color 0.2s",
-            },
-          }}
-        ></Box>
+        <Typography variant="body2" sx={{ color: "warning.contrastText", fontWeight: 600 }}>
+          💡 Clarification Only Mode
+        </Typography>
+        <Typography variant="caption" sx={{ color: "warning.contrastText" }}>
+          This assistant only provides explanations and clarifications for lesson content.
+          It will NOT answer quiz or assignment questions directly.
+        </Typography>
+      </Paper>
 
-        {/* Drawer Content */}
-        <Box sx={{ p: 3, mt: 8, overflowY: "auto", height: "100%", display: "flex", flexDirection: "column" }}>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 2,
-            }}
-          >
-            <Typography variant="h6">Notes ({notes.length})</Typography>
-            <IconButton onClick={() => setNotesDrawerOpen(false)}>
-              <CloseIcon />
-            </IconButton>
-          </Box>
-          <Divider sx={{ mb: 3 }} />
+      {/* Redirect to full chat */}
+      <Button
+        variant="outlined"
+        fullWidth
+        size="small"
+        endIcon={<OpenInNewIcon />}
+        onClick={handleRedirectToFullChat}
+      >
+        Open in Full Chat Platform
+      </Button>
 
-          {/* Create Note Button */}
-          <Button
-            variant="contained"
-            fullWidth
-            onClick={() => setNoteDialogOpen(true)}
-            sx={{ mb: 3 }}
-          >
-            + New Note
-          </Button>
+      {/* Chat input */}
+      <Box sx={{ flex: 1 }}>
+        <ChatSection
+          handleSendMessage={handleMiniChatSendMessage}
+        />
+      </Box>
+    </Box>
+  );
 
-          {notes.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
-              No notes yet. Create one to get started!
+  const renderDiscussionsPanel = () => (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
+      {selectedTopic ? (
+        <>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
+              {replyingTo ? "Replying to comment..." : "Start a discussion"}
             </Typography>
+            <TextField
+              fullWidth
+              multiline
+              minRows={2}
+              size="small"
+              placeholder="Ask a question or share your thoughts..."
+              value={newDiscussionContent}
+              onChange={(e) => setNewDiscussionContent(e.target.value)}
+              sx={{ mb: 1, bgcolor: "background.default", borderRadius: 1 }}
+            />
+            <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+              {replyingTo && (
+                <Button size="small" onClick={() => setReplyingTo(null)}>Cancel</Button>
+              )}
+              <Button
+                variant="contained"
+                size="small"
+                onClick={handlePostDiscussion}
+                disabled={!newDiscussionContent.trim()}
+              >
+                Post
+              </Button>
+            </Box>
+          </Box>
+
+          <Divider />
+
+          {discussions.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 4 }}>
+              <GroupOutlined sx={{ fontSize: 40, color: "text.disabled", mb: 1 }} />
+              <Typography color="text.secondary" variant="body2">
+                No discussions yet. Be the first to start!
+              </Typography>
+            </Box>
           ) : (
-            <Box sx={{ flex: 1, overflowY: "auto" }}>
-              {notes.map((note, index) => (
-                <Accordion key={note.id} defaultExpanded={index === 0}>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <SubjectIcon sx={{ mr: 1 }} />
-                    <Typography variant="subtitle2" noWrap>
-                      {note.title || `Note ${index + 1}`}
+            <Box sx={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
+              {discussions.map((disc) => (
+                <Box key={disc.id} sx={{ p: 2, bgcolor: "background.default", borderRadius: 2, border: 1, borderColor: "divider" }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                    <Typography variant="subtitle2" color="primary.main">
+                      {disc.user_name || disc.user_email || "User"}
                     </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Box>
-                      <Typography variant="body2">{note.content}</Typography>
-                      {note.description && (
-                        <Typography
-                          variant="caption"
-                          display="block"
-                          sx={{ mt: 1, opacity: 0.7 }}
-                        >
-                          {note.description}
-                        </Typography>
-                      )}
-                      <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
-                        <Button
-                          size="small"
-                          variant="text"
-                          color="error"
-                          onClick={() => handleDeleteNote(note.id)}
-                        >
-                          Delete
-                        </Button>
-                      </Box>
+                    <Typography variant="caption" color="text.secondary">
+                      {new Date(disc.created_at).toLocaleDateString()}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", mb: 2 }}>
+                    {disc.content}
+                  </Typography>
+
+                  <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                    <Button size="small" variant="text" onClick={() => setReplyingTo(disc.id)}>Reply</Button>
+                  </Box>
+
+                  {/* Nested replies */}
+                  {disc.replies && disc.replies.length > 0 && (
+                    <Box sx={{ mt: 2, pl: 2, borderLeft: 2, borderColor: "divider", display: "flex", flexDirection: "column", gap: 1 }}>
+                      {disc.replies.map((reply) => (
+                        <Box key={reply.id} sx={{ p: 1.5, bgcolor: "action.hover", borderRadius: 2 }}>
+                          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+                            <Typography variant="caption" fontWeight={600}>
+                              {reply.user_name || reply.user_email || "User"}
+                            </Typography>
+                          </Box>
+                          <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                            {reply.content}
+                          </Typography>
+                        </Box>
+                      ))}
                     </Box>
-                  </AccordionDetails>
-                </Accordion>
+                  )}
+                </Box>
               ))}
             </Box>
           )}
-        </Box>
-      </Drawer>
+        </>
+      ) : (
+        <Typography color="text.secondary">
+          Select a topic from the sidebar to view discussions.
+        </Typography>
+      )}
+    </Box>
+  );
 
-      {/* Chat Drawer */}
+  const panelTitles = {
+    1: { title: "Edit Content", subtitle: selectedTopic?.title },
+    2: { title: "My Notes", subtitle: `${notes.length} note${notes.length !== 1 ? "s" : ""}` },
+    3: { title: "Resources", subtitle: selectedTopic?.title },
+    4: { title: "Lesson Chat", subtitle: "Clarification mode" },
+    5: { title: "Peer Discussion", subtitle: selectedTopic?.title },
+  };
+
+  const currentPanelMeta = panelTitles[activePanel] || {};
+
+  // ────────────────────────────────────────────────────────────────────────────
+  return (
+    <>
+      {/* ── Right-side Drawer (unified) ─────────────────────────────────────── */}
       <Drawer
         sx={{
-          width: chatDrawerOpen ? drawerWidth : 0,
+          width: panelOpen ? drawerWidth : 0,
           flexShrink: 0,
           "& .MuiDrawer-paper": {
             width: drawerWidth,
+            mt: 8,
             backgroundColor: "background.paper",
             boxSizing: "border-box",
             transition: isResizing ? "none" : "width 0.3s ease",
+            display: "flex",
+            flexDirection: "column",
           },
         }}
         variant="persistent"
         anchor="right"
-        open={chatDrawerOpen}
+        open={panelOpen}
       >
-        {/* Resize Handle */}
-        <Box
-          onMouseDown={handleMouseDown}
-          sx={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: "20px",
-            cursor: "ew-resize",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1300,
-            "&:hover": {
-              "&::before": {
-                bgcolor: "primary.main",
-                opacity: 0.5,
-              },
-            },
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              left: "0px",
-              top: 0,
-              bottom: 0,
-              width: "1px",
-              bgcolor: isResizing ? "primary.main" : "divider",
-              borderRadius: 1,
-              transition: "background-color 0.2s",
-            },
-          }}
-        ></Box>
+        <ResizeHandle onMouseDown={(e) => { setIsResizing(true); e.preventDefault(); }} isResizing={isResizing} />
 
-        {/* Drawer Content */}
-        <Box sx={{ p: 3, mt: 8 }}>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Typography variant="h6">Chat Assistant</Typography>
-            <IconButton onClick={() => setChatDrawerOpen(false)}>
-              <CloseIcon />
-            </IconButton>
-          </Box>
-          <Divider sx={{ mt: 1, mb: 3 }} orientation="horizontal" flexItem />
-          <Typography>{user.username} - Your learning assistant</Typography>
+        <PanelHeader
+          title={currentPanelMeta.title}
+          subtitle={currentPanelMeta.subtitle}
+          onClose={() => setActivePanel(null)}
+          extraAction={
+            activePanel === 4 ? (
+              <Tooltip title="Expand to popup">
+                <IconButton size="small" onClick={() => setChatExpanded(true)}>
+                  <OpenInFullIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            ) : null
+          }
+        />
 
-          <Box sx={{ mt: 3, p: 2, borderRadius: 2, border: 1, borderColor: "divider" }}>
-            <Typography variant="body2" color="text.secondary">
-              💡 Drag the left edge to resize this panel
-            </Typography>
-          </Box>
-          <ChatSection sx={{ position: "sticky", bottom: 0 }} />
+        {/* Panel body */}
+        <Box sx={{ flex: 1, overflowY: "auto", p: 3, mt: 8, display: "flex", flexDirection: "column" }}>
+          {activePanel === 1 && renderEditPanel()}
+          {activePanel === 2 && renderNotesPanel()}
+          {activePanel === 3 && renderResourcesPanel()}
+          {activePanel === 4 && <MiniChatContent />}
+          {activePanel === 5 && renderDiscussionsPanel()}
         </Box>
       </Drawer>
 
-      {/* Resources Drawer */}
-      <Drawer
-        sx={{
-          width: resourcesDrawerOpen ? drawerWidth : 0,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: drawerWidth,
-            backgroundColor: "background.paper",
-            boxSizing: "border-box",
-            transition: isResizing ? "none" : "width 0.3s ease",
+      {/* ── Chat expanded popup ─────────────────────────────────────────────── */}
+      <Dialog
+        open={chatExpanded}
+        onClose={() => setChatExpanded(false)}
+        fullWidth
+        maxWidth="md"
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            minHeight: "80vh",
+            display: "flex",
+            flexDirection: "column",
           },
         }}
-        variant="persistent"
-        anchor="right"
-        open={resourcesDrawerOpen}
       >
-        {/* Resize Handle */}
-        <Box
-          onMouseDown={handleMouseDown}
-          sx={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: "20px",
-            cursor: "ew-resize",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1300,
-            "&:hover": {
-              "&::before": {
-                bgcolor: "primary.main",
-                opacity: 0.5,
-              },
-            },
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              left: "0px",
-              top: 0,
-              bottom: 0,
-              width: "1px",
-              bgcolor: isResizing ? "primary.main" : "divider",
-              borderRadius: 1,
-              transition: "background-color 0.2s",
-            },
-          }}
-        ></Box>
-
-        {/* Drawer Content */}
-        <Box sx={{ p: 3, mt: 8, overflowY: "auto", height: "100%" }}>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Typography variant="h6">Resources</Typography>
-            <IconButton onClick={() => setResourcesDrawerOpen(false)}>
-              <CloseIcon />
-            </IconButton>
-          </Box>
-          <Divider sx={{ mt: 1, mb: 3 }} />
-
-          {selectedTopic ? (
-            <>
-              <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 700 }}>
-                {selectedTopic.title}
+        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Box>
+            <Typography variant="h6" fontWeight={700}>Lesson Chat Assistant</Typography>
+            {selectedTopic && (
+              <Typography variant="caption" color="text.secondary">
+                {lesson?.title} — {selectedTopic.title}
               </Typography>
-
-              {selectedTopic.resources ? (
-                <Box>
-                  <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
-                    {selectedTopic.resources}
-                  </Typography>
-                </Box>
-              ) : (
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2,
-                    borderRadius: 2,
-                    border: 1,
-                    borderColor: "divider",
-                    textAlign: "center",
-                  }}
-                >
-                  <Typography variant="body2" color="text.secondary">
-                    No resources available for this topic yet.
-                  </Typography>
-                </Paper>
-              )}
-            </>
-          ) : (
-            <Typography color="text.secondary">
-              Select a topic from the left sidebar to view its resources.
+            )}
+          </Box>
+          <IconButton onClick={() => setChatExpanded(false)}>
+            <CloseFullscreenIcon />
+          </IconButton>
+        </DialogTitle>
+        <Divider />
+        <DialogContent sx={{ flex: 1, display: "flex", flexDirection: "column", gap: 2, pt: 2 }}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              border: 1,
+              borderColor: "warning.light",
+              bgcolor: "warning.light",
+            }}
+          >
+            <Typography variant="body2" fontWeight={600} color="warning.dark">
+              💡 Clarification Only Mode
             </Typography>
-          )}
-        </Box>
-      </Drawer>
+            <Typography variant="caption" color="warning.dark">
+              This assistant only explains lesson concepts. It will not solve quizzes or assignments.
+            </Typography>
+          </Paper>
 
-      {/* Main Content */}
+          <Button
+            variant="outlined"
+            size="small"
+            endIcon={<OpenInNewIcon />}
+            onClick={() => { setChatExpanded(false); handleRedirectToFullChat(); }}
+            sx={{ alignSelf: "flex-start" }}
+          >
+            Switch to Full Chat Platform
+          </Button>
+
+          <Box sx={{ flex: 1 }}>
+            <ChatSection handleSendMessage={handleMiniChatSendMessage} />
+          </Box>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Main layout ─────────────────────────────────────────────────────── */}
       <Box
         sx={{
-          width:
-            editDrawerOpen || notesDrawerOpen || resourcesDrawerOpen || chatDrawerOpen
-              ? `calc(100% - ${drawerWidth}px)`
-              : "100%",
+          width: panelOpen ? `calc(100% - ${drawerWidth}px)` : "100%",
           transition: isResizing ? "none" : "width 0.3s ease",
+          pb: 14,
         }}
       >
         {/* Header */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 2,
-          }}
-        >
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <IconButton
-              size="small"
-              onClick={() => navigate("/dashboard/platform/lessons")}
-            >
+            <IconButton size="small" onClick={() => navigate("/dashboard/platform/lessons")}>
               <ArrowBackIcon />
             </IconButton>
-            <Typography variant="h5">{lesson?.title}</Typography>
+            <Typography variant="h5" fontWeight={700}>
+              {lesson?.title}
+            </Typography>
           </Box>
           <Box sx={{ display: "flex", gap: 1 }}>
-            {editDrawerOpen ||
-              notesDrawerOpen ||
-              resourcesDrawerOpen ||
-              (chatDrawerOpen && (
-                <Button
-                  sx={{
-                    color: "primary.contrastText",
-                    textTransform: "initial",
-                    border: 1,
-                    borderColor: "graycolor.two",
-                    borderRadius: 3,
-                    px: 3
-                  }}
-                >
-                  Topics
-                </Button>
-              ))}
-            <IconButton>
-              <ShareOutlined />
-            </IconButton>
-            <IconButton>
-              <MoreHorizOutlined />
-            </IconButton>
+            <IconButton><ShareOutlined /></IconButton>
+            <IconButton><MoreHorizOutlined /></IconButton>
           </Box>
         </Box>
 
-        <Grid sx={{ mt: 2 }} container spacing={3}>
-          {/* Sidebar - Topics */}
-          {editDrawerOpen || notesDrawerOpen || resourcesDrawerOpen || chatDrawerOpen ? null : (
-            <Grid item xs={12} md={3}>
+        {/* 2-column layout */}
+        <Grid container spacing={3} sx={{ mt: 0 }}>
+          {/* ── Topics sidebar ─────────────────────────────────────────────── */}
+          <Grid item xs={12} md={3}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2.5,
+                border: 1,
+                borderColor: "divider",
+                borderRadius: 3,
+                maxHeight: "70vh",
+                overflowY: "auto",
+                position: "sticky",
+                top: 80,
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1.5 }}>
+                Topics ({topics.length})
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              {topics.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">No topics yet.</Typography>
+              ) : (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  {topics.map((topic, i) => {
+                    const isSelected = selectedTopic?.id === topic.id;
+                    return (
+                      <Box
+                        key={topic.id}
+                        onClick={() => handleSelectTopic(topic)}
+                        sx={{
+                          p: 1.5,
+                          borderRadius: 2,
+                          cursor: "pointer",
+                          border: 1,
+                          borderColor: isSelected ? "primary.main" : "divider",
+                          bgcolor: isSelected ? "action.selected" : "transparent",
+                          transition: "all 0.2s",
+                          "&:hover": { bgcolor: "action.hover", borderColor: "primary.main" },
+                        }}
+                      >
+                        <Typography variant="subtitle2" noWrap>
+                          {i + 1}. {topic.title}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" noWrap>
+                          {topic.content?.substring(0, 40)}…
+                        </Typography>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              )}
+            </Paper>
+          </Grid>
+
+          {/* ── Main content area ───────────────────────────────────────────── */}
+          <Grid
+            item
+            xs={12}
+            md={9}
+            sx={{ flex: 1 }}
+            container
+            direction="column"
+            spacing={3}>
+            {selectedTopic ? (
               <Paper
                 elevation={0}
                 sx={{
                   p: 3,
                   border: 1,
-                  borderColor: "graycolor.two",
+                  borderColor: "divider",
                   borderRadius: 3,
-                  maxHeight: "70vh",
-                  overflowY: "auto",
+                  minHeight: "50vh",
                 }}
               >
-                <Typography variant="h6">Topics ({topics.length})</Typography>
-                <Divider
-                  sx={{ mt: 1, mb: 3 }}
-                  orientation="horizontal"
-                  flexItem
-                />
-
-                {topics.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    No topics yet.
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                  <Typography variant="h6" fontWeight={700}>
+                    {selectedTopic.title}
                   </Typography>
+                  <Chip
+                    size="small"
+                    label={selectedTopic.content ? "Has content" : "No content"}
+                    color={selectedTopic.content ? "success" : "default"}
+                    variant="outlined"
+                  />
+                </Box>
+                <Divider sx={{ mb: 2.5 }} />
+
+                {selectedTopic.content ? (
+                  <Box
+                    sx={{
+                      whiteSpace: "pre-wrap",
+                      lineHeight: 1.85,
+                      color: "text.primary",
+                      "& img": { maxWidth: "100%", height: "auto", borderRadius: 2, my: 2 },
+                      "& iframe": { width: "100%", aspectRatio: "16/9", borderRadius: 2, my: 2, border: "none" },
+                      "& blockquote": { borderLeft: "4px solid", borderColor: "primary.main", pl: 2, my: 2, fontStyle: "italic", bgcolor: "action.hover", py: 1, pr: 1, borderRadius: "0 8px 8px 0" },
+                      "& pre": { bgcolor: "grey.900", color: "grey.100", p: 2, borderRadius: 2, overflowX: "auto", my: 2 },
+                      "& code": { fontFamily: "monospace", bgcolor: "action.hover", px: 0.5, py: 0.25, borderRadius: 1 },
+                      "& h1, & h2, & h3, & h4": { fontWeight: 700, mt: 3, mb: 1.5 },
+                      "& a": { color: "primary.main", textDecoration: "none", "&:hover": { textDecoration: "underline" } }
+                    }}
+                    dangerouslySetInnerHTML={{ __html: selectedTopic.content }}
+                  />
                 ) : (
                   <Box
-                    sx={{ display: "flex", flexDirection: "column", gap: 1 }}
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      py: 6,
+                      gap: 2,
+                    }}
                   >
-                    {topics.map((topic, index) => (
-                      <Paper
-                        key={topic.id}
-                        elevation={selectedTopic?.id === topic.id ? 2 : 0}
-                        sx={{
-                          p: 2,
-                          border: 1,
-                          borderColor:
-                            selectedTopic?.id === topic.id
-                              ? "primary.main"
-                              : "divider",
-                          borderRadius: 2,
-                          cursor: "pointer",
-                          backgroundColor:
-                            selectedTopic?.id === topic.id
-                              ? "action.selected"
-                              : "transparent",
-                          transition: "all 0.2s",
-                          "&:hover": {
-                            backgroundColor: "action.hover",
-                            borderColor: "primary.main",
-                          },
-                        }}
-                        onClick={() => handleSelectTopic(topic)}
-                      >
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Box sx={{ overflow: 'hidden' }}>
-                            <Typography variant="subtitle2" noWrap>
-                              {index + 1}. {topic.title}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {topic.content?.substring(0, 30)}...
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </Paper>
-                    ))}
+                    <Typography variant="body2" color="text.secondary">
+                      No content yet for this topic.
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      onClick={handleGenerateAndSaveContent}
+                      disabled={isGeneratingTopicContent}
+                    >
+                      {isGeneratingTopicContent
+                        ? <CircularProgress size={20} color="inherit" />
+                        : "✨ Generate Content"}
+                    </Button>
+                    <Typography variant="caption" color="text.disabled">
+                      Or click the Edit button below to write it manually.
+                    </Typography>
                   </Box>
                 )}
               </Paper>
-            </Grid>
-          )}
-
-          {/* Main Content */}
-          <Grid
-            item
-            xs={12}
-            size={{ xs: 12, md: editDrawerOpen || notesDrawerOpen || resourcesDrawerOpen || chatDrawerOpen ? 12 : 9 }}
-            container
-            direction="column"
-            spacing={3}
-          >
-            {selectedTopic ? (
-              <>
-                {/* Content Section */}
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 3,
-                    border: 1,
-                    borderColor: "graycolor.two",
-                    borderRadius: 3,
-                  }}
-                >
-                  <Typography variant="h6">Content</Typography>
-                  <Divider
-                    sx={{ mt: 1, mb: 2 }}
-                    orientation="horizontal"
-                    flexItem
-                  />
-                  <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-                    {selectedTopic.content}
-                  </Typography>
-                  {/* If no content, show generate button */}
-                  {!selectedTopic.content && (
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 3,
-                        border: 1,
-                        borderColor: "graycolor.two",
-                        borderRadius: 3,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between'
-                      }}
-                    >
-                      <Typography variant="body2" color="text.secondary">No content yet for this topic.</Typography>
-                      <Button variant="contained" onClick={handleGenerateAndSaveContent} disabled={isGeneratingTopicContent}>
-                        {isGeneratingTopicContent ? (<CircularProgress size={20} color="inherit" />) : 'Generate content'}
-                      </Button>
-                    </Paper>
-                  )}
-                </Paper>
-
-
-              </>
             ) : (
               <Paper
                 elevation={0}
                 sx={{
-                  p: 3,
+                  p: 4,
                   border: 1,
-                  borderColor: "graycolor.two",
+                  borderColor: "divider",
                   borderRadius: 3,
                   textAlign: "center",
+                  minHeight: "40vh",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
                 <Typography color="text.secondary">
-                  Select a topic from the left sidebar to view its content
+                  Select a topic from the left sidebar to view its content.
                 </Typography>
               </Paper>
             )}
@@ -1069,108 +1233,20 @@ const PlatformLessonId = () => {
         </Grid>
       </Box>
 
-      {/* Fixed Menu Bar */}
-      <Box
-        sx={{
-          position: "fixed",
-          bottom: 20,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 1200,
-        }}
-      >
-        <Box
-          sx={{
-            backgroundColor: "background.paper",
-            p: 1,
-            borderRadius: 3,
-            gap: 1,
-            display: "inline-flex",
-            alignItems: "end",
-            boxShadow: 3,
-          }}
-        >
-          {menuConfigs.platformMenu.map((item, index) => (
-            <Box
-              key={index}
-              sx={{
-                transition: "transform 0.2s",
-                "&:hover": { transform: "translateY(-4px) scale(1.1)" },
-              }}
-            >
-              <Tooltip title={item.display} placement="top" arrow>
-                <IconButton
-                  onClick={() => handleBottomMenu(index)}
-                  size="large"
-                  sx={{
-                    border: 1,
-                    borderColor: "graycolor.two",
-                    "&:hover": {
-                      color: appState.includes(item.state)
-                        ? "secondary.contrastText"
-                        : "primary.main",
-                    },
-                    color: appState.includes(item.state)
-                      ? "secondary.contrastText"
-                      : "primary.contrastText",
-                    background: appState.includes(item.state)
-                      ? uiConfigs.style.mainGradient.color
-                      : "none",
-                  }}
-                >
-                  {item.icon}
-                </IconButton>
-              </Tooltip>
-            </Box>
-          ))}
-        </Box>
-      </Box>
+      {/* ── Bottom Navigation ────────────────────────────────────────────────── */}
+      <PlatformBottomNav onMenuClick={handleBottomMenu} activePanel={activePanel} />
 
-      {/* Snackbar for notifications */}
-
-      {/* Snackbar for notifications */}
+      {/* ── Snackbar ─────────────────────────────────────────────────────────── */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={6000}
+        autoHideDuration={5000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+          {snackbar.message}
+        </Alert>
       </Snackbar>
-
-      {/* Create Note Dialog */}
-      <Dialog open={noteDialogOpen} onClose={() => setNoteDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Create New Note</DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <TextField
-              autoFocus
-              label="Note Title"
-              fullWidth
-              value={newNoteTitle}
-              onChange={(e) => setNewNoteTitle(e.target.value)}
-              placeholder="Enter note title..."
-            />
-            <TextField
-              label="Note Content"
-              fullWidth
-              multiline
-              rows={6}
-              value={newNoteContent}
-              onChange={(e) => setNewNoteContent(e.target.value)}
-              placeholder="Enter note content..."
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setNoteDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleCreateNote}
-            variant="contained"
-          >
-            Create Note
-          </Button>
-        </DialogActions>
-      </Dialog>
     </>
   );
 };

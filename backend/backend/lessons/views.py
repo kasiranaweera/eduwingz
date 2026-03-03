@@ -281,7 +281,7 @@ class NoteViewSet(viewsets.ModelViewSet):
         return Note.objects.filter(user=self.request.user).order_by('-created_at')
     
     def perform_create(self, serializer):
-        """Create note with current user"""
+        """Create note with current user (lesson is optional)"""
         serializer.save(user=self.request.user)
 
 
@@ -395,3 +395,20 @@ class SubjectViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = LessonSerializer(lessons, many=True)
         return Response(serializer.data)
 
+
+class TopicDiscussionViewSet(viewsets.ModelViewSet):
+    from .models import TopicDiscussion
+    from .serializers import TopicDiscussionSerializer
+    queryset = TopicDiscussion.objects.all().order_by('created_at')
+    serializer_class = TopicDiscussionSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Filter discussions by topic if provided in query params"""
+        topic_id = self.request.query_params.get('topic', None)
+        if topic_id:
+            return self.queryset.filter(topic_id=topic_id, parent=None)
+        return self.queryset.filter(parent=None)
+        
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

@@ -48,3 +48,20 @@ class NoteSerializer(serializers.ModelSerializer):
         model = Note
         fields = ['id', 'title', 'content', 'description', 'lesson', 'user', 'created_at', 'updated_at']
         read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+
+from .models import TopicDiscussion
+
+class TopicDiscussionSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.first_name', read_only=True)
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    replies = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TopicDiscussion
+        fields = ['id', 'topic', 'user', 'user_name', 'user_email', 'content', 'parent', 'replies', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+
+    def get_replies(self, obj):
+        if obj.replies.exists():
+            return TopicDiscussionSerializer(obj.replies.all(), many=True).data
+        return []

@@ -32,6 +32,9 @@ import { AccountCircle } from "@mui/icons-material";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 import ReplayIcon from "@mui/icons-material/Replay";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
@@ -119,8 +122,6 @@ const ChatPage = () => {
   ];
 
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
-  // Debug: show current loading message
-  console.log(loadingMessageIndex, loadingMessages[loadingMessageIndex]);
 
   /* ---------------------------------------------------------- */
   /* 1. SEND MESSAGE – fixed duplicate logic                    */
@@ -202,31 +203,19 @@ const ChatPage = () => {
     try {
       let documentIds = [];
       if (attachments.length) {
-        console.log(`Uploading ${attachments.length} file(s)...`);
         const uploadedDocuments = [];
         for (const file of attachments) {
-          console.log(
-            `Uploading file: ${file.name}, size: ${file.size} bytes, type: ${file.type}`
-          );
           const { response: uploadResponse, err: uploadErr } =
             await chatApi.uploadDocument(sessionId, file);
           if (uploadErr) {
-            console.error("upload document error", uploadErr);
             toast.error(`Failed to upload file: ${file.name}`, { autoClose: 5000 });
             throw uploadErr;
           }
           if (uploadResponse) {
-            console.log("Upload successful:", uploadResponse);
             uploadedDocuments.push(uploadResponse);
-          } else {
-            console.warn("Upload response is empty for file:", file.name);
           }
         }
         documentIds = uploadedDocuments.map((doc) => doc?.id).filter(Boolean);
-        console.log(
-          `Successfully uploaded ${documentIds.length} document(s). IDs:`,
-          documentIds
-        );
       }
 
       const { response, err } = await chatApi.postMessage(sessionId, {
@@ -235,7 +224,6 @@ const ChatPage = () => {
       });
 
       if (err) {
-        console.error("post message error", err);
         let errorMessage = "Failed to send message. Please try again.";
 
         if (typeof err?.detail === "string") {
@@ -250,7 +238,6 @@ const ChatPage = () => {
           errorMessage = err;
         }
 
-        // Show error toast
         toast.error(errorMessage, { autoClose: 5000 });
         return false;
       }
@@ -267,12 +254,6 @@ const ChatPage = () => {
           "assistant"
         );
 
-        console.log("📨 [SEND] Response received:");
-        console.log("  - user_message:", response.user_message);
-        console.log("  - assistant_message:", response.assistant_message);
-        console.log("  - normalizedUser:", normalizedUser);
-        console.log("  - normalizedAssistant:", normalizedAssistant);
-
         // Check if documents are already in the response, otherwise fetch them
         if (normalizedUser) {
           // If documents are already in the response, use them
@@ -280,63 +261,30 @@ const ChatPage = () => {
             normalizedUser.attachments &&
             normalizedUser.attachments.length > 0
           ) {
-            console.log(
-              "Documents already in response:",
-              normalizedUser.attachments
-            );
+            // Documents already in response
           }
           // Otherwise, if we uploaded documents, fetch them
           else if (documentIds.length > 0 && normalizedUser.id) {
-            console.log(
-              `Fetching documents for message ${normalizedUser.id}...`
-            );
             try {
               const { response: docsResponse, err: docsErr } =
                 await chatApi.getDocumentsByMessage(normalizedUser.id);
               if (!docsErr && docsResponse && Array.isArray(docsResponse)) {
                 normalizedUser.attachments = docsResponse;
-                console.log("Fetched documents:", docsResponse);
-              } else if (docsErr) {
-                console.error("Error fetching documents:", docsErr);
               }
             } catch (e) {
-              console.error(
-                `Error fetching documents for new message ${normalizedUser.id}:`,
-                e
-              );
+              // Document fetch failed silently
             }
           }
         }
 
         setMessages((prev) => {
           const out = [...prev];
-          // Check for duplicates before adding
-          if (normalizedUser) {
-            if (!out.find((m) => m.id === normalizedUser.id)) {
-              console.log("✅ [SEND] Adding user message:", normalizedUser.id);
-              out.push(normalizedUser);
-            } else {
-              console.warn("⚠️ [SEND] User message already exists:", normalizedUser.id);
-            }
-          } else {
-            console.error("❌ [SEND] Failed to normalize user message!");
+          if (normalizedUser && !out.find((m) => m.id === normalizedUser.id)) {
+            out.push(normalizedUser);
           }
-
-          if (normalizedAssistant) {
-            if (!out.find((m) => m.id === normalizedAssistant.id)) {
-              console.log("✅ [SEND] Adding assistant message:", normalizedAssistant.id);
-              out.push(normalizedAssistant);
-              // Don't mark new messages as animated - let them animate
-              // Only existing messages (from API) should skip animation
-            } else {
-              console.warn("⚠️ [SEND] Assistant message already exists:", normalizedAssistant.id);
-            }
-          } else {
-            console.error("❌ [SEND] Failed to normalize assistant message!");
-            console.error("  - response.assistant_message:", response.assistant_message);
+          if (normalizedAssistant && !out.find((m) => m.id === normalizedAssistant.id)) {
+            out.push(normalizedAssistant);
           }
-
-          console.log("📊 [SEND] Total messages after update:", out.length);
           return out;
         });
         // Clear quoted message after successful send
@@ -344,7 +292,6 @@ const ChatPage = () => {
         success = true;
       }
     } catch (e) {
-      console.error("[CHAT] Unexpected error in handleSendMessage:", e);
       toast.error("An unexpected error occurred. Please try again.", { autoClose: 5000 });
     } finally {
       setIsLoading(false);
@@ -364,9 +311,7 @@ const ChatPage = () => {
         setIsLoading(true);
         try {
           const { response, err } = await chatApi.getMessages(sessionId);
-          console.log("response", response);
           if (err) {
-            console.error(err);
             return;
           }
 
@@ -433,10 +378,7 @@ const ChatPage = () => {
                       }
                     }
                   } catch (e) {
-                    console.error(
-                      `Error fetching documents for message ${userMsg.id}:`,
-                      e
-                    );
+                    // Document fetch failed silently for this message
                   }
                 });
 
@@ -593,29 +535,7 @@ const ChatPage = () => {
     }));
   };
 
-  /* ---------------------------------------------------------- */
-  /* 6. DEBUG CONSOLE LOG (every render)                      */
-  /* ---------------------------------------------------------- */
-  useEffect(() => {
-    console.group("Chat messages (rendered)");
-    messages.forEach((m) => {
-      console.log(
-        `%c[${m.sender.toUpperCase()}] %c${m.text}`,
-        "color: #555; font-weight: bold",
-        "color: inherit"
-      );
-      console.log("  id:", m.id, "time:", m.timestamp.toLocaleTimeString());
-      if (m.attachments?.length) {
-        console.log(
-          "  attachments:",
-          m.attachments
-            .map((attachment) => attachment.filename || attachment.id)
-            .join(", ")
-        );
-      }
-    });
-    console.groupEnd();
-  }, [messages]);
+
 
   const handleCopy = async (text, id) => {
     try {
@@ -1239,10 +1159,10 @@ ${message.text}
         }
       `}</style>
       <Container
-        sx={{ position: "relative", height: window.innerHeight - 100 }}
+        sx={{ position: "relative", height: "calc(100vh - 100px)" }}
       >
         <Box sx={{ display: "flex", flexDirection: "column" }}>
-          <Box sx={{ overflowY: "auto", minHeight: window.innerHeight - 250 }}>
+          <Box sx={{ overflowY: "auto", minHeight: "calc(100vh - 250px)" }}>
             <List sx={{ width: "100%", maxWidth: "75%", mx: "auto" }}>
               {messages.map((message) => (
                 <ListItem
@@ -1301,7 +1221,8 @@ ${message.text}
                             <>
                               {/* Animated Typing Version - Only render this during animation */}
                               <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
+                                remarkPlugins={[remarkGfm, remarkMath]}
+                                rehypePlugins={[rehypeKatex]}
                                 components={markdownComponents}
                               >
                                 {animatedTexts[message.id] || ""}
@@ -1340,7 +1261,8 @@ ${message.text}
                           ) : (
                             /* Static Full Version - Only render this after animation completes */
                             <ReactMarkdown
-                              remarkPlugins={[remarkGfm]}
+                              remarkPlugins={[remarkGfm, remarkMath]}
+                              rehypePlugins={[rehypeKatex]}
                               components={markdownComponents}
                             >
                               {message.text}
@@ -1350,7 +1272,8 @@ ${message.text}
                       ) : (
                         /* User Message */
                         <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
+                          remarkPlugins={[remarkGfm, remarkMath]}
+                          rehypePlugins={[rehypeKatex]}
                           components={markdownComponents}
                         >
                           {message.text}
@@ -1650,6 +1573,7 @@ ${message.text}
           handleSendMessage={handleSendMessage}
           quotedMessage={quotedMessage}
           onClearQuote={() => setQuotedMessage(null)}
+          initialMessage={user_message}
         />
       </Container>
 

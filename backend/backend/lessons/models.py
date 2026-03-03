@@ -82,10 +82,26 @@ class Note(TimeStampedModel):
         ordering = ['-created_at']
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notes')
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='notes')
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='notes', null=True, blank=True)
     title = models.CharField(max_length=255, blank=True)
     content = models.TextField(blank=True)
     description = models.CharField(max_length=1023, blank=True)
 
     def __str__(self):
         return self.title or str(self.id)
+
+class TopicDiscussion(TimeStampedModel):
+    """Comments/Discussions for a specific topic"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='discussions')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='topic_discussions')
+    content = models.TextField()
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
+    
+    class Meta:
+        verbose_name = _("Topic Discussion")
+        verbose_name_plural = _("Topic Discussions")
+        ordering = ['created_at']
+        
+    def __str__(self):
+        return f"{self.user.email} on {self.topic.title}"

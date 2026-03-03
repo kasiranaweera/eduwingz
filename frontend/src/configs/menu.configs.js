@@ -20,6 +20,7 @@ import FormatShapesIcon from "@mui/icons-material/FormatShapes";
 import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
 import FilePresentOutlinedIcon from "@mui/icons-material/FilePresentOutlined";
 import VoiceChatIcon from "@mui/icons-material/VoiceChat";
+import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
 
 const main = [
   {
@@ -219,6 +220,12 @@ const platformMenu = [
     path: "/dashboard/platform/lessons",
     icon: <VoiceChatIcon />,
     state: "platform-menu-voicechat",
+  },
+  {
+    display: "Discussions",
+    path: "/dashboard/platform/lessons",
+    icon: <GroupOutlinedIcon />,
+    state: "platform-menu-discussions",
   },
 ];
 

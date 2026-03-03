@@ -41,6 +41,24 @@ const dashboardRoutes = [
     state: "newchat",
   },
   {
+    path: "/dashboard/chat/history",
+    element: (
+      <ProtectedPage>
+        <ChatHistoryPage />
+      </ProtectedPage>
+    ),
+    state: "chat-history",
+  },
+  {
+    path: "/dashboard/chat/bookmarks",
+    element: (
+      <ProtectedPage>
+        <ChatBookmarkPage />
+      </ProtectedPage>
+    ),
+    state: "chat-bookmarks",
+  },
+  {
     path: "/dashboard/chat",
     element: (
       <ProtectedPage>
@@ -102,24 +120,6 @@ const dashboardRoutes = [
       </ProtectedPage>
     ),
     state: "settings",
-  },
-  {
-    path: "/dashboard/chat/history",
-    element: (
-      <ProtectedPage>
-      <ChatHistoryPage />
-      </ProtectedPage>
-    ),
-    state: "chat-history",
-  },
-  {
-    path: "/dashboard/chat/bookmarks",
-    element: (
-      <ProtectedPage>
-      <ChatBookmarkPage />
-      </ProtectedPage>
-    ),
-    state: "chat-bookmarks",
   },
   {
     path: "/dashboard/platform/notes",

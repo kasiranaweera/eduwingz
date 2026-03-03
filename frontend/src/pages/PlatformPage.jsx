@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Paper,
@@ -13,6 +13,7 @@ import {
   Tabs,
   Tab,
   Divider,
+  TextField,
 } from "@mui/material";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import ArrowRightAltIcon from "@mui/icons-material/ArrowRightAlt";
@@ -27,6 +28,8 @@ import uiConfigs from "../configs/ui.config";
 // Components
 import RecentActivities from "../components/RecentActivities";
 import { useSelector } from "react-redux";
+import lessonsApi from "../api/modules/lessons.api";
+import lessonGeneratorData from "../assets/data/lessonGeneratorData.json";
 
 const DashboardPlatformPage = () => {
   const { user } = useSelector((state) => state.user);
@@ -49,17 +52,90 @@ const DashboardPlatformPage = () => {
     return "Good Evening";
   }
 
-  const popularLesson = [
-    { topic: "Lesson Topic", counts: "19 Topics", to: "/dashboard/platform/lessons/lessonId" },
-    { topic: "Lesson Topic", counts: "19 Topics", to: "" },
-    { topic: "Lesson Topic", counts: "19 Topics", to: "" },
-  ];
+  const [lessons, setLessons] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const resentLesson = [
-    { topic: "Lesson Topic", counts: "19 Topics", to: "" },
-    { topic: "Lesson Topic", counts: "19 Topics", to: "" },
-    { topic: "Lesson Topic", counts: "19 Topics", to: "" },
-  ];
+  // Modal form states
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [customTopic, setCustomTopic] = useState("");
+
+  useEffect(() => {
+    const fetchLessons = async () => {
+      if (!user) return;
+      try {
+        setLoading(true);
+        const { response, err } = await lessonsApi.listLessons();
+        if (!err && response) {
+          setLessons(response);
+        }
+      } catch (error) {
+        console.error("Failed to fetch lessons", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLessons();
+  }, [user]);
+
+  // Derived arrays
+  const popularLessons = lessons.slice(0, 3); // Or sort by views if available
+  const recentLessons = lessons.slice(0, 3); // Assuming response is sorted by date descending
+
+  // Dropdown data getters
+  const getSubjectsForGrade = () => {
+    if (!grade) return [];
+    const selectedGrade = lessonGeneratorData.grades.find((g) => g.value === grade);
+    return selectedGrade ? selectedGrade.subjects : [];
+  };
+
+  const getTopicsForSubject = () => {
+    if (!grade || !subject) return [];
+    const selectedGrade = lessonGeneratorData.grades.find((g) => g.value === grade);
+    if (!selectedGrade) return [];
+    const selectedSubjectObj = selectedGrade.subjects.find((s) => s.value === subject);
+    return selectedSubjectObj ? selectedSubjectObj.topics : [];
+  };
+
+  const handleGenerateLesson = async () => {
+    const finalTopic = customTopic || topic;
+    if (!grade || !subject || !finalTopic) {
+      alert("Please select all fields or enter a custom topic");
+      return;
+    }
+
+    try {
+      setIsGenerating(true);
+      const { response: sessionRes, err: sessionErr } = await lessonsApi.createSession({
+        title: `${subject}: ${finalTopic} (Grade ${grade})`,
+        description: `Generated lesson for Grade ${grade} - ${subject} - ${finalTopic}`,
+      });
+
+      if (sessionErr) throw new Error("Failed to create session");
+
+      const { err: genErr } = await lessonsApi.generateLesson({
+        grade,
+        subject,
+        topic: finalTopic,
+        lesson_id: sessionRes.id,
+        lesson_type: topic ? "default" : "custom",
+      });
+
+      if (genErr) throw new Error("Failed to generate content");
+
+      alert("Lesson generated successfully!");
+      handleClose();
+      // Optionally refresh lessons list here
+      const { response: newLessons } = await lessonsApi.listLessons();
+      if (newLessons) setLessons(newLessons);
+
+      // Navigate to new lesson or let user click it
+    } catch (err) {
+      console.error(err);
+      alert("Error generating lesson");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <Grid container spacing={3}>
@@ -131,9 +207,9 @@ const DashboardPlatformPage = () => {
               />{" "}
               <Typography variant="paragraph">Popular Lessons</Typography>
               <Box sx={{ display: "flex", gap: 1, mt: 1, mb: 3, flexWrap: 'wrap' }}>
-                {popularLesson.map((lesson) => (
+                {popularLessons.map((lesson) => (
                   <Box
-                    key={lesson}
+                    key={lesson.id}
                     sx={{
                       flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)', md: '1 1 calc(33.33% - 8px)' },
                       minWidth: 0,
@@ -159,15 +235,15 @@ const DashboardPlatformPage = () => {
                       />
                     </Box>
                     <Box>
-                      <Typography>{lesson.topic}</Typography>
+                      <Typography noWrap title={lesson.title}>{lesson.title}</Typography>
                       <Typography variant="subtitle2" sx={{ opacity: 0.75 }}>
-                        {lesson.counts}
+                        {lesson.topics_count || 0} Topics
                       </Typography>
                     </Box>
                     <Button
                       size="small"
                       variant="text"
-                      href={lesson.to}
+                      href={`/dashboard/platform/lessons/${lesson.id}`}
                       sx={{
                         textTransform: "none",
                         "&:hover": { color: "primary.main" },
@@ -181,9 +257,9 @@ const DashboardPlatformPage = () => {
               </Box>
               <Typography sx={{}} variant="paragraph">Recent Lessons</Typography>
               <Box sx={{ display: "flex", gap: 1, mt: 1, flexWrap: 'wrap' }}>
-                {resentLesson.map((lesson) => (
+                {recentLessons.map((lesson) => (
                   <Box
-                    key={lesson}
+                    key={lesson.id}
                     sx={{
                       flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)', md: '1 1 calc(33.33% - 8px)' },
                       minWidth: 0,
@@ -209,15 +285,15 @@ const DashboardPlatformPage = () => {
                       />
                     </Box>
                     <Box>
-                      <Typography>{lesson.topic}</Typography>
+                      <Typography noWrap title={lesson.title}>{lesson.title}</Typography>
                       <Typography variant="subtitle2" sx={{ opacity: 0.75 }}>
-                        {lesson.counts}
+                        {lesson.topics_count || 0} Topics
                       </Typography>
                     </Box>
                     <Button
                       size="small"
                       variant="text"
-                      href={lesson.to}
+                      href={`/dashboard/platform/lessons/${lesson.id}`}
                       sx={{
                         textTransform: "none",
                         "&:hover": { color: "primary.main" },
@@ -311,51 +387,81 @@ const DashboardPlatformPage = () => {
             <InputLabel>Grade</InputLabel>
             <Select
               value={grade}
-              onChange={(e) => setGrade(e.target.value)}
+              onChange={(e) => {
+                setGrade(e.target.value);
+                setSubject("");
+                setTopic("");
+              }}
               label="Grade"
             >
-              <MenuItem value="10">Grade 10</MenuItem>
-              <MenuItem value="11">Grade 11</MenuItem>
-              <MenuItem value="12">Grade 12</MenuItem>
+              {lessonGeneratorData.grades.map((g) => (
+                <MenuItem key={g.value} value={g.value}>
+                  {g.label}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
 
-          <FormControl fullWidth margin="normal">
+          <FormControl fullWidth margin="normal" disabled={!grade}>
             <InputLabel>Subject</InputLabel>
             <Select
               value={subject}
-              onChange={(e) => setSubject(e.target.value)}
+              onChange={(e) => {
+                setSubject(e.target.value);
+                setTopic("");
+              }}
               label="Subject"
             >
-              <MenuItem value="Math">Mathematics</MenuItem>
-              <MenuItem value="Science">Science</MenuItem>
-              <MenuItem value="English">English</MenuItem>
+              {getSubjectsForGrade().map((s) => (
+                <MenuItem key={s.value} value={s.value}>
+                  {s.label}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
 
-          <FormControl fullWidth margin="normal">
+          <FormControl fullWidth margin="normal" disabled={!subject || customTopic !== ""}>
             <InputLabel>Topic</InputLabel>
             <Select
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               label="Topic"
             >
-              <MenuItem value="Algebra">Algebra</MenuItem>
-              <MenuItem value="Biology">Biology</MenuItem>
-              <MenuItem value="Grammar">Grammar</MenuItem>
+              {getTopicsForSubject().map((t) => (
+                <MenuItem key={t.value} value={t.value}>
+                  {t.label}
+                </MenuItem>
+              ))}
             </Select>
+          </FormControl>
+
+          <Box sx={{ mt: 2, mb: 1 }}>
+            <Typography variant="caption" color="text.secondary" display="block" align="center">
+              OR
+            </Typography>
+          </Box>
+
+          <FormControl fullWidth margin="normal">
+            <TextField
+              size="small"
+              label="Enter custom topic"
+              value={customTopic}
+              onChange={(e) => {
+                setCustomTopic(e.target.value);
+                if (e.target.value) setTopic("");
+              }}
+              disabled={!!topic}
+            />
           </FormControl>
 
           <Button
             fullWidth
             variant="contained"
-            sx={{ mt: 2 }}
-            onClick={() => {
-              alert(`Generating lesson for ${grade} - ${subject} - ${topic}`);
-              handleClose();
-            }}
+            sx={{ mt: 3 }}
+            onClick={handleGenerateLesson}
+            disabled={isGenerating}
           >
-            Generate Lesson
+            {isGenerating ? "Generating..." : "Generate Lesson"}
           </Button>
         </Box>
       </Modal>

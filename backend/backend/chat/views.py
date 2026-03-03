@@ -191,6 +191,23 @@ class ChatSessionDetailView(APIView):
         except ChatSession.DoesNotExist:
             return APIErrorResponse.not_found("Session not found")
 
+    def patch(self, request, session_id):
+        """Update a chat session (e.g. rename)"""
+        try:
+            session = ChatSession.objects.get(id=session_id, user=request.user)
+            title = request.data.get("title")
+            if title is not None:
+                session.title = title
+            session.save()
+            return Response({
+                "id": str(session.id),
+                "title": session.title,
+                "updated_at": session.updated_at,
+                "message": "Session updated successfully"
+            })
+        except ChatSession.DoesNotExist:
+            return APIErrorResponse.not_found("Session not found")
+
     def delete(self, request, session_id):
         """Delete a chat session"""
         try:

@@ -11,6 +11,7 @@ const lessonEndpoints = {
   session: (lessonId) => `lessons/lessons/${lessonId}/`,
   notes: (lessonId) => `lessons/lessons/${lessonId}/notes/`,
   addNote: (lessonId) => `lessons/lessons/${lessonId}/add_note/`,
+  allNotes: "lessons/notes/",
   topics: (lessonId) => `lessons/lessons/${lessonId}/topics/`,
   addTopic: (lessonId) => `lessons/lessons/${lessonId}/add_topic/`,
   topic: (topicId) => `lessons/topics/${topicId}/`,
@@ -18,6 +19,11 @@ const lessonEndpoints = {
   createSession: "lessons/lessons/create_session/",
   generateLesson: "lessons/lessons/generate_lesson/",
   allLessons: "lessons/lessons/",
+  quizzes: "quiz/quizzes/",
+  quiz: (quizId) => `quiz/quizzes/${quizId}/`,
+  quizAttempts: "quiz/attempts/",
+  discussions: "lessons/discussions/",
+  topicDiscussions: (topicId) => `lessons/discussions/?topic=${topicId}`,
 };
 
 const lessonsApi = {
@@ -286,6 +292,40 @@ const lessonsApi = {
     }
   },
 
+  // ==================== TOPIC DISCUSSIONS ====================
+
+  getTopicDiscussions: async (topicId) => {
+    try {
+      const response = await privateClient.get(lessonEndpoints.topicDiscussions(topicId));
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+
+  addTopicDiscussion: async (data) => {
+    try {
+      const payload = {
+        topic: data.topicId,
+        content: data.content,
+        parent: data.parentId || null
+      };
+      const response = await privateClient.post(lessonEndpoints.discussions, payload);
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+
+  deleteTopicDiscussion: async (discussionId) => {
+    try {
+      const response = await privateClient.delete(`${lessonEndpoints.discussions}${discussionId}/`);
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+
   // ==================== NOTES ====================
 
   /**
@@ -296,6 +336,38 @@ const lessonsApi = {
   getNotes: async (lessonId) => {
     try {
       const response = await privateClient.get(lessonEndpoints.notes(lessonId));
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+
+  /**
+   * Get all global notes for the user
+   * @returns {Promise}
+   */
+  getAllNotes: async () => {
+    try {
+      const response = await privateClient.get(lessonEndpoints.allNotes);
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+
+  /**
+   * Add a standalone note globally (without a lesson)
+   * @param {Object} data - Note data { title, content, description }
+   * @returns {Promise}
+   */
+  addGlobalNote: async (data) => {
+    try {
+      const payload = {
+        title: data.title || "",
+        content: data.content || "",
+        description: data.description || "",
+      };
+      const response = await privateClient.post(lessonEndpoints.allNotes, payload);
       return { response };
     } catch (err) {
       return { err };
@@ -370,6 +442,55 @@ const lessonsApi = {
       return { err };
     }
   },
+
+  // ==================== QUIZZES ====================
+
+  /**
+   * Get all quizzes for the platform
+   * @returns {Promise}
+   */
+  getQuizzes: async () => {
+    try {
+      const response = await privateClient.get(lessonEndpoints.quizzes);
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+
+  /**
+   * Get a specific quiz
+   * @param {string} quizId
+   */
+  getQuiz: async (quizId) => {
+    try {
+      const response = await privateClient.get(lessonEndpoints.quiz(quizId));
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+
+  /**
+   * Submit quiz results
+   */
+  submitQuiz: async (quizId, scoreData) => {
+    try {
+      const payload = {
+        quiz: quizId,
+        score: scoreData.score,
+        total_questions: scoreData.total_questions,
+        correct_answers: scoreData.correct_answers,
+        time_taken: scoreData.time_taken,
+        completed: true,
+      };
+      const response = await privateClient.post(lessonEndpoints.quizAttempts, payload);
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+
 };
 
 export default lessonsApi;

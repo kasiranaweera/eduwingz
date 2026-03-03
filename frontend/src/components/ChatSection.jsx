@@ -33,6 +33,7 @@ const ChatSection = ({
   main,
   quotedMessage,
   onClearQuote,
+  initialMessage,
 }) => {
   const { themeMode } = useSelector((state) => state.themeMode);
   const [templateModalOpen, setTemplateModalOpen] = useState();
@@ -41,8 +42,9 @@ const ChatSection = ({
   const [recordingModalOpen, setRecordingModalOpen] = useState(false);
 
   const chatFormik = useFormik({
+    enableReinitialize: true,
     initialValues: {
-      message: "",
+      message: initialMessage || "",
     },
     validationSchema: Yup.object({
       message: Yup.string()
@@ -82,7 +84,7 @@ const ChatSection = ({
     },
   });
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       chatFormik.handleSubmit();
@@ -233,7 +235,7 @@ const ChatSection = ({
           value={chatFormik.values.message}
           onChange={chatFormik.handleChange}
           onBlur={chatFormik.handleBlur}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyDown}
           error={
             chatFormik.touched.message && Boolean(chatFormik.errors.message) && !recordingModalOpen
           }

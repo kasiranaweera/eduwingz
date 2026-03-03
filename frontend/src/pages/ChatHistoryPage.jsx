@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -12,8 +12,16 @@ import {
   Modal,
   Button,
   Tooltip,
+  TextField,
+  InputAdornment,
+  Pagination,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import SearchIcon from "@mui/icons-material/Search";
 import chatApi from "../api/modules/chat.api";
 
 import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
@@ -23,6 +31,8 @@ import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
 
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+
+const ITEMS_PER_PAGE = 20;
 
 // Small helper to format date/time
 const formatDateTime = (iso) => {
@@ -36,9 +46,16 @@ const formatDateTime = (iso) => {
 
 const ChatHistoryPage = () => {
   const [sessions, setSessions] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
 
   const [openDelete, setOpenDelete] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState(null);
+
+  // Rename dialog state
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [renameSessionId, setRenameSessionId] = useState(null);
+  const [renameTitle, setRenameTitle] = useState("");
 
   const handleOpenDelete = (id) => {
     setSelectedSessionId(id);
@@ -59,38 +76,50 @@ const ChatHistoryPage = () => {
         if (response && Array.isArray(response)) {
           setSessions(response);
         } else {
-          // If response is undefined/null or not an array, set to empty
           setSessions([]);
         }
-        // }
       } catch (e) {
         console.error("Failed to load sessions:", e);
       }
     };
 
     load();
-
-    // return () => {
-    //   mounted = false;
-    // };
   }, []);
 
+  // Filtered and sorted sessions (reverse-chronological, filtered by search)
+  const filteredSessions = useMemo(() => {
+    const sorted = [...sessions].reverse();
+    if (!searchQuery.trim()) return sorted;
+    const q = searchQuery.toLowerCase();
+    return sorted.filter(
+      (s) =>
+        (s.title || "").toLowerCase().includes(q)
+    );
+  }, [sessions, searchQuery]);
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredSessions.length / ITEMS_PER_PAGE));
+  const paginatedSessions = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return filteredSessions.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredSessions, page]);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
+
   const deleteSession = async (sessionId) => {
-    console.log("delete", sessionId);
     try {
-      // privateClient interceptor returns `response.data` (not full axios response)
-      // chatApi.deleteSession returns { response } or { err }
-      const { response, err } = await chatApi.deleteSession(sessionId);
+      const { err } = await chatApi.deleteSession(sessionId);
 
       if (err) {
         console.error("Failed to delete session:", err);
-        toast.error("Failed to delete session:");
+        toast.error("Failed to delete session");
         return;
       }
 
-      // Treat a non-error response as success. Optimistically remove the session.
       setSessions((prev) => (prev ? prev.filter((s) => s.id !== sessionId) : []));
-      console.log("Session deleted successfully", response);
       toast.success("Session deleted successfully");
     } catch (e) {
       console.error("Error deleting session:", e);
@@ -101,12 +130,93 @@ const ChatHistoryPage = () => {
     navigate(`/dashboard/chat/${sessionId}`);
   };
 
+  // Rename handlers
+  const handleOpenRename = (session) => {
+    setRenameSessionId(session.id);
+    setRenameTitle(session.title || "");
+    setRenameDialogOpen(true);
+  };
+
+  const handleCloseRename = () => {
+    setRenameDialogOpen(false);
+    setRenameSessionId(null);
+    setRenameTitle("");
+  };
+
+  const handleSubmitRename = async () => {
+    if (!renameTitle.trim()) {
+      toast.warning("Title cannot be empty");
+      return;
+    }
+    try {
+      const { err } = await chatApi.updateSession(renameSessionId, {
+        title: renameTitle.trim(),
+      });
+      if (err) {
+        console.error("Failed to rename session:", err);
+        toast.error("Failed to rename session");
+        return;
+      }
+      // Update locally
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === renameSessionId ? { ...s, title: renameTitle.trim() } : s
+        )
+      );
+      toast.success("Session renamed successfully");
+      handleCloseRename();
+    } catch (e) {
+      console.error("Error renaming session:", e);
+      toast.error("Error renaming session");
+    }
+  };
+
+  const handleCopyChat = async (session) => {
+    const text = `Chat: ${session.title || "Untitled"}\nLast updated: ${formatDateTime(
+      session.lastUpdated || session.updated_at || session.last_modified || ""
+    )}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Chat info copied to clipboard");
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  const handleShareChat = (session) => {
+    const shareText = `Check out my chat: ${session.title || "Untitled"}`;
+    if (navigator.share) {
+      navigator.share({ title: session.title || "EduWingz Chat", text: shareText });
+    } else {
+      handleCopyChat(session);
+    }
+  };
+
   return (
     <>
-      <Box sx={{}}>
-        <Typography variant="h5" gutterBottom>
-          Chat history
-        </Typography>
+      <Box>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Typography variant="h5" gutterBottom>
+            Chat History
+          </Typography>
+        
+
+        {/* Search Bar */}
+        <TextField
+          placeholder="Search chats by title..."
+          size="small"
+          fullWidth
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          sx={{ mb: 2, maxWidth: 400 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" />
+              </InputAdornment>
+            ),
+          }}
+        /></Box>
 
         <Box
           sx={{
@@ -115,20 +225,23 @@ const ChatHistoryPage = () => {
             overflow: "hidden",
           }}
         >
-          <List sx={{}} disablePadding>
-            {!sessions || sessions.length === 0 ? (
+          <List disablePadding>
+            {paginatedSessions.length === 0 ? (
               <Box sx={{ p: 3 }}>
-                <Typography color="text.secondary">No chats yet.</Typography>
+                <Typography color="text.secondary">
+                  {searchQuery.trim()
+                    ? "No chats match your search."
+                    : "No chats yet."}
+                </Typography>
               </Box>
             ) : (
-              sessions.reverse().map((s, idx) => (
+              paginatedSessions.map((s, idx) => (
                 <React.Fragment key={s.id || idx}>
                   <ListItemButton
                     sx={{
                       backgroundColor: "background.paper",
                       mb: 1,
                       alignItems: "center",
-
                     }}
                     alignItems="flex-start"
                   >
@@ -158,17 +271,17 @@ const ChatHistoryPage = () => {
                     />
                     <Box>
                       <Tooltip title="Share Chat" arrow>
-                        <IconButton>
+                        <IconButton onClick={() => handleShareChat(s)}>
                           <ShareOutlinedIcon />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Rename Chat" arrow>
-                        <IconButton>
+                        <IconButton onClick={() => handleOpenRename(s)}>
                           <EditNoteOutlinedIcon />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Copy Chat Log" arrow>
-                        <IconButton>
+                        <IconButton onClick={() => handleCopyChat(s)}>
                           <CopyAllOutlinedIcon />
                         </IconButton>
                       </Tooltip>
@@ -179,13 +292,31 @@ const ChatHistoryPage = () => {
                       </Tooltip>
                     </Box>
                   </ListItemButton>
-                  {idx < sessions.length - 1 && <Divider component="li" />}
+                  {idx < paginatedSessions.length - 1 && (
+                    <Divider component="li" />
+                  )}
                 </React.Fragment>
               ))
             )}
           </List>
         </Box>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={(e, value) => setPage(value)}
+              color="primary"
+              showFirstButton
+              showLastButton
+            />
+          </Box>
+        )}
       </Box>
+
+      {/* Delete Confirmation Modal */}
       <Modal
         sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}
         open={openDelete}
@@ -233,7 +364,6 @@ const ChatHistoryPage = () => {
             </Button>
             <Button
               size="small"
-              sx={{}}
               variant="contained"
               onClick={() => {
                 deleteSession(selectedSessionId);
@@ -246,6 +376,38 @@ const ChatHistoryPage = () => {
           </Box>
         </Box>
       </Modal>
+
+      {/* Rename Dialog */}
+      <Dialog
+        open={renameDialogOpen}
+        onClose={handleCloseRename}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Rename Chat</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Chat Title"
+            fullWidth
+            value={renameTitle}
+            onChange={(e) => setRenameTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSubmitRename();
+              }
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseRename}>Cancel</Button>
+          <Button onClick={handleSubmitRename} variant="contained">
+            Rename
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
