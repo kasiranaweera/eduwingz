@@ -30,6 +30,18 @@ def reconcile_lessons_tables(apps, schema_editor):
                 if 'lessons_note' in tables: tables.remove('lessons_note')
                 if 'lessons_topic' in tables: tables.remove('lessons_topic')
 
+    # Check for Grade table
+    if 'lessons_grade' not in tables:
+        print("Creating missing table: lessons_grade")
+        Grade = apps.get_model('lessons', 'Grade')
+        schema_editor.create_model(Grade)
+        
+    # Check for Subject table
+    if 'lessons_subject' not in tables:
+        print("Creating missing table: lessons_subject")
+        Subject = apps.get_model('lessons', 'Subject')
+        schema_editor.create_model(Subject)
+
     # Check for Lesson table
     if 'lessons_lesson' not in tables:
         print("Creating missing table: lessons_lesson")
