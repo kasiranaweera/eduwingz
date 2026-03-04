@@ -53,7 +53,7 @@ const DashboardPlatformPage = () => {
   }
 
   const [lessons, setLessons] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   // Modal form states
   const [isGenerating, setIsGenerating] = useState(false);

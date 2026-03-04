@@ -1,6 +1,5 @@
 import React from "react";
 import { Box, Tooltip, IconButton, Typography } from "@mui/material";
-import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import menuConfigs from "../configs/menu.configs";
 import uiConfigs from "../configs/ui.config";

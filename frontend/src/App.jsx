@@ -1,5 +1,5 @@
 import { ThemeProvider } from "@mui/material/styles";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import themeConfigs from "./configs/theme.config";
 import { ToastContainer } from "react-toastify";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -22,11 +22,7 @@ import "swiper/css/pagination";
 
 const App = () => {
   const { themeMode } = useSelector((state) => state.themeMode);
-
-  const dispatch = useDispatch();
-
-
-
+  
   return (
     <ThemeProvider theme={themeConfigs.custom({ mode: themeMode })}>
       {/* config toastify */}

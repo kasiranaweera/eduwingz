@@ -21,15 +21,12 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  Collapse,
   ToggleButton,
   ToggleButtonGroup,
 } from "@mui/material";
 import React, { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
-import uiConfigs from "../configs/ui.config";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import SubjectIcon from "@mui/icons-material/Subject";
 import CloseIcon from "@mui/icons-material/Close";
@@ -207,7 +204,6 @@ const PlatformLessonId = () => {
 
   // ── Mini Chat state ───────────────────────────────────────────────────────────
   const [miniChatSessionId, setMiniChatSessionId] = useState(null);
-  const [isMiniChatLoading, setIsMiniChatLoading] = useState(false);
 
   // ── Discussions state ─────────────────────────────────────────────────────────
   const [discussions, setDiscussions] = useState([]);
@@ -512,7 +508,6 @@ const PlatformLessonId = () => {
   const handleMiniChatSendMessage = async (content) => {
     if (!content.trim()) return false;
     try {
-      setIsMiniChatLoading(true);
       let sessionId = miniChatSessionId;
       if (!sessionId) {
         const { response, err } = await chatApi.createSession({
@@ -535,7 +530,7 @@ const PlatformLessonId = () => {
       setSnackbar({ open: true, message: "Mini Chat failed to send", severity: "error" });
       return false;
     } finally {
-      setIsMiniChatLoading(false);
+      // isMiniChatLoading removed
     }
   };
 
@@ -543,7 +538,7 @@ const PlatformLessonId = () => {
   const handlePostDiscussion = async () => {
     if (!newDiscussionContent.trim() || !selectedTopic) return;
     try {
-      const { response: newPost, err } = await lessonsApi.addTopicDiscussion({
+      const { err } = await lessonsApi.addTopicDiscussion({
         topicId: selectedTopic.id,
         content: newDiscussionContent,
         parentId: replyingTo

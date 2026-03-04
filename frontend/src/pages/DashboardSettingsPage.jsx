@@ -20,10 +20,6 @@ import {
   Paper,
   CircularProgress,
   LinearProgress,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
   useMediaQuery,
   useTheme,
   alpha,
@@ -208,11 +204,6 @@ const DashboardSettingsPage = () => {
     toast.success("Privacy settings updated");
   };
 
-  const handleSettingsChange = (setting) => {
-    setSettings((prev) => ({ ...prev, [setting]: !prev[setting] }));
-    toast.success("Settings updated");
-  };
-
   const handleLearningStyleChange = (dimension, value) => {
     setLearningStyleAdjustments((prev) => ({
       ...prev,
@@ -238,17 +229,6 @@ const DashboardSettingsPage = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const premiumPaperStyle = {
-    p: { xs: 2.5, md: 4 },
-    borderRadius: 4,
-    bgcolor: isDark ? alpha(theme.palette.background.paper, 0.4) : alpha('#ffffff', 0.8),
-    backdropFilter: "blur(20px)",
-    border: "1px solid",
-    borderColor: isDark ? alpha(theme.palette.common.white, 0.05) : alpha(theme.palette.common.black, 0.05),
-    boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.05)',
-    mb: 4
   };
 
   const sectionPaperStyle = {

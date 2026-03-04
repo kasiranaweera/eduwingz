@@ -37,6 +37,8 @@ import ViewListIcon from "@mui/icons-material/ViewList";
 import lessonsApi from "../api/modules/lessons.api";
 import { useSelector } from "react-redux";
 
+const colors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8", "#F7DC6F"];
+
 const PlatformNotes = () => {
   const { user } = useSelector((state) => state.user);
   const [notes, setNotes] = useState([]);
@@ -60,8 +62,6 @@ const PlatformNotes = () => {
     content: "",
     description: "",
   });
-
-  const colors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8", "#F7DC6F"];
 
   // Fetch notes from all lessons + global
   useEffect(() => {
