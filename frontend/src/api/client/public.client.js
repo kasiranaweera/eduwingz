@@ -48,13 +48,13 @@ publicClient.interceptors.response.use((response) => {
       statusText: err.response.statusText,
       data: err.response.data,
     });
-    
+
     if (err.response.data) {
       throw err.response.data;
     }
     throw err;
   }
-  
+
   // Network error or no response from server (includes CORS errors)
   if (!err.response) {
     console.error("❌ [Network/CORS Error - No Server Response]", {
@@ -63,10 +63,10 @@ publicClient.interceptors.response.use((response) => {
       baseURL: baseURL,
       errorMessage: err.message,
     });
-    
+
     // Handle different network error codes
     let errorMessage = "Unable to connect to server. Checking connection...";
-    
+
     if (err.code === "ECONNABORTED") {
       errorMessage = "Request timeout. Server is slow. Try again.";
     } else if (err.code === "ERR_NETWORK" || err.code === "ENOTFOUND") {
@@ -77,7 +77,7 @@ publicClient.interceptors.response.use((response) => {
     } else if (err.message && err.message.includes("CORS")) {
       errorMessage = "CORS error. Server configuration issue.";
     }
-    
+
     const networkError = new Error(errorMessage);
     networkError.code = err.code;
     networkError.originalError = err;

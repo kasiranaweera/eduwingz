@@ -19,7 +19,8 @@ import {
     Alert,
     Typography,
     Chip,
-    Paper
+    Paper,
+    IconButton
 } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
