@@ -45,6 +45,10 @@ class ProfileSerializer(serializers.ModelSerializer):
             'profile_image',
             'social_links',
             'learning_styles',
+            'manual_adjustments',
+            'manual_adjustments_completed',
+            'questionnaire_completed',
+            'last_learning_style_update',
             'other',
             'achievements',
             'created_at',
@@ -57,7 +61,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ['first_name', 'last_name', 'username', 'bio', 'tagline', 'status', 'profile_image', 'social_links', 'learning_styles', 'other']
+        fields = ['first_name', 'last_name', 'username', 'bio', 'tagline', 'status', 'profile_image', 'social_links', 'learning_styles', 'manual_adjustments', 'manual_adjustments_completed', 'questionnaire_completed', 'last_learning_style_update', 'other']
 
     def validate_username(self, value):
         profile = self.instance
@@ -67,11 +71,17 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         return value
 
     def update(self, instance, validated_data):
+        print(f"[PROFILE] Updating profile {instance.profile_id} with data: {validated_data}")
         other_data = validated_data.pop('other', None)
+        
+        # Update Profile fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+        
+        # Update OtherDetail if provided
         if other_data:
+            print(f"[PROFILE] Updating other detail for {instance.profile_id}: {other_data}")
             if instance.other:
                 for attr, value in other_data.items():
                     setattr(instance.other, attr, value)

@@ -198,9 +198,9 @@ class LLM_Model:
                 if not api_key:
                     raise ValueError("GEMINI_API_KEY environment variable not set")
                 
-                # Use Gemini 1.5 Pro model (latest available)
+                # Use Gemini 2.0 Flash model
                 model = genai.GenerativeModel(
-                    model_name='gemini-2.5-flash',
+                    model_name='gemini-2.0-flash',
                     generation_config={
                         "temperature": 0.7,
                         "top_p": 0.9,

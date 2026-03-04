@@ -12,7 +12,7 @@ import DashboardSettingsPage from "../pages/DashboardSettingsPage";
 import PlatformNotes from "../pages/PlatformNotes";
 import DashboardCommunityPage from "../pages/DashboardCommunityPage";
 import PlatformQuizzesPage from "../pages/PlatformQuizzesPage";
-import DashboardAnaliticsPage from "../pages/DashboardAnalyticsPage"
+import DashboardAnalyticsPage from "../pages/DashboardAnalyticsPage"
 import DashboardMinehoarizonPage from "../pages/DashboardMinehorizonPage"
 import PlatformLessons from "../pages/PlatformLessons";
 import PlatformLessonId from "../pages/PlatformLessonId";
@@ -153,10 +153,10 @@ const dashboardRoutes = [
     path: "/dashboard/analytics",
     element: (
       <ProtectedPage>
-        <DashboardAnaliticsPage />
+        <DashboardAnalyticsPage />
       </ProtectedPage>
     ),
-    state: "analitics",
+    state: "analytics",
   },
   {
     path: "/dashboard/mine-horizon",

@@ -95,10 +95,23 @@ class RegisterView(generics.CreateAPIView):
                 traceback.print_exc()
 
             # Return the newly created user data immediately (no wait for email)
-            print(f"[REGISTER] Registration successful, returning user data")
+            print(f"[REGISTER] Registration successful, returning user data and tokens")
+            
+            # Generate tokens for the new user using the custom serializer to ensure consistency
+            # This fixes the "Given token not valid for any token type" error by making 
+            # registration tokens identical to login tokens.
+            token_serializer = MyTokenObtainPairSerializer()
+            refresh = token_serializer.get_token(user)
+            
             user_serializer = UserSerializer(user)
-            headers = self.get_success_headers(user_serializer.data)
-            return Response(user_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            response_data = user_serializer.data
+            response_data['access'] = str(refresh.access_token)
+            response_data['refresh'] = str(refresh)
+            
+            print(f"[REGISTER] Registration successful. Issued token with sub: {refresh.access_token.get('sub')}")
+            
+            headers = self.get_success_headers(response_data)
+            return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
         
         except Exception as e:
             print(f"[REGISTER] Registration error: {str(e)}")

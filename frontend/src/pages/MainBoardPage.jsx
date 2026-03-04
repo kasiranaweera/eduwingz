@@ -55,7 +55,7 @@ const MainBoardPage = () => {
     if (!trimmed) return false;
 
     setIsLoading(true);
-    
+
     // Create a new chat session on the backend, post initial message, then open session page
     try {
       const title = trimmed ? trimmed.slice(0, 80) : 'New Chat';
@@ -69,7 +69,7 @@ const MainBoardPage = () => {
       }
 
       const sessionId = session?.id || session?.session_id || session?.uuid || session?.pk || session?.id;
-      
+
       if (!sessionId) {
         console.error('No session ID received');
         navigate('/dashboard/chat');
@@ -105,7 +105,7 @@ const MainBoardPage = () => {
 
       // Try to send the first message if we have a session id and a message
       if (sessionId && trimmed) {
-        const { err: msgErr } = await chatApi.postMessage(sessionId, { 
+        const { err: msgErr } = await chatApi.postMessage(sessionId, {
           content: trimmed,
           document_ids: documentIds,
         });
@@ -144,10 +144,10 @@ const MainBoardPage = () => {
           variant="h3"
           sx={{ textAlign: "center", fontWeight: "500" }}
         >{`How's it going, ${user.username} ?`}</Typography>
-        <Box sx={{width:'100%'}}>
+        <Box sx={{ width: '100%' }}>
           {isLoading && (
             <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-              <List sx={{ width: "50vw" }}>
+              <List sx={{ width: { xs: "90vw", md: "50vw" } }}>
                 <ListItem sx={{ justifyContent: "center", alignItems: "center", gap: 2 }}>
                   <ShinyText variant="body2" sx={{ ml: 1 }}>
                     <TextType
@@ -165,16 +165,17 @@ const MainBoardPage = () => {
             </Box>
           )}
           <Box sx={{ justifyContent: "center", display: "flex" }}>
-            <ChatSection sx={{ width: "50vw" }} handleSendMessage={handleSendMessage} />
+            <ChatSection sx={{ width: { xs: "90vw", md: "50vw" } }} handleSendMessage={handleSendMessage} />
           </Box>
 
-          <Divider sx={{ my: 3, width:'75vw' }} />
+          <Divider sx={{ my: 3, width: { xs: "90vw", md: "75vw" }, mx: "auto" }} />
           <Box
             sx={{
               display: "flex",
               gap: 2,
               justifyContent: "center",
               alignItems: "center",
+              flexDirection: { xs: "column", md: "row" },
             }}
           >
             <Link
@@ -187,7 +188,7 @@ const MainBoardPage = () => {
                   backgroundColor: "background.paper",
                   display: "flex",
                   gap: 2,
-                  width: "20vw",
+                  width: { xs: '100%', sm: '45%', md: '20vw' },
                   p: 2,
                   borderRadius: 5,
                   borderBottom: 1,
@@ -230,7 +231,7 @@ const MainBoardPage = () => {
                   backgroundColor: "background.paper",
                   display: "flex",
                   gap: 2,
-                  width: "20vw",
+                  width: { xs: '100%', sm: '45%', md: '20vw' },
                   p: 2,
                   borderRadius: 5,
                   borderBottom: 1,

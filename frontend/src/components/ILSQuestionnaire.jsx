@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import fastApiClient from "../api/client/fastapi.client";
 
 import { ilsQuestions } from "../data/ilsQuestions";
 import uiConfigs from "../configs/ui.config";
@@ -30,15 +31,25 @@ const ILSQuestionnaire = () => {
     const progress = ((currentQuestionIdx) / ilsQuestions.length) * 100;
 
     const handleSelect = (value) => {
-        const newAnswers = { ...answers, [question.id]: { dimension: question.dimension, value } };
+        const newAnswers = { ...answers, [question.id]: { dimension: question.dimension, value: parseInt(value) } };
         setAnswers(newAnswers);
 
         if (currentQuestionIdx < ilsQuestions.length - 1) {
             setTimeout(() => {
                 setCurrentQuestionIdx((prev) => prev + 1);
-            }, 300); // Small delay for micro-animation effect
+            }, 500); // Slightly longer delay for Likert experience
+        }
+    };
+
+    const handleNext = () => {
+        if (answers[question.id]) {
+            if (currentQuestionIdx < ilsQuestions.length - 1) {
+                setCurrentQuestionIdx((prev) => prev + 1);
+            } else {
+                submitQuestionnaire(answers);
+            }
         } else {
-            submitQuestionnaire(newAnswers);
+            toast.warning("Please select an answer before proceeding.");
         }
     };
 
@@ -51,47 +62,47 @@ const ILSQuestionnaire = () => {
     const submitQuestionnaire = async (finalAnswers) => {
         setIsSubmitting(true);
 
-        // Calculate dimensions
-        const scores = {
-            active_reflective: 0,
-            sensing_intuitive: 0,
-            visual_verbal: 0,
-            sequential_global: 0
+        // Group answers by dimension
+        const dimensionGroups = {
+            active_reflective: [],
+            sensing_intuitive: [],
+            visual_verbal: [],
+            sequential_global: []
         };
 
         Object.values(finalAnswers).forEach((ans) => {
-            scores[ans.dimension] += ans.value;
+            dimensionGroups[ans.dimension].push(ans.value);
+        });
+
+        // Calculate normalized scores: (sum - min) / (max - min)
+        // With 11 questions per dimension, min=11 (all 1s), max=55 (all 5s)
+        const scores = {};
+        Object.entries(dimensionGroups).forEach(([dim, vals]) => {
+            const sum = vals.reduce((a, b) => a + b, 0);
+            // If some questions weren't answered for some reason, handle fallback
+            const count = vals.length || 11;
+            const minPossible = count * 1;
+            const maxPossible = count * 5;
+            scores[dim] = (sum - minPossible) / (maxPossible - minPossible);
         });
 
         try {
-            // POST the scores to the backend
+            // POST the scores to the backend using privateClient for proper token handling
             const payload = {
                 session_id: session_id,
                 ...scores
             };
 
-            const res = await fetch('http://localhost:8001/api/learning/questionnaire', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token') || ''}` // Use token if available
-                },
-                body: JSON.stringify(payload)
-            });
+            const response = await fastApiClient.post('/api/learning/questionnaire', payload);
 
-            if (!res.ok) {
-                throw new Error('Failed to submit questionnaire');
-            }
-
-            const data = await res.json();
-            console.log('Questionnaire response:', data);
+            console.log('Questionnaire response:', response);
 
             toast.success("Learning profile generated successfully!", {
                 onClose: () => navigate("/main")
             });
 
         } catch (error) {
-            console.error(error);
+            console.error("❌ [ILS] Questionnaire submission error:", error);
             toast.error("Failed to submit questionnaire. Please try again.");
             setIsSubmitting(false);
         }
@@ -164,51 +175,100 @@ const ILSQuestionnaire = () => {
                     {question.text}
                 </Typography>
 
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3 }}>
-                    <Button
-                        variant="outlined"
-                        onClick={() => handleSelect(question.valueA)}
-                        sx={{
-                            flex: 1,
-                            p: 4,
-                            borderRadius: 4,
-                            textTransform: 'none',
-                            fontSize: '1.1rem',
-                            fontWeight: 500,
-                            bgcolor: answers[question.id]?.value === question.valueA ? 'primary.main' : 'transparent',
-                            color: answers[question.id]?.value === question.valueA ? 'white' : 'text.primary',
-                            borderColor: answers[question.id]?.value === question.valueA ? 'primary.main' : 'divider',
-                            '&:hover': {
-                                bgcolor: answers[question.id]?.value === question.valueA ? 'primary.dark' : 'rgba(25, 118, 210, 0.08)',
-                                transform: 'translateY(-2px)'
-                            },
-                            transition: 'all 0.2s ease-in-out',
-                        }}
-                    >
-                        {question.optionA}
-                    </Button>
+                <Box sx={{ mb: 6 }}>
+                    <Typography variant="body1" sx={{ color: 'text.secondary', fontStyle: 'italic', mb: 3 }}>
+                        Choose the position that best represents your preference between:
+                    </Typography>
 
+                    <Box sx={{
+                        display: 'flex',
+                        flexDirection: { xs: 'column', md: 'row' },
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: { xs: 2, md: 4 }
+                    }}>
+                        <Typography
+                            variant="subtitle1"
+                            sx={{
+                                flex: 1,
+                                textAlign: { xs: 'center', md: 'right' },
+                                fontWeight: 700,
+                                color: themeMode === 'dark' ? 'primary.light' : 'primary.main',
+                                minWidth: { md: '180px' }
+                            }}
+                        >
+                            (a) {question.optionA}
+                        </Typography>
+
+                        <Box sx={{
+                            display: 'flex',
+                            gap: { xs: 1, sm: 2 },
+                            bgcolor: themeMode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                            p: 2,
+                            borderRadius: 10,
+                            border: '1px solid',
+                            borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                        }}>
+                            {[1, 2, 3, 4, 5].map((val) => (
+                                <IconButton
+                                    key={val}
+                                    onClick={() => handleSelect(val)}
+                                    sx={{
+                                        width: { xs: 40, sm: 50 },
+                                        height: { xs: 40, sm: 50 },
+                                        fontSize: '1.2rem',
+                                        fontWeight: 800,
+                                        transition: 'all 0.2s',
+                                        bgcolor: answers[question.id]?.value === val ? 'primary.main' : 'transparent',
+                                        color: answers[question.id]?.value === val ? 'white' : 'text.primary',
+                                        border: '2px solid',
+                                        borderColor: answers[question.id]?.value === val ? 'primary.main' : 'divider',
+                                        '&:hover': {
+                                            bgcolor: answers[question.id]?.value === val ? 'primary.dark' : 'rgba(25, 118, 210, 0.1)',
+                                            transform: 'scale(1.1)'
+                                        }
+                                    }}
+                                >
+                                    {val}
+                                </IconButton>
+                            ))}
+                        </Box>
+
+                        <Typography
+                            variant="subtitle1"
+                            sx={{
+                                flex: 1,
+                                textAlign: { xs: 'center', md: 'left' },
+                                fontWeight: 700,
+                                color: themeMode === 'dark' ? 'primary.light' : 'primary.main',
+                                minWidth: { md: '180px' }
+                            }}
+                        >
+                            (b) {question.optionB}
+                        </Typography>
+                    </Box>
+                </Box>
+
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
                     <Button
-                        variant="outlined"
-                        onClick={() => handleSelect(question.valueB)}
+                        variant="contained"
+                        onClick={handleNext}
+                        disabled={!answers[question.id]}
                         sx={{
-                            flex: 1,
-                            p: 4,
-                            borderRadius: 4,
-                            textTransform: 'none',
+                            px: 8,
+                            py: 1.5,
+                            borderRadius: 8,
                             fontSize: '1.1rem',
-                            fontWeight: 500,
-                            bgcolor: answers[question.id]?.value === question.valueB ? 'primary.main' : 'transparent',
-                            color: answers[question.id]?.value === question.valueB ? 'white' : 'text.primary',
-                            borderColor: answers[question.id]?.value === question.valueB ? 'primary.main' : 'divider',
-                            '&:hover': {
-                                bgcolor: answers[question.id]?.value === question.valueB ? 'primary.dark' : 'rgba(25, 118, 210, 0.08)',
-                                transform: 'translateY(-2px)'
-                            },
-                            transition: 'all 0.2s ease-in-out',
+                            fontWeight: 700,
+                            background: uiConfigs.style.mainGradient.color,
+                            color: 'white',
+                            '&:disabled': {
+                                opacity: 0.5,
+                                background: 'grey'
+                            }
                         }}
                     >
-                        {question.optionB}
+                        {currentQuestionIdx === ilsQuestions.length - 1 ? "Finish & Generate Profile" : "Next Question"}
                     </Button>
                 </Box>
             </Paper>

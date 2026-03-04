@@ -42,6 +42,14 @@ class Profile(TimeStampedModel):
         blank=True,
         help_text="Learning style dimensions: active_reflective, sensing_intuitive, visual_verbal, sequential_global (-11 to +11)"
     )
+    manual_adjustments = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Manual learning style adjustments set by user from Settings page (-11 to +11)"
+    )
+    manual_adjustments_completed = models.BooleanField(default=False)
+    questionnaire_completed = models.BooleanField(default=False)
+    last_learning_style_update = models.DateTimeField(null=True, blank=True)
     other = models.ForeignKey(OtherDetail, on_delete=models.SET_NULL, blank=True, null=True)
 
     def __str__(self):

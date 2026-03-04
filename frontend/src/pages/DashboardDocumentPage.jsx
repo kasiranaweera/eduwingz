@@ -358,14 +358,14 @@ const DashboardDocumentPage = () => {
         {/* Left: Title */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <Box>
-            <Typography variant="h4" sx={{  }}>
+            <Typography variant="h4" sx={{}}>
               Documents
             </Typography>
           </Box>
         </Box>
 
         {/* Right: Control Buttons */}
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+        <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
           {/* Category Button */}
           <Tooltip title="Select Category">
             <Button
@@ -633,7 +633,7 @@ const DashboardDocumentPage = () => {
       ) : (
         <Grid container spacing={2}>
           {filteredDocuments.map((doc) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} size={2} key={doc.id}>
+            <Grid item size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={doc.id}>
               <Card
                 sx={{
                   height: "100%",

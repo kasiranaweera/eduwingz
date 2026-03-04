@@ -1,8 +1,9 @@
 import axios from "axios";
 import queryString from "query-string";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://eduwingz-backend.onrender.com" || "http://localhost:8000";
-const baseURL = BACKEND_URL;
+// const FASTAPI_URL = process.env.REACT_APP_FASTAPI_URL || "https://eduwingz-fastapi.onrender.com" || "http://localhost:8080/fastapi";
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (process.env.NODE_ENV === 'development' ? "http://localhost:8080/django" : "https://eduwingz-backend.onrender.com");
+const baseURL = BACKEND_URL.endsWith('/') ? BACKEND_URL : `${BACKEND_URL}/`;
 
 console.log("🔌 Public Client initialized with baseURL:", baseURL);
 

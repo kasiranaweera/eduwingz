@@ -169,7 +169,7 @@ const DashboardProfilePage = () => {
 
       <Grid container spacing={4} sx={{ position: 'relative', zIndex: 1 }}>
         {/* LEFT SIDEBAR */}
-        <Grid item xs={12} md={4} lg={3.5}>
+        <Grid item size={{ xs: 12, md: 4, lg: 4 }}>
           <Paper elevation={0} sx={{ ...premiumPaperStyle, position: { xs: 'static', md: 'sticky' }, top: 24 }}>
             {/* Header/Cover Area inside Card */}
             <Box sx={{
@@ -283,7 +283,7 @@ const DashboardProfilePage = () => {
         </Grid>
 
         {/* RIGHT CONTENT AREA */}
-        <Grid item xs={12} md={8} lg={8.5}>
+        <Grid item size={{ xs: 12, md: 8, lg: 8 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
 
             {/* Learning Style Section */}
@@ -310,7 +310,7 @@ const DashboardProfilePage = () => {
                     const progress = Math.max(0, Math.min(100, ((value + 11) / 22) * 100));
 
                     return (
-                      <Grid item xs={12} sm={6} key={key}>
+                      <Grid item size={{ xs: 12, sm: 6 }} key={key}>
                         <Box sx={{ p: 2, borderRadius: 3, bgcolor: alpha(theme.palette.background.default, 0.4), border: `1px solid ${alpha(theme.palette.divider, 0.5)}` }}>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                             <Typography variant="caption" sx={{ fontWeight: 600, color: progress < 50 ? 'primary.main' : 'text.secondary' }}>{labels[0]}</Typography>
@@ -372,7 +372,7 @@ const DashboardProfilePage = () => {
 
             {/* Combined Lessons and Quizzes Grid */}
             <Grid container spacing={4}>
-              <Grid item xs={12} md={6}>
+              <Grid item size={{ xs: 12, md: 6 }}>
                 <Paper elevation={0} sx={{ ...premiumPaperStyle, height: '100%' }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
                     <Box sx={{ p: 1, borderRadius: 2, bgcolor: alpha(theme.palette.info.main, 0.1), color: "info.main", display: 'flex' }}>
@@ -417,7 +417,7 @@ const DashboardProfilePage = () => {
                 </Paper>
               </Grid>
 
-              <Grid item xs={12} md={6}>
+              <Grid item size={{ xs: 12, md: 6 }}>
                 <Paper elevation={0} sx={{ ...premiumPaperStyle, height: '100%' }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
                     <Box sx={{ p: 1, borderRadius: 2, bgcolor: alpha(theme.palette.secondary.main, 0.1), color: "secondary.main", display: 'flex' }}>

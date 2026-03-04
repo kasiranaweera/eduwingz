@@ -195,8 +195,8 @@ const ChatHistoryPage = () => {
   return (
     <>
       <Box>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography variant="h5" gutterBottom>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: { xs: "flex-start", sm: "center" }, flexDirection: { xs: "column", sm: "row" }, gap: 1, mb: 2 }}>
+          <Typography variant="h5" gutterBottom sx={{ mb: 0 }}>
             Chat History
           </Typography>
 
@@ -205,10 +205,9 @@ const ChatHistoryPage = () => {
           <TextField
             placeholder="Search chats by title..."
             size="small"
-            fullWidth
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ mb: 2, maxWidth: 400 }}
+            sx={{ width: { xs: "100%", sm: "auto" }, minWidth: { sm: 300 }, maxWidth: { sm: 400 } }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -269,7 +268,7 @@ const ChatHistoryPage = () => {
                         </Typography>
                       }
                     />
-                    <Box>
+                    <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end" }}>
                       <Tooltip title="Share Chat" arrow>
                         <IconButton onClick={() => handleShareChat(s)}>
                           <ShareOutlinedIcon />

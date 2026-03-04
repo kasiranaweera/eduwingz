@@ -289,7 +289,7 @@ const HomePage = () => {
               mt: 5,
             }}
           >
-            <Box sx={{ width: "100%" }}>
+            <Box sx={{ width: "100%", minWidth: 0 }}>
               <Typography
                 variant={isMdUp ? "h6" : "body1"}
                 sx={{ textAlign: "center", fontWeight: "400" }}
@@ -425,7 +425,7 @@ const HomePage = () => {
                 </Button>
               </Box>
             </Box>
-            <Box sx={{ width: "60%" }}>
+            <Box sx={{ width: { xs: "100%", md: "60%" } }}>
               <img
                 style={{ transform: "scaleX(-1)" }}
                 src={hero_img}

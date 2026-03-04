@@ -17,8 +17,19 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         # Force 'sub' claim to be a string. Stricter versions of pyjwt (like on Python 3.13)
         # require 'sub' to be a string and will throw InvalidSubjectError if it's an int.
-        if 'sub' in token:
+        from django.conf import settings
+        user_id_claim = getattr(settings, 'SIMPLE_JWT', {}).get('USER_ID_CLAIM', 'user_id')
+        if user_id_claim in token:
+            token[user_id_claim] = str(token[user_id_claim])
+        
+        # Ensure 'sub' is also a string if it exists and is different from the claim
+        if 'sub' in token and user_id_claim != 'sub':
             token['sub'] = str(token['sub'])
+
+        # Explicitly set 'sub' to match USER_ID_FIELD if not already set correctly
+        # This ensures consistency with how simplejwt validates tokens
+        user_id_field = getattr(settings, 'SIMPLE_JWT', {}).get('USER_ID_FIELD', 'id')
+        token['sub'] = str(getattr(user, user_id_field))
 
         # Avoid overwriting SimpleJWT's internal 'user_id' which maps to the database primary key.
         token['app_user_id'] = user.user_id

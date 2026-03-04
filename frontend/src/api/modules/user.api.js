@@ -4,8 +4,9 @@ import publicClient from "../client/public.client";
 const userEndpoints = {
   signin: "users/token/",
   signup: "users/register/",
-  getInfo: "user/info",
-  passwordUpdate: "user/update-password",
+  getInfo: "users/info/",
+  passwordUpdate: "users/update-password/",
+  updateProfile: (userId) => `app/user/${userId}/profile/`,
   notifications: (userId) => `app/user/${userId}/notifications/`,
 };
 
@@ -65,6 +66,20 @@ const userApi = {
       const response = await privateClient.get(userEndpoints.notifications(userId));
       return { response };
     } catch (err) {
+      return { err };
+    }
+  },
+  updateProfile: async ({ userId, data }) => {
+    try {
+      console.log(`🔄 [PROFILE] Updating profile for user ${userId}...`);
+      const response = await privateClient.put(
+        userEndpoints.updateProfile(userId),
+        data
+      );
+      console.log("✅ [PROFILE] Update response:", response);
+      return { response };
+    } catch (err) {
+      console.error("❌ [PROFILE] Update error:", err);
       return { err };
     }
   }

@@ -6,9 +6,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
+        port=8001,
         reload=True,
-        timeout_keep_alive=180,  # 3 minutes - allows LLM generation
-        timeout_notify=180,       # Notify timeout
-        timeout_shutdown=30       # Graceful shutdown timeout
+        timeout_keep_alive=180  # 3 minutes - allows LLM generation
     )

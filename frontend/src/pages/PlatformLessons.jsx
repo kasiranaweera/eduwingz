@@ -341,7 +341,7 @@ const PlatformLessons = () => {
                 sx={{
                   mt: 2,
                   display: "grid",
-                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
                   gap: 2,
                 }}
               >
@@ -450,7 +450,7 @@ const PlatformLessons = () => {
                 sx={{
                   mt: 2,
                   display: "grid",
-                  gridTemplateColumns: "repeat(5, 1fr)",
+                  gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)", md: "repeat(4, 1fr)", lg: "repeat(5, 1fr)" },
                   gap: 2,
                 }}
               >
@@ -472,7 +472,7 @@ const PlatformLessons = () => {
                 sx={{
                   mt: 2,
                   display: "grid",
-                  gridTemplateColumns: "repeat(5, 1fr)",
+                  gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)", md: "repeat(4, 1fr)", lg: "repeat(5, 1fr)" },
                   gap: 2,
                 }}
               >
@@ -558,7 +558,7 @@ const PlatformLessons = () => {
                 sx={{
                   mt: 2,
                   display: "grid",
-                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
                   gap: 2,
                 }}
               >

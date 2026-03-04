@@ -13,6 +13,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import TuneIcon from '@mui/icons-material/Tune';
 import { useNavigate } from 'react-router-dom';
+import userApi from '../api/modules/user.api';
 
 const steps = [
   'Profile Data',
@@ -22,6 +23,7 @@ const steps = [
 
 const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
   const { themeMode } = useSelector((state) => state.themeMode);
+  const { user } = useSelector((state) => state.user);
   const navigate = useNavigate();
 
   const [activeStep, setActiveStep] = useState(0);
@@ -76,20 +78,68 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
       setErrorMessage(undefined);
       setIsSubmitting(true);
 
+      const profileData = {
+        first_name: values.firstName,
+        last_name: values.lastName,
+        tagline: values.tagline,
+        bio: values.bio,
+        status: values.status,
+        learning_styles: {
+          active_reflective: values.active_reflective,
+          sensing_intuitive: values.sensing_intuitive,
+          visual_verbal: values.visual_verbal,
+          sequential_global: values.sequential_global,
+        },
+        other: {
+          subject: values.favSubject,
+          avg_hours: values.averageLearningHours.toString(),
+          time_period: values.studyTimePeriod,
+        },
+        manual_adjustments: learningStyleMode === 'manual' ? {
+          active_reflective: values.active_reflective,
+          sensing_intuitive: values.sensing_intuitive,
+          visual_verbal: values.visual_verbal,
+          sequential_global: values.sequential_global,
+        } : {},
+        manual_adjustments_completed: learningStyleMode === 'manual',
+      };
+
       try {
-        // Here you would normally await userApi.updateProfile(values)
-        // Simulated API call wait
-        await new Promise(r => setTimeout(r, 800));
+        if (!user || (!user.user_id && !user.id)) {
+          throw new Error("User not found. Please log in again.");
+        }
+
+        const userId = user.user_id || user.id;
+        const { response, err } = await userApi.updateProfile({ userId, data: profileData });
+
+        if (err) throw err;
 
         if (learningStyleMode === 'questionnaire') {
           toast.success("Profile saved! Let's discover your learning style...");
           navigate('/ils-questionnaire');
         } else {
+          console.log("Profile saved successfully!", response);
           toast.success("Welcome! Your profile has been set up successfully!");
           if (onSuccess) onSuccess();
         }
       } catch (error) {
-        setErrorMessage(error.message || "Failed to setup profile");
+        console.error("❌ [PROFILE] Setup error details:", error);
+        let errorMsg = "Failed to setup profile";
+        if (typeof error === 'string') {
+          errorMsg = error;
+        } else if (error.detail) {
+          errorMsg = error.detail;
+        } else if (error.message) {
+          errorMsg = error.message;
+        } else if (typeof error === 'object') {
+          // Handle DRF validation errors
+          const firstErrorKey = Object.keys(error)[0];
+          if (firstErrorKey) {
+            const firstError = error[firstErrorKey];
+            errorMsg = Array.isArray(firstError) ? `${firstErrorKey}: ${firstError[0]}` : `${firstErrorKey}: ${JSON.stringify(firstError)}`;
+          }
+        }
+        setErrorMessage(errorMsg);
       } finally {
         setIsSubmitting(false);
       }
@@ -399,7 +449,7 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
                 </Typography>
 
                 <Grid container spacing={3}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item size={{ xs: 12, sm: 6 }}>
                     <TextField
                       select
                       fullWidth
@@ -415,7 +465,7 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
                       <MenuItem value={11}>Strongly Reflective</MenuItem>
                     </TextField>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item size={{ xs: 12, sm: 6 }}>
                     <TextField
                       select
                       fullWidth
@@ -431,7 +481,7 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
                       <MenuItem value={11}>Strongly Intuitive</MenuItem>
                     </TextField>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item size={{ xs: 12, sm: 6 }}>
                     <TextField
                       select
                       fullWidth
@@ -447,7 +497,7 @@ const ProfileSetup = ({ onSkip, onSuccess, switchAuthState }) => {
                       <MenuItem value={11}>Strongly Verbal</MenuItem>
                     </TextField>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item size={{ xs: 12, sm: 6 }}>
                     <TextField
                       select
                       fullWidth

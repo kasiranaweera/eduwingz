@@ -15,6 +15,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { setAuthModalOpen } from "../redux/features/authModalSlice";
+import { setUser } from "../redux/features/userSlice";
 import uiConfigs from "../configs/ui.config";
 
 // const swal = require('sweetalert2')
@@ -67,9 +68,29 @@ const SignupForm = ({ switchAuthState }) => {
 
         // Successful signup
         if (response && response.email) {
-          console.log("✅ [SIGNUP] Registration successful!");
+          console.log("✅ [SIGNUP] Registration successful! tokens received:", {
+            access: response.access ? "yes" : "no",
+            refresh: response.refresh ? "yes" : "no"
+          });
+
+          // Store tokens in localStorage for auto-login
+          if (response.access) {
+            localStorage.setItem("actkn", response.access);
+          }
+
+          // Create a consistent user object like in SigninForm.jsx
+          const userObject = {
+            username: response.username,
+            email: response.email,
+            id: response.id || response.user_id,
+            token: response.access
+          };
+
+          // Dispatch user to redux store
+          dispatch(setUser(userObject));
+
           signinForm.resetForm();
-          toast.success("Account created successfully! Redirecting...", {
+          toast.success("Account created successfully! Welcome!", {
             autoClose: 1500,
             onClose: () => {
               dispatch(setAuthModalOpen(false));

@@ -103,7 +103,7 @@ const FeaturesPage = () => {
         {/* How It Works */}
         <Grid container spacing={3} mb={10} >
           {contentData.objectives.map((item, idx) => (
-            <Grid item xs={12} size={3} key={idx}>
+            <Grid item xs={12} md={3} key={idx}>
               <Card
                 sx={{
                   p: 3,
@@ -153,7 +153,7 @@ const FeaturesPage = () => {
         </Typography>
         <Grid container spacing={3} mb={10}>
           {contentData.features.map((feature, idx) => (
-            <Grid item xs={12} size={6} key={idx}>
+            <Grid item xs={12} md={6} key={idx}>
               <Card
                 sx={{
                   p: 3,
@@ -194,7 +194,7 @@ const FeaturesPage = () => {
           Benefits
         </Typography>
         <Grid container spacing={3} mb={10}>
-          <Grid item xs={12} size={6}>
+          <Grid item xs={12} md={6}>
             <Card
               sx={{
                 height: "100%",
@@ -236,7 +236,7 @@ const FeaturesPage = () => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} size={6}>
+          <Grid item xs={12} md={6}>
             <Card
               sx={{
                 height: "100%",

@@ -331,7 +331,7 @@ const DashboardAnalyticsPage = () => {
     )
 
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto', pr: 1, height: '100%' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pr: 1, height: '100%' }}>
         {alerts.map((alert, i) => {
           const student = overview?.students?.find(s => s.id === alert.profile)
           const name = student ? student.name : `Student #${alert.profile}`
@@ -380,7 +380,7 @@ const DashboardAnalyticsPage = () => {
   }
 
   return (
-    <Box sx={{ width: '100%', minHeight: '100vh', pb: 8, px: { xs: 2, sm: 4 }, pt: 3, position: 'relative' }}>
+    <Box sx={{ width: '100%', minHeight: '100vh', position: 'relative' }}>
 
       {/* Subtle Background Glows */}
       <Box sx={{
@@ -447,7 +447,7 @@ const DashboardAnalyticsPage = () => {
         ) : (
           <Grid container spacing={4}>
             {/* Top Stat Cards */}
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
               <Card sx={glassCardSx} elevation={0}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <Box>
@@ -464,7 +464,7 @@ const DashboardAnalyticsPage = () => {
               </Card>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
               <Card sx={{ ...glassCardSx, border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`, background: isDark ? alpha(theme.palette.primary.dark, 0.1) : alpha(theme.palette.primary.light, 0.1) }} elevation={0}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <Box>
@@ -483,7 +483,7 @@ const DashboardAnalyticsPage = () => {
               </Card>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
               <Card sx={glassCardSx} elevation={0}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <Box>
@@ -500,7 +500,7 @@ const DashboardAnalyticsPage = () => {
               </Card>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
               <Card sx={{ ...glassCardSx, border: getAtRiskStudents().length > 0 ? `1px solid ${alpha(theme.palette.warning.main, 0.4)}` : glassCardSx.border }} elevation={0}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <Box>
@@ -520,7 +520,7 @@ const DashboardAnalyticsPage = () => {
             </Grid>
 
             {/* Charts Section */}
-            <Grid item xs={12} lg={8}>
+            <Grid item size={{ xs: 12, lg: 8 }}>
               <Paper sx={{ ...glassCardSx, height: '420px', display: 'flex', flexDirection: 'column' }} elevation={0}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                   <Typography variant="h6" fontWeight="700">Evolution Tracker</Typography>
@@ -532,7 +532,7 @@ const DashboardAnalyticsPage = () => {
               </Paper>
             </Grid>
 
-            <Grid item xs={12} lg={4}>
+            <Grid item size={{ xs: 12, lg: 4 }}>
               <Paper sx={{ ...glassCardSx, height: '420px', display: 'flex', flexDirection: 'column' }} elevation={0}>
                 <Typography variant="h6" fontWeight="700" mb={3}>Subject Mastery</Typography>
                 <Box sx={{ flexGrow: 1, position: 'relative' }}>
@@ -542,7 +542,7 @@ const DashboardAnalyticsPage = () => {
             </Grid>
 
             {/* New Analytics Capabilities */}
-            <Grid item xs={12} lg={6}>
+            <Grid item size={{ xs: 12, lg: 6 }}>
               <Paper sx={{ ...glassCardSx, height: '420px', display: 'flex', flexDirection: 'column' }} elevation={0}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                   <Typography variant="h6" fontWeight="700">Engagement & Activity Patterns</Typography>
@@ -554,7 +554,7 @@ const DashboardAnalyticsPage = () => {
               </Paper>
             </Grid>
 
-            <Grid item xs={12} lg={6}>
+            <Grid item size={{ xs: 12, lg: 6 }}>
               <Paper sx={{ ...glassCardSx, height: '420px', display: 'flex', flexDirection: 'column' }} elevation={0}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                   <Typography variant="h6" fontWeight="700" color="error.main">Predictive Alerts</Typography>
@@ -566,7 +566,7 @@ const DashboardAnalyticsPage = () => {
               </Paper>
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid item size={{ xs: 12 }}>
               <Paper sx={{ ...glassCardSx, height: '400px', display: 'flex', flexDirection: 'column' }} elevation={0}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                   <Typography variant="h6" fontWeight="700" color="warning.main">Decision Support System</Typography>

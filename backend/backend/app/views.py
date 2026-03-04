@@ -50,18 +50,26 @@ class UserProfileDetail(APIView):
     def put(self, request, user_id=None, format=None):
         """Update profile by user_id"""
         try:
+            print(f"[PROFILE] PUT request for user_id: {user_id} with data: {request.data}")
             if user_id.isdigit():
                 profile = Profile.objects.get(user__id=int(user_id))
             else:
                 profile = Profile.objects.get(user__user_id=user_id)
+            
             serializer = ProfileUpdateSerializer(profile, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            print(f"[PROFILE] Validation errors: {serializer.errors}")
+            return APIErrorResponse.bad_request("Validation failed", errors=serializer.errors)
         except Profile.DoesNotExist:
-            return APIErrorResponse.not_found("Profile not found")
+            print(f"[PROFILE] Profile not found for user_id: {user_id}")
+            return APIErrorResponse.not_found(f"Profile not found for user_id: {user_id}")
         except Exception as e:
+            print(f"[PROFILE] Unexpected error in put: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return APIErrorResponse.server_error(str(e))
 
 class NotificationListCreateAPIView(generics.ListAPIView):

@@ -138,10 +138,10 @@ const DashboardPlatformPage = () => {
   };
 
   return (
-    <Grid container spacing={3}>
-      <Grid size={{ xs: 12, md: 9 }} spacing={2} container direction="column">
-        <Grid container size={12} spacing={2}>
-          <Grid item size={{ xs: 12, md: 9 }}>
+    <Grid container spacing={0}>
+      <Grid size={{ xs: 12, md: 9 }} item spacing={2} container direction="column">
+        <Grid container item xs={12} spacing={2}>
+          <Grid item size={{ xs: 12, md: 6 }}>
             <Box
               sx={{
                 p: 3,
@@ -187,9 +187,9 @@ const DashboardPlatformPage = () => {
             </Paper>
           </Grid>
         </Grid>
-        <Grid container ize={12} spacing={2}>
+        <Grid container item xs={12} spacing={2}>
           {/* My Lessons */}
-          <Grid item size={{ xs: 12, md: 8 }}>
+          <Grid item size={{ xs: 12, md: 5 }}>
             <Paper
               elevation={0}
               sx={{
@@ -373,11 +373,13 @@ const DashboardPlatformPage = () => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: 400,
+            width: { xs: "90vw", sm: 400 },
+            maxHeight: "90vh",
+            overflowY: "auto",
             bgcolor: "background.paper",
             borderRadius: 3,
             boxShadow: 24,
-            p: 4,
+            p: { xs: 2, sm: 4 },
           }}
         >
           <Typography variant="h6" mb={2}>

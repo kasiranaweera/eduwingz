@@ -1,8 +1,8 @@
 import axios from "axios";
 import queryString from "query-string";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://eduwingz-backend.onrender.com" || "http://localhost:8000";
-const baseURL = BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (process.env.NODE_ENV === 'development' ? "http://localhost:8080/django" : "https://eduwingz-backend.onrender.com");
+const baseURL = BACKEND_URL.endsWith('/') ? BACKEND_URL : `${BACKEND_URL}/`;
 
 console.log("🔌 Private Client initialized with baseURL:", baseURL);
 
@@ -37,6 +37,12 @@ privateClient.interceptors.request.use(async config => {
   // Fallback to legacy `actkn` only if user object token is missing
   if (!token) {
     token = localStorage.getItem("actkn");
+  }
+
+  // Sanity check: ensure token is a non-empty string and not "null"/"undefined"
+  if (token && (token === "undefined" || token === "null" || token.trim() === "")) {
+    console.warn("⚠️ [Private API] Invalid token string detected in localStorage:", token);
+    token = null;
   }
 
   const headers = {

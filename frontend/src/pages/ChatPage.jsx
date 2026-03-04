@@ -1143,11 +1143,11 @@ ${message.text}
         }
       `}</style>
       <Container
-        sx={{ position: "relative", height: "calc(100vh - 100px)" }}
+        sx={{ position: "relative", height: "calc(100vh - 100px)", px: { xs: 1, sm: 2, md: 3 } }}
       >
         <Box sx={{ display: "flex", flexDirection: "column" }}>
           <Box sx={{ overflowY: "auto", minHeight: "calc(100vh - 250px)" }}>
-            <List sx={{ width: "100%", maxWidth: "75%", mx: "auto" }}>
+            <List sx={{ width: "100%", maxWidth: { xs: "100%", sm: "90%", md: "75%" }, mx: "auto" }}>
               {messages.map((message) => (
                 <ListItem
                   key={message.id}

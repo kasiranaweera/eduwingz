@@ -19,6 +19,10 @@ class User(AbstractUser, TimeStampedModel):
         return self.email
     
     def save(self, *args, **kwargs):
-        if not self.user_id and self.id:
-            self.user_id = create_user_id(self.id)
+        is_new = self._state.adding
         super().save(*args, **kwargs)
+        if is_new and not self.user_id:
+            self.user_id = create_user_id(self.id)
+            # Use update to avoid infinite recursion or multiple save signals if preferred, 
+            # but a simple save here is fine as is_new will be False now.
+            super().save(update_fields=['user_id'])

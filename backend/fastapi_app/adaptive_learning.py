@@ -17,10 +17,10 @@ class ILSLearningProfile:
     def __init__(self, user_id: str):
         self.user_id = user_id
         self.dimensions = {
-            'active_reflective': 0,  # -11 to +11 (negative=active, positive=reflective)
-            'sensing_intuitive': 0,  # -11 to +11 (negative=sensing, positive=intuitive)
-            'visual_verbal': 0,      # -11 to +11 (negative=visual, positive=verbal)
-            'sequential_global': 0  # -11 to +11 (negative=sequential, positive=global)
+            'active_reflective': 0.5,  # 0.0 to 1.0 (0=active, 1=reflective, 0.5=balanced)
+            'sensing_intuitive': 0.5,  # 0.0 to 1.0 (0=sensing, 1=intuitive, 0.5=balanced)
+            'visual_verbal': 0.5,      # 0.0 to 1.0 (0=visual, 1=verbal, 0.5=balanced)
+            'sequential_global': 0.5   # 0.0 to 1.0 (0=sequential, 1=global, 0.5=balanced)
         }
         self.interaction_history = []
         self.total_interactions = 0
@@ -35,10 +35,10 @@ class ILSLearningProfile:
         
         Args:
             questionnaire_responses: Dict with keys:
-                - active_reflective: int (-11 to +11)
-                - sensing_intuitive: int (-11 to +11)
-                - visual_verbal: int (-11 to +11)
-                - sequential_global: int (-11 to +11)
+            - active_reflective: float (0.0 to 1.0)
+            - sensing_intuitive: float (0.0 to 1.0)
+            - visual_verbal: float (0.0 to 1.0)
+            - sequential_global: float (0.0 to 1.0)
         """
         print(f"📝 [ILS Profile] Setting questionnaire data for user {self.user_id}")
         self.questionnaire_data = questionnaire_responses
@@ -127,38 +127,38 @@ class ILSLearningProfile:
         
         # Active vs Reflective
         if indicators.get('active_learning'):
-            adjustment = -1 * interaction_weight
-            self.dimensions['active_reflective'] = max(-11, self.dimensions['active_reflective'] + adjustment)
+            adjustment = -0.05 * interaction_weight
+            self.dimensions['active_reflective'] = max(0.0, self.dimensions['active_reflective'] + adjustment)
         if indicators.get('reflective_learning'):
-            adjustment = 1 * interaction_weight
-            self.dimensions['active_reflective'] = min(11, self.dimensions['active_reflective'] + adjustment)
+            adjustment = 0.05 * interaction_weight
+            self.dimensions['active_reflective'] = min(1.0, self.dimensions['active_reflective'] + adjustment)
         if indicators.get('brief_communication'):
-            adjustment = -0.5 * interaction_weight
-            self.dimensions['active_reflective'] = max(-11, self.dimensions['active_reflective'] + adjustment)
+            adjustment = -0.02 * interaction_weight
+            self.dimensions['active_reflective'] = max(0.0, self.dimensions['active_reflective'] + adjustment)
         
         # Sensing vs Intuitive
         if indicators.get('sensing_preference'):
-            adjustment = -1 * interaction_weight
-            self.dimensions['sensing_intuitive'] = max(-11, self.dimensions['sensing_intuitive'] + adjustment)
+            adjustment = -0.05 * interaction_weight
+            self.dimensions['sensing_intuitive'] = max(0.0, self.dimensions['sensing_intuitive'] + adjustment)
         if indicators.get('intuitive_preference'):
-            adjustment = 1 * interaction_weight
-            self.dimensions['sensing_intuitive'] = min(11, self.dimensions['sensing_intuitive'] + adjustment)
+            adjustment = 0.05 * interaction_weight
+            self.dimensions['sensing_intuitive'] = min(1.0, self.dimensions['sensing_intuitive'] + adjustment)
         
         # Visual vs Verbal
         if indicators.get('visual_preference'):
-            adjustment = -1 * interaction_weight
-            self.dimensions['visual_verbal'] = max(-11, self.dimensions['visual_verbal'] + adjustment)
+            adjustment = -0.05 * interaction_weight
+            self.dimensions['visual_verbal'] = max(0.0, self.dimensions['visual_verbal'] + adjustment)
         if indicators.get('verbal_preference'):
-            adjustment = 1 * interaction_weight
-            self.dimensions['visual_verbal'] = min(11, self.dimensions['visual_verbal'] + adjustment)
+            adjustment = 0.05 * interaction_weight
+            self.dimensions['visual_verbal'] = min(1.0, self.dimensions['visual_verbal'] + adjustment)
         
         # Sequential vs Global
         if indicators.get('sequential_preference'):
-            adjustment = -1 * interaction_weight
-            self.dimensions['sequential_global'] = max(-11, self.dimensions['sequential_global'] + adjustment)
+            adjustment = -0.05 * interaction_weight
+            self.dimensions['sequential_global'] = max(0.0, self.dimensions['sequential_global'] + adjustment)
         if indicators.get('global_preference'):
-            adjustment = 1 * interaction_weight
-            self.dimensions['sequential_global'] = min(11, self.dimensions['sequential_global'] + adjustment)
+            adjustment = 0.05 * interaction_weight
+            self.dimensions['sequential_global'] = min(1.0, self.dimensions['sequential_global'] + adjustment)
         
         self.total_interactions += 1
         self.interaction_history.append({
@@ -182,42 +182,42 @@ class ILSLearningProfile:
         print(f"🎯 [ILS Profile] Getting learning style classification")
         style = {}
         
-        # Classify each dimension (moderate preference at ±3, strong at ±7)
+        # Classify each dimension (moderate at ±0.1, strong at ±0.3 from 0.5 midpoint)
         ar = self.dimensions['active_reflective']
-        if abs(ar) >= 3:
-            style['processing'] = 'active' if ar < 0 else 'reflective'
-            style['processing_strength'] = 'strong' if abs(ar) >= 7 else 'moderate'
+        if abs(ar - 0.5) >= 0.1:
+            style['processing'] = 'active' if ar < 0.5 else 'reflective'
+            style['processing_strength'] = 'strong' if abs(ar - 0.5) >= 0.3 else 'moderate'
         else:
             style['processing'] = 'balanced'
             style['processing_strength'] = 'balanced'
-        print(f"   📊 Processing: {style['processing']} ({style['processing_strength']}) [value: {ar:.1f}]")
+        print(f"   📊 Processing: {style['processing']} ({style['processing_strength']}) [value: {ar:.2f}]")
         
         si = self.dimensions['sensing_intuitive']
-        if abs(si) >= 3:
-            style['perception'] = 'sensing' if si < 0 else 'intuitive'
-            style['perception_strength'] = 'strong' if abs(si) >= 7 else 'moderate'
+        if abs(si - 0.5) >= 0.1:
+            style['perception'] = 'sensing' if si < 0.5 else 'intuitive'
+            style['perception_strength'] = 'strong' if abs(si - 0.5) >= 0.3 else 'moderate'
         else:
             style['perception'] = 'balanced'
             style['perception_strength'] = 'balanced'
-        print(f"   📊 Perception: {style['perception']} ({style['perception_strength']}) [value: {si:.1f}]")
+        print(f"   📊 Perception: {style['perception']} ({style['perception_strength']}) [value: {si:.2f}]")
         
         vv = self.dimensions['visual_verbal']
-        if abs(vv) >= 3:
-            style['input'] = 'visual' if vv < 0 else 'verbal'
-            style['input_strength'] = 'strong' if abs(vv) >= 7 else 'moderate'
+        if abs(vv - 0.5) >= 0.1:
+            style['input'] = 'visual' if vv < 0.5 else 'verbal'
+            style['input_strength'] = 'strong' if abs(vv - 0.5) >= 0.3 else 'moderate'
         else:
             style['input'] = 'balanced'
             style['input_strength'] = 'balanced'
-        print(f"   📊 Input: {style['input']} ({style['input_strength']}) [value: {vv:.1f}]")
+        print(f"   📊 Input: {style['input']} ({style['input_strength']}) [value: {vv:.2f}]")
         
-        sg = self.dimensions['sequential_global']
-        if abs(sg) >= 3:
-            style['understanding'] = 'sequential' if sg < 0 else 'global'
-            style['understanding_strength'] = 'strong' if abs(sg) >= 7 else 'moderate'
+        si = self.dimensions['sequential_global']
+        if abs(si - 0.5) >= 0.1:
+            style['understanding'] = 'sequential' if si < 0.5 else 'global'
+            style['understanding_strength'] = 'strong' if abs(si - 0.5) >= 0.3 else 'moderate'
         else:
             style['understanding'] = 'balanced'
             style['understanding_strength'] = 'balanced'
-        print(f"   📊 Understanding: {style['understanding']} ({style['understanding_strength']}) [value: {sg:.1f}]")
+        print(f"   📊 Understanding: {style['understanding']} ({style['understanding_strength']}) [value: {si:.2f}]")
         
         if self.questionnaire_completed:
             print(f"   📝 Learning style based on: Questionnaire (70%) + Interactions (30%)")

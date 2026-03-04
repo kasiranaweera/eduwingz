@@ -1,0 +1,243 @@
+nohup: ignoring input
+INFO:     Will watch for changes in these directories: ['/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [79467] using WatchFiles
+INFO:     Started server process [79569]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+🚀 FastAPI startup initiated...
+⚙️ Loading configuration...
+✅ Configuration loaded
+📚 Importing edu_design_generator...
+✅ Edu design generator imported
+✅ Global services will be lazily initialized on first request (startup is fast!)
+🔐 CORS allowed origins (9 total):
+   ✅ http://127.0.0.1:3000
+   ✅ http://127.0.0.1:8000
+   ✅ http://127.0.0.1:8001
+   ✅ http://localhost:3000
+   ✅ http://localhost:8000
+   ✅ http://localhost:8001
+   ✅ https://eduwingz-backend.onrender.com
+   ✅ https://eduwingz-fastapi.onrender.com
+   ✅ https://eduwingz.vercel.app
+============================================================
+✅ FastAPI app started successfully!
+============================================================
+⚠️  Main services not available - app running in limited mode
+============================================================
+🟢 App is now listening and ready to accept requests!
+============================================================
+INFO:     127.0.0.1:0 - "HEAD / HTTP/1.0" 405 Method Not Allowed
+INFO:     127.0.0.1:0 - "HEAD / HTTP/1.0" 405 Method Not Allowed
+WARNING:  WatchFiles detected changes in 'main.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [79569]
+INFO:     Started server process [89882]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'main.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [89882]
+INFO:     Started server process [106957]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'main.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [106957]
+INFO:     Started server process [106984]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+Traceback (most recent call last):
+  File "/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app/main.py", line 69, in ensure_services_initialized
+    from services.rag_service import RAGService as RAGServiceClass
+  File "/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app/services/rag_service.py", line 7, in <module>
+    from langchain_huggingface import HuggingFaceEmbeddings
+ModuleNotFoundError: No module named 'langchain_huggingface'
+Traceback (most recent call last):
+  File "/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app/main.py", line 394, in process_message
+    rag_response = await rag_service.chat(
+                         ^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'chat'
+🚀 FastAPI startup initiated...
+⚙️ Loading configuration...
+✅ Configuration loaded
+📚 Importing edu_design_generator...
+✅ Edu design generator imported
+✅ Global services will be lazily initialized on first request (startup is fast!)
+🔐 CORS allowed origins (11 total):
+   ✅ http://127.0.0.1:3000
+   ✅ http://127.0.0.1:8000
+   ✅ http://127.0.0.1:8001
+   ✅ http://127.0.0.1:8080
+   ✅ http://localhost:3000
+   ✅ http://localhost:8000
+   ✅ http://localhost:8001
+   ✅ http://localhost:8080
+   ✅ https://eduwingz-backend.onrender.com
+   ✅ https://eduwingz-fastapi.onrender.com
+   ✅ https://eduwingz.vercel.app
+============================================================
+✅ FastAPI app started successfully!
+============================================================
+⚠️  Main services not available - app running in limited mode
+============================================================
+🟢 App is now listening and ready to accept requests!
+============================================================
+
+🔵 [CHAT/PROCESS] Starting message processing...
+   User ID: 30
+   Message: Write the chemical formulae of the following compounds.
+i. Lithium fluoride
+ii. Beryllium chloride
+i...
+   Session ID: 93f034f2-955b-445e-9b70-5597e4ef589d
+⏳ [CHAT/PROCESS] Ensuring services initialized...
+📦 Attempting to import RAG and agent services on first request...
+❌ Could not import main services: No module named 'langchain_huggingface'
+✅ [CHAT/PROCESS] Services initialized successfully
+🔍 [CHAT/PROCESS] Starting RAG search...
+❌ ERROR in process_message: 'NoneType' object has no attribute 'chat'
+   Exception type: AttributeError
+INFO:     127.0.0.1:55432 - "POST /api/chat/process HTTP/1.1" 500 Internal Server Error
+Traceback (most recent call last):
+  File "/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app/main.py", line 69, in ensure_services_initialized
+    from services.rag_service import RAGService as RAGServiceClass
+  File "/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app/services/rag_service.py", line 7, in <module>
+    from langchain_huggingface import HuggingFaceEmbeddings
+ModuleNotFoundError: No module named 'langchain_huggingface'
+Traceback (most recent call last):
+  File "/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app/main.py", line 394, in process_message
+    rag_response = await rag_service.chat(
+                         ^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'chat'
+
+🔵 [CHAT/PROCESS] Starting message processing...
+   User ID: 30
+   Message: Write the chemical formulae of the following compounds.
+i. Lithium fluoride
+ii. Beryllium chloride
+i...
+   Session ID: 93f034f2-955b-445e-9b70-5597e4ef589d
+⏳ [CHAT/PROCESS] Ensuring services initialized...
+📦 Attempting to import RAG and agent services on first request...
+❌ Could not import main services: No module named 'langchain_huggingface'
+✅ [CHAT/PROCESS] Services initialized successfully
+🔍 [CHAT/PROCESS] Starting RAG search...
+❌ ERROR in process_message: 'NoneType' object has no attribute 'chat'
+   Exception type: AttributeError
+INFO:     127.0.0.1:55434 - "POST /api/chat/process HTTP/1.1" 500 Internal Server Error
+Traceback (most recent call last):
+  File "/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app/main.py", line 69, in ensure_services_initialized
+    from services.rag_service import RAGService as RAGServiceClass
+  File "/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app/services/rag_service.py", line 7, in <module>
+    from langchain_huggingface import HuggingFaceEmbeddings
+ModuleNotFoundError: No module named 'langchain_huggingface'
+Traceback (most recent call last):
+  File "/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app/main.py", line 394, in process_message
+    rag_response = await rag_service.chat(
+                         ^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'chat'
+
+🔵 [CHAT/PROCESS] Starting message processing...
+   User ID: 30
+   Message: Write the chemical formulae of the following compounds.
+i. Lithium fluoride
+ii. Beryllium chloride
+i...
+   Session ID: 93f034f2-955b-445e-9b70-5597e4ef589d
+⏳ [CHAT/PROCESS] Ensuring services initialized...
+📦 Attempting to import RAG and agent services on first request...
+❌ Could not import main services: No module named 'langchain_huggingface'
+✅ [CHAT/PROCESS] Services initialized successfully
+🔍 [CHAT/PROCESS] Starting RAG search...
+❌ ERROR in process_message: 'NoneType' object has no attribute 'chat'
+   Exception type: AttributeError
+INFO:     127.0.0.1:43672 - "POST /api/chat/process HTTP/1.1" 500 Internal Server Error
+Traceback (most recent call last):
+  File "/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app/main.py", line 69, in ensure_services_initialized
+    from services.rag_service import RAGService as RAGServiceClass
+  File "/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app/services/rag_service.py", line 7, in <module>
+    from langchain_huggingface import HuggingFaceEmbeddings
+ModuleNotFoundError: No module named 'langchain_huggingface'
+Traceback (most recent call last):
+  File "/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app/main.py", line 394, in process_message
+    rag_response = await rag_service.chat(
+                         ^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'chat'
+
+🔵 [CHAT/PROCESS] Starting message processing...
+   User ID: 1
+   Message: Write the chemical formulae of the following compounds.
+i. Lithium fluoride
+ii. Beryllium chloride
+i...
+   Session ID: 72bcb8ee-10fb-4213-99c4-97f1dfcf3e32
+⏳ [CHAT/PROCESS] Ensuring services initialized...
+📦 Attempting to import RAG and agent services on first request...
+❌ Could not import main services: No module named 'langchain_huggingface'
+✅ [CHAT/PROCESS] Services initialized successfully
+🔍 [CHAT/PROCESS] Starting RAG search...
+❌ ERROR in process_message: 'NoneType' object has no attribute 'chat'
+   Exception type: AttributeError
+INFO:     127.0.0.1:36850 - "POST /api/chat/process HTTP/1.1" 500 Internal Server Error
+Traceback (most recent call last):
+  File "/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app/main.py", line 69, in ensure_services_initialized
+    from services.rag_service import RAGService as RAGServiceClass
+  File "/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app/services/rag_service.py", line 7, in <module>
+    from langchain_huggingface import HuggingFaceEmbeddings
+ModuleNotFoundError: No module named 'langchain_huggingface'
+Traceback (most recent call last):
+  File "/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app/main.py", line 394, in process_message
+    rag_response = await rag_service.chat(
+                         ^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'chat'
+
+🔵 [CHAT/PROCESS] Starting message processing...
+   User ID: 1
+   Message: Write the chemical formulae of the following compounds.
+i. Lithium fluoride
+ii. Beryllium chloride
+i...
+   Session ID: 72bcb8ee-10fb-4213-99c4-97f1dfcf3e32
+⏳ [CHAT/PROCESS] Ensuring services initialized...
+📦 Attempting to import RAG and agent services on first request...
+❌ Could not import main services: No module named 'langchain_huggingface'
+✅ [CHAT/PROCESS] Services initialized successfully
+🔍 [CHAT/PROCESS] Starting RAG search...
+❌ ERROR in process_message: 'NoneType' object has no attribute 'chat'
+   Exception type: AttributeError
+INFO:     127.0.0.1:36862 - "POST /api/chat/process HTTP/1.1" 500 Internal Server Error
+Traceback (most recent call last):
+  File "/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app/main.py", line 69, in ensure_services_initialized
+    from services.rag_service import RAGService as RAGServiceClass
+  File "/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app/services/rag_service.py", line 7, in <module>
+    from langchain_huggingface import HuggingFaceEmbeddings
+ModuleNotFoundError: No module named 'langchain_huggingface'
+Traceback (most recent call last):
+  File "/media/kasi_ranaweera/905bfebc-e960-4a1f-896e-0c75d3dd7fbe/github/eduwingz/backend/fastapi_app/main.py", line 394, in process_message
+    rag_response = await rag_service.chat(
+                         ^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'chat'
+
+🔵 [CHAT/PROCESS] Starting message processing...
+   User ID: 1
+   Message: Write the chemical formulae of the following compounds.
+i. Lithium fluoride
+ii. Beryllium chloride
+i...
+   Session ID: 72bcb8ee-10fb-4213-99c4-97f1dfcf3e32
+⏳ [CHAT/PROCESS] Ensuring services initialized...
+📦 Attempting to import RAG and agent services on first request...
+❌ Could not import main services: No module named 'langchain_huggingface'
+✅ [CHAT/PROCESS] Services initialized successfully
+🔍 [CHAT/PROCESS] Starting RAG search...
+❌ ERROR in process_message: 'NoneType' object has no attribute 'chat'
+   Exception type: AttributeError
+INFO:     127.0.0.1:51130 - "POST /api/chat/process HTTP/1.1" 500 Internal Server Error

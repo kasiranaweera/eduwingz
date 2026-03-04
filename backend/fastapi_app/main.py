@@ -14,6 +14,7 @@ import io
 import base64
 import sys
 import traceback
+import httpx
 
 print("🚀 FastAPI startup initiated...")
 
@@ -200,9 +201,11 @@ local_origins = [
     "http://localhost:8001",
     "http://localhost:3000",
     "http://localhost:8000",
+    "http://localhost:8080",
     "http://127.0.0.1:8001",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:8000",
+    "http://127.0.0.1:8080",
 ]
 
 # Combine all origins: from env + production + local
@@ -386,11 +389,14 @@ async def process_message(message: MessageCreate, user_id: int = Depends(verify_
         await ensure_services_initialized()
         print(f"✅ [CHAT/PROCESS] Services initialized successfully")
         
+        # Namespace session_id by user_id for isolation
+        namespaced_session_id = f"{user_id}_{message.session_id}"
+        
         # First, try to get RAG results
         print(f"🔍 [CHAT/PROCESS] Starting RAG search...")
         rag_response = await rag_service.chat(
             message.content, 
-            message.session_id,
+            namespaced_session_id,
             document_ids=message.document_ids
         )
         print(f"✅ [CHAT/PROCESS] RAG response received")
@@ -407,7 +413,7 @@ async def process_message(message: MessageCreate, user_id: int = Depends(verify_
             # Max iterations set to 3 for balanced reasoning
             agent_response = await agent_service.reason_and_act(
                 message=message.content,
-                session_id=message.session_id,
+                session_id=namespaced_session_id,
                 context=rag_response.get("answer", ""),
                 enable_tools=True,
                 max_iterations=3
@@ -467,13 +473,15 @@ async def process_document(
         content = await file.read()
         f.write(content)
     
-    success = await rag_service.process_document(file_path, session_id=session_id, document_id=document_id)
+    namespaced_session_id = f"{user_id}_{session_id}"
+    success = await rag_service.process_document(file_path, session_id=namespaced_session_id, document_id=document_id)
     return {"processed": success}
 
 @app.post("/api/chat/clear/{session_id}")
 async def clear_session(session_id: str, user_id: int = Depends(verify_token)):
     """Clear session history in RAG service"""
-    rag_service.clear_session_history(session_id)
+    namespaced_session_id = f"{user_id}_{session_id}"
+    rag_service.clear_session_history(namespaced_session_id)
     return {"message": "Session history cleared"}
 
 # ==================== LESSON GENERATION ENDPOINT ====================
@@ -557,6 +565,10 @@ async def generate_topic_content(request: TopicContentRequest):
         # Get learning profile if session_id provided
         learning_profile = None
         if request.session_id:
+            # We don't have user_id here directly as it's not authenticated for this endpoint
+            # but usually content generation is part of a session.
+            # If we want strict isolation here too, we might need verify_token.
+            # However, learning profiles are also session-based.
             learning_profile = rag_service.get_or_create_learning_profile(request.session_id)
             print(f"   👤 Using learning profile for session: {request.session_id}")
         
@@ -708,21 +720,23 @@ IMPORTANT:
 
 class QuestionnaireSubmit(BaseModel):
     session_id: str
-    active_reflective: int = Field(..., ge=-11, le=11)
-    sensing_intuitive: int = Field(..., ge=-11, le=11)
-    visual_verbal: int = Field(..., ge=-11, le=11)
-    sequential_global: int = Field(..., ge=-11, le=11)
+    active_reflective: float = Field(..., ge=0.0, le=1.0)
+    sensing_intuitive: float = Field(..., ge=0.0, le=1.0)
+    visual_verbal: float = Field(..., ge=0.0, le=1.0)
+    sequential_global: float = Field(..., ge=0.0, le=1.0)
 
 @app.post("/api/learning/questionnaire")
 async def submit_questionnaire(
     questionnaire: QuestionnaireSubmit,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     user_id: int = Depends(verify_token)
 ):
     """Submit ILS questionnaire responses and update learning profile"""
     try:
         await ensure_services_initialized()
         print(f"📝 [Questionnaire] Received questionnaire submission for session: {questionnaire.session_id}")
-        learning_profile = rag_service.get_or_create_learning_profile(questionnaire.session_id)
+        namespaced_session_id = f"{user_id}_{questionnaire.session_id}"
+        learning_profile = rag_service.get_or_create_learning_profile(namespaced_session_id)
         
         questionnaire_data = {
             'active_reflective': questionnaire.active_reflective,
@@ -733,8 +747,45 @@ async def submit_questionnaire(
         
         learning_profile.set_questionnaire_data(questionnaire_data)
         
-        # Save the updated profile
+        # Save the updated profile locally
         rag_service._save_learning_profiles()
+        
+        # Sync to Django backend
+        try:
+            print(f"🔄 [Questionnaire] Syncing to Django for user: {user_id}")
+            # Map 0..1 to -11..11
+            to_11 = lambda x: int(round((x * 22) - 11))
+            django_styles = {
+                'active_reflective': to_11(questionnaire.active_reflective),
+                'sensing_intuitive': to_11(questionnaire.sensing_intuitive),
+                'visual_verbal': to_11(questionnaire.visual_verbal),
+                'sequential_global': to_11(questionnaire.sequential_global)
+            }
+            
+            django_data = {
+                "learning_styles": django_styles,
+                "questionnaire_completed": True,
+                "last_learning_style_update": datetime.now().isoformat()
+            }
+            
+            # Use the same token from the request to authenticate with Django
+            headers = {"Authorization": f"Bearer {credentials.credentials}"}
+            django_backend_url = os.getenv("DJANGO_BACKEND_URL", "http://127.0.0.1:8000")
+            
+            async with httpx.AsyncClient() as client:
+                resp = await client.put(
+                    f"{django_backend_url}/app/user/{user_id}/profile/",
+                    json=django_data,
+                    headers=headers,
+                    timeout=10.0
+                )
+                if resp.status_code == 200:
+                    print(f"✅ [Questionnaire] Successfully synced to Django")
+                else:
+                    print(f"⚠️ [Questionnaire] Django sync failed: {resp.status_code} - {resp.text}")
+        except Exception as sync_err:
+            print(f"❌ [Questionnaire] Error syncing to Django: {sync_err}")
+            # We don't fail the whole request if sync fails, but we log it
         
         # Get the updated learning style
         learning_style = learning_profile.get_learning_style()
@@ -759,7 +810,8 @@ async def get_learning_profile(
     """Get learning profile for a session"""
     try:
         await ensure_services_initialized()
-        learning_profile = rag_service.get_or_create_learning_profile(session_id)
+        namespaced_session_id = f"{user_id}_{session_id}"
+        learning_profile = rag_service.get_or_create_learning_profile(namespaced_session_id)
         learning_style = learning_profile.get_learning_style()
         
         return {
@@ -785,9 +837,10 @@ async def continue_response(
     try:
         await ensure_services_initialized()
         print(f"🔄 [Continue] Continuing response for session: {continue_msg.session_id}")
+        namespaced_session_id = f"{user_id}_{continue_msg.session_id}"
         
         # Get the last assistant message from history
-        history = rag_service.get_session_history(continue_msg.session_id)
+        history = rag_service.get_session_history(namespaced_session_id)
         if not history.messages or len(history.messages) == 0:
             raise HTTPException(status_code=400, detail="No conversation history found")
         
@@ -878,10 +931,11 @@ async def agent_chat(
     try:
         await ensure_services_initialized()
         print(f"\n📡 Agent Chat Request received")
+        namespaced_session_id = f"{user_id}_{request.session_id}"
         
         response = await rag_service.chat_with_agent(
             message=request.content,
-            session_id=request.session_id,
+            session_id=namespaced_session_id,
             document_ids=request.document_ids,
             use_adaptive_learning=request.use_adaptive_learning,
             enable_tools=request.enable_tools,
@@ -917,7 +971,8 @@ async def get_agent_memory(
     """Get agent's reasoning memory for a session"""
     try:
         await ensure_services_initialized()
-        memory_summary = rag_service.get_agent_memory_summary(session_id)
+        namespaced_session_id = f"{user_id}_{session_id}"
+        memory_summary = rag_service.get_agent_memory_summary(namespaced_session_id)
         return {
             "status": "success",
             "memory": memory_summary
@@ -933,7 +988,8 @@ async def clear_agent_memory(
     """Clear agent's memory for a session"""
     try:
         await ensure_services_initialized()
-        rag_service.clear_agent_memory(session_id)
+        namespaced_session_id = f"{user_id}_{session_id}"
+        rag_service.clear_agent_memory(namespaced_session_id)
         return {
             "status": "success",
             "message": f"Agent memory cleared for session {session_id}"

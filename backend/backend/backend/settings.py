@@ -63,12 +63,12 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'sub',
 }
 
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://localhost:8001,https://eduwingz.vercel.app,https://eduwingz-backend.onrender.com,https://eduwingz-fastapi.onrender.com').split(',')
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://localhost:8001,http://localhost:8080,http://127.0.0.1:8080,https://eduwingz.vercel.app,https://eduwingz-backend.onrender.com,https://eduwingz-fastapi.onrender.com').split(',')
 # Strip whitespace from CORS_ALLOWED_ORIGINS
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in CORS_ALLOWED_ORIGINS]
 
 # CSRF trusted origins for POST/PUT/DELETE requests
-CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,https://eduwingz.vercel.app,https://eduwingz-backend.onrender.com').split(',')
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://127.0.0.1:8080,https://eduwingz.vercel.app,https://eduwingz-backend.onrender.com').split(',')
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in CSRF_TRUSTED_ORIGINS]
 
 # Enhanced CORS configuration

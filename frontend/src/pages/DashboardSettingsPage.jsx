@@ -43,6 +43,7 @@ import {
 } from "@mui/icons-material";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 import uiConfigs from "../configs/ui.config";
 import profileApi from "../api/modules/profile.api";
 import learningApi from "../api/modules/lessons.api";
@@ -77,6 +78,7 @@ const DashboardSettingsPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const isDark = themeMode === "dark";
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -478,21 +480,33 @@ const DashboardSettingsPage = () => {
                         sx={{ fontWeight: 600, bgcolor: alpha(theme.palette.success.main, 0.1) }}
                       />
                     </Box>
-                    <Button
-                      startIcon={<Edit />}
-                      onClick={() => setIsEditingLearningStyle(true)}
-                      variant="outlined"
-                      color="primary"
-                      sx={{ borderRadius: 8 }}
-                    >
-                      Calibrate Values
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <Button
+                        startIcon={<Edit />}
+                        onClick={() => setIsEditingLearningStyle(true)}
+                        variant="outlined"
+                        color="primary"
+                        sx={{ borderRadius: 8 }}
+                      >
+                        Calibrate Values
+                      </Button>
+                      <Button
+                        variant={profile?.questionnaire_completed ? "outlined" : "contained"}
+                        color="primary"
+                        sx={{ borderRadius: 8 }}
+                        disabled={profile?.questionnaire_completed}
+                        onClick={() => navigate('/ils-questionnaire')}
+                      >
+                        {profile?.questionnaire_completed ? "ILS Questionnaire Completed" : "Face the ILS Questionnaire"}
+                      </Button>
+                    </Box>
                   </Box>
 
                   <Grid container spacing={3}>
                     {['active_reflective', 'sensing_intuitive', 'visual_verbal', 'sequential_global'].map((dim) => {
-                      const value = (learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.[dim] || 0;
-                      const progress = ((value + 11) / 22) * 100;
+                      const rawValue = (learningStyleSource === "manual" ? learningStyleAdjustments : profile.learning_styles)?.[dim] ?? 0;
+                      // Normalize -11..11 to 0..100
+                      const progress = ((rawValue + 11) / 22) * 100;
                       const labels = {
                         active_reflective: ["Active", "Reflective"],
                         sensing_intuitive: ["Sensing", "Intuitive"],
@@ -501,11 +515,13 @@ const DashboardSettingsPage = () => {
                       }[dim];
 
                       return (
-                        <Grid item xs={12} sm={6} key={dim}>
+                        <Grid item xs={12} md={3} key={dim}>
                           <Box sx={{ p: 2, borderRadius: 3, bgcolor: alpha(theme.palette.background.default, 0.5) }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
                               <Typography variant="caption" sx={{ fontWeight: 700 }}>{labels[0]}</Typography>
-                              <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main' }}>Val: {value}</Typography>
+                              <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                                {rawValue > 0 ? `+${rawValue}` : rawValue}
+                              </Typography>
                               <Typography variant="caption" sx={{ fontWeight: 700 }}>{labels[1]}</Typography>
                             </Box>
                             <LinearProgress

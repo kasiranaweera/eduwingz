@@ -23,6 +23,8 @@ import {
   DialogContent,
   ToggleButton,
   ToggleButtonGroup,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import React, { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
@@ -171,6 +173,8 @@ const PlatformLessonId = () => {
   const { user } = useSelector((state) => state.user);
   const { lessonId } = useParams();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   // ── Data state ──────────────────────────────────────────────────────────────
   const [lesson, setLesson] = useState(null);
@@ -1033,11 +1037,11 @@ const PlatformLessonId = () => {
       {/* ── Right-side Drawer (unified) ─────────────────────────────────────── */}
       <Drawer
         sx={{
-          width: panelOpen ? drawerWidth : 0,
+          width: (!isMobile && panelOpen) ? drawerWidth : 0,
           flexShrink: 0,
           "& .MuiDrawer-paper": {
-            width: drawerWidth,
-            mt: 8,
+            width: isMobile ? '100vw' : drawerWidth,
+            mt: isMobile ? 0 : 8,
             backgroundColor: "background.paper",
             boxSizing: "border-box",
             transition: isResizing ? "none" : "width 0.3s ease",
@@ -1045,11 +1049,12 @@ const PlatformLessonId = () => {
             flexDirection: "column",
           },
         }}
-        variant="persistent"
+        variant={isMobile ? "temporary" : "persistent"}
         anchor="right"
         open={panelOpen}
+        onClose={() => setActivePanel(null)}
       >
-        <ResizeHandle onMouseDown={(e) => { setIsResizing(true); e.preventDefault(); }} isResizing={isResizing} />
+        {!isMobile && <ResizeHandle onMouseDown={(e) => { setIsResizing(true); e.preventDefault(); }} isResizing={isResizing} />}
 
         <PanelHeader
           title={currentPanelMeta.title}
@@ -1143,7 +1148,7 @@ const PlatformLessonId = () => {
       {/* ── Main layout ─────────────────────────────────────────────────────── */}
       <Box
         sx={{
-          width: panelOpen ? `calc(100% - ${drawerWidth}px)` : "100%",
+          width: (!isMobile && panelOpen) ? `calc(100% - ${drawerWidth}px)` : "100%",
           transition: isResizing ? "none" : "width 0.3s ease",
           pb: 14,
         }}
@@ -1314,7 +1319,7 @@ const PlatformLessonId = () => {
                           <Box sx={{ width: '100%', textAlign: 'center' }}>
                             <audio controls style={{ width: '100%' }}>
                               {/* Since it's local FastAPI, proxy it similar to images */}
-                              <source src={`http://localhost:8001${topicCodeCache[selectedTopic.id].audioUrl}`} type="audio/wav" />
+                              <source src={`http://localhost:8080/fastapi${topicCodeCache[selectedTopic.id].audioUrl}`} type="audio/wav" />
                               Your browser does not support the audio element.
                             </audio>
                             <Typography variant="caption" sx={{ mt: 2, display: 'block', color: "text.secondary" }}>
