@@ -10,15 +10,37 @@ def reconcile_lessons_tables(apps, schema_editor):
     """
     Ensure core tables exist before creating TopicDiscussion.
     This handles cases where migrations were marked as applied but tables are missing in the DB.
+    It ALSO handles the case where the user originally deployed with Integer primary keys
+    for lessons and notes, but later changed the codebase to use UUIDs without a proper migration.
     """
     from django.db import connection
     tables = connection.introspection.table_names()
     
+    # Check if lessons_lesson has the wrong ID type (bigint instead of uuid)
+    with connection.cursor() as cursor:
+        if 'lessons_lesson' in tables:
+            cursor.execute("SELECT data_type FROM information_schema.columns WHERE table_name = 'lessons_lesson' AND column_name = 'id';")
+            result = cursor.fetchone()
+            if result and result[0] != 'uuid':
+                print("WARNING: lessons_lesson has incorrect primary key type (not uuid). Dropping table to recreate.")
+                cursor.execute("DROP TABLE IF EXISTS lessons_topic CASCADE")
+                cursor.execute("DROP TABLE IF EXISTS lessons_note CASCADE")
+                cursor.execute("DROP TABLE IF EXISTS lessons_lesson CASCADE")
+                tables.remove('lessons_lesson')
+                if 'lessons_note' in tables: tables.remove('lessons_note')
+                if 'lessons_topic' in tables: tables.remove('lessons_topic')
+
     # Check for Lesson table
     if 'lessons_lesson' not in tables:
         print("Creating missing table: lessons_lesson")
         Lesson = apps.get_model('lessons', 'Lesson')
         schema_editor.create_model(Lesson)
+    
+    # Check for Note table
+    if 'lessons_note' not in tables:
+        print("Creating missing table: lessons_note")
+        Note = apps.get_model('lessons', 'Note')
+        schema_editor.create_model(Note)
         
     # Check for Topic table
     if 'lessons_topic' not in tables:
