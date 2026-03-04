@@ -7,7 +7,6 @@ import {
   Button,
   Menu,
   MenuItem,
-  Divider,
   Chip,
   Card,
   Tooltip,
@@ -18,7 +17,6 @@ import {
   alpha
 } from '@mui/material'
 import {
-  BarChart as BarChartIcon,
   FilterList as FilterListIcon,
   TrendingUp as TrendingUpIcon,
   Assessment as AssessmentIcon,
@@ -43,8 +41,6 @@ import {
   Legend,
   Filler
 } from 'chart.js'
-import sampleData from '../assets/analyticsSampleData'
-import uiConfigs from '../configs/ui.config'
 
 ChartJS.register(
   CategoryScale,
@@ -59,7 +55,6 @@ ChartJS.register(
 
 const SUBJECTS = ['All Subjects', 'Mathematics', 'Science', 'English', 'History', 'Geography']
 const TIME_PERIODS = ['All Time', 'Last 7 Days', 'Last 30 Days', 'Last 3 Months']
-const ASSESSMENT_TYPES = ['All', 'Quiz', 'Test', 'Assignment']
 
 const DashboardAnalyticsPage = () => {
   const theme = useTheme()
@@ -68,13 +63,11 @@ const DashboardAnalyticsPage = () => {
   const [overview, setOverview] = useState(null)
   const [selectedSubject, setSelectedSubject] = useState('All Subjects')
   const [selectedTimePeriod, setSelectedTimePeriod] = useState('All Time')
-  const [assessmentType, setAssessmentType] = useState('All')
   const [loading, setLoading] = useState(true)
 
   // Menu anchors
   const [subjectAnchorEl, setSubjectAnchorEl] = useState(null)
   const [timePeriodAnchorEl, setTimePeriodAnchorEl] = useState(null)
-  const [assessmentAnchorEl, setAssessmentAnchorEl] = useState(null)
 
   // Snackbar
   const [snackbar, setSnackbar] = useState({
@@ -272,56 +265,6 @@ const DashboardAnalyticsPage = () => {
           boxPadding: 4
         }
       }
-    }} />
-  }
-
-  const renderClassDistribution = () => {
-    const snapshots = overview?.class_snapshots;
-    if (!snapshots || snapshots.length === 0) return <Typography color="text.secondary">No class data available</Typography>
-
-    let filtered = snapshots
-    if (selectedTimePeriod !== 'All Time') {
-      const now = new Date()
-      let cutoff = new Date()
-      if (selectedTimePeriod === 'Last 7 Days') cutoff.setDate(now.getDate() - 7)
-      else if (selectedTimePeriod === 'Last 30 Days') cutoff.setDate(now.getDate() - 30)
-      else if (selectedTimePeriod === 'Last 3 Months') cutoff.setMonth(now.getMonth() - 3)
-      filtered = snapshots.filter(s => new Date(s.date) >= cutoff)
-    }
-    if (filtered.length === 0) return <Typography color="text.secondary">No data for selected period</Typography>
-
-    const data = {
-      labels: filtered.map(s => new Date(s.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
-      datasets: [{
-        label: 'Overall Class Avg (%)',
-        data: filtered.map(s => s.avg_score ?? 0),
-        borderColor: theme.palette.success.main,
-        backgroundColor: (context) => {
-          const ctx = context.chart.ctx;
-          const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-          gradient.addColorStop(0, alpha(theme.palette.success.main, 0.3));
-          gradient.addColorStop(1, alpha(theme.palette.success.main, 0.0));
-          return gradient;
-        },
-        borderWidth: 3,
-        tension: 0.5,
-        fill: true,
-        pointRadius: 0,
-        pointHoverRadius: 6,
-        segment: {
-          borderColor: ctx => ctx.p0.parsed.y > ctx.p1.parsed.y ? theme.palette.error.main : theme.palette.success.main
-        }
-      }]
-    }
-
-    return <Line data={data} options={{
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        y: { beginAtZero: true, max: 100, grid: { color: alpha(theme.palette.text.primary, 0.05) } },
-        x: { grid: { display: false } }
-      },
-      plugins: { legend: { display: false } }
     }} />
   }
 

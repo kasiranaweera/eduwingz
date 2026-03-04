@@ -76,7 +76,10 @@ class Topic(TimeStampedModel):
 
 
 class Note(TimeStampedModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
     class Meta:
+
         verbose_name = _("Note")
         verbose_name_plural = _("Notes")
         ordering = ['-created_at']

@@ -18,8 +18,7 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
-import { useEffect } from "react";
-import { setUser } from "./redux/features/userSlice";
+
 
 const App = () => {
   const { themeMode } = useSelector((state) => state.themeMode);

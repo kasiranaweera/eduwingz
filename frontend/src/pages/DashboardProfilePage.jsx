@@ -4,7 +4,6 @@ import {
   Grid,
   Avatar,
   Typography,
-  Button,
   Paper,
   Chip,
   CircularProgress,
@@ -29,7 +28,6 @@ import {
   EmojiEvents,
   Quiz,
   MenuBook,
-  MoreHoriz,
   Psychology,
 } from "@mui/icons-material";
 import { useSelector } from "react-redux";

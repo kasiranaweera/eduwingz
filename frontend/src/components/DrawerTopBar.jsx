@@ -23,7 +23,6 @@ import {
   useMediaQuery,
   useTheme,
   ClickAwayListener,
-  Paper,
   Popover,
 } from "@mui/material";
 import menuConfigs from "../configs/menu.configs";
@@ -133,8 +132,6 @@ const CustomDrawer = styled(Drawer, {
 
 // Reusable sidebar content component
 const SidebarContent = ({ open, dashboardType, appState, user, dispatch, toggleMenu2, isMobile, handleClose }) => {
-  const sidebarItemWidth = open ? "100%" : "auto";
-
   const handleLinkClick = () => {
     if (isMobile && handleClose) handleClose();
   };
@@ -518,7 +515,7 @@ const DrawerTopBar = ({ special, content }) => {
   useEffect(() => {
     if (user?.id) {
       const fetchNotifications = async () => {
-        const { response, err } = await userApi.getNotifications({ userId: user.id });
+        const { response } = await userApi.getNotifications({ userId: user.id });
         if (response && response.data) {
           setNotifications(Array.isArray(response.data) ? response.data : []);
         } else {
@@ -533,7 +530,7 @@ const DrawerTopBar = ({ special, content }) => {
     const delayDebounceFn = setTimeout(async () => {
       if (searchQuery.trim().length > 0) {
         setIsSearching(true);
-        const { response, err } = await searchApi.globalSearch({ query: searchQuery });
+        const { response } = await searchApi.globalSearch({ query: searchQuery });
         if (response && response.data && response.data.results) {
           setSearchResults(response.data.results);
         } else {

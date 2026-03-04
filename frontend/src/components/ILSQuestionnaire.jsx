@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { Box, Button, Typography, LinearProgress, Paper, IconButton } from "@mui/material";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-import userApi from "../api/modules/user.api";
+
 import { ilsQuestions } from "../data/ilsQuestions";
 import uiConfigs from "../configs/ui.config";
 

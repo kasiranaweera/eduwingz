@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { LoadingButton } from "@mui/lab";
 import {
-  Alert, Box, Stack, TextField, Typography, Button, Stepper, Step, StepLabel,
+  Alert, Box, TextField, Typography, Button, Stepper, Step, StepLabel,
   Avatar, MenuItem, Paper, Grid
 } from "@mui/material";
 import { useFormik } from "formik";
@@ -10,7 +10,6 @@ import { toast } from "react-toastify";
 import * as Yup from "yup";
 import uiConfigs from "../configs/ui.config";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import TuneIcon from '@mui/icons-material/Tune';
 import { useNavigate } from 'react-router-dom';

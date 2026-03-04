@@ -6,7 +6,6 @@ import menuConfigs from "../configs/menu.configs";
 import uiConfigs from "../configs/ui.config";
 
 const PlatformBottomNav = ({ onMenuClick, activePanel }) => {
-    const { appState } = useSelector((state) => state.appState);
     const navigate = useNavigate();
 
     const handleMenuClick = (index, path) => {

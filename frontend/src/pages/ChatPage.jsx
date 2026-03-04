@@ -121,7 +121,6 @@ const ChatPage = () => {
     "Gathering information...",
   ];
 
-  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
   /* ---------------------------------------------------------- */
   /* 1. SEND MESSAGE – fixed duplicate logic                    */
@@ -490,7 +489,7 @@ const ChatPage = () => {
       }
     })();
     return () => (mounted = false);
-  }, [sessionId, user_message]);
+  }, [sessionId, user_message, location.state, navigate]);
 
   /* ---------------------------------------------------------- */
   /* 3. AUTO-SCROLL                                            */
