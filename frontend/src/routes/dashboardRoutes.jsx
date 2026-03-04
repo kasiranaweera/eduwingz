@@ -16,6 +16,7 @@ import DashboardAnaliticsPage from "../pages/DashboardAnalyticsPage"
 import DashboardMinehoarizonPage from "../pages/DashboardMinehorizonPage"
 import PlatformLessons from "../pages/PlatformLessons";
 import PlatformLessonId from "../pages/PlatformLessonId";
+import PlatformQuiz from "../pages/PlatformQuiz";
 
 export const routesGen = {
   dashboard: "/",
@@ -125,7 +126,7 @@ const dashboardRoutes = [
     path: "/dashboard/platform/notes",
     element: (
       <ProtectedPage>
-      <PlatformNotes />
+        <PlatformNotes />
       </ProtectedPage>
     ),
     state: "platform-notes",
@@ -134,7 +135,7 @@ const dashboardRoutes = [
     path: "/dashboard/community",
     element: (
       <ProtectedPage>
-      <DashboardCommunityPage />
+        <DashboardCommunityPage />
       </ProtectedPage>
     ),
     state: "platform-community",
@@ -143,7 +144,7 @@ const dashboardRoutes = [
     path: "/dashboard/platform/quizzes",
     element: (
       <ProtectedPage>
-      <PlatformQuizzesPage />
+        <PlatformQuizzesPage />
       </ProtectedPage>
     ),
     state: "quizzes",
@@ -152,7 +153,7 @@ const dashboardRoutes = [
     path: "/dashboard/analytics",
     element: (
       <ProtectedPage>
-      <DashboardAnaliticsPage />
+        <DashboardAnaliticsPage />
       </ProtectedPage>
     ),
     state: "analitics",
@@ -161,7 +162,7 @@ const dashboardRoutes = [
     path: "/dashboard/mine-horizon",
     element: (
       <ProtectedPage>
-      <DashboardMinehoarizonPage />
+        <DashboardMinehoarizonPage />
       </ProtectedPage>
     ),
     state: "platform-community",
@@ -170,7 +171,7 @@ const dashboardRoutes = [
     path: "/dashboard/platform/lessons",
     element: (
       <ProtectedPage>
-      <PlatformLessons />
+        <PlatformLessons />
       </ProtectedPage>
     ),
     state: "platform-lessons",
@@ -179,10 +180,19 @@ const dashboardRoutes = [
     path: "/dashboard/platform/lessons/:lessonId",
     element: (
       <ProtectedPage>
-      <PlatformLessonId />
+        <PlatformLessonId />
       </ProtectedPage>
     ),
     state: "platform-lessons-detail",
+  },
+  {
+    path: "/dashboard/platform/quiz",
+    element: (
+      <ProtectedPage>
+        <PlatformQuiz />
+      </ProtectedPage>
+    ),
+    state: "platform-quiz",
   },
 ];
 

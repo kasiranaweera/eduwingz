@@ -152,6 +152,119 @@ class QuizViewSet(viewsets.ModelViewSet):
         serializer = QuizSerializer(quiz)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    @action(detail=False, methods=['post'], url_path='generate_adaptive')
+    def generate_adaptive_quiz(self, request):
+        """
+        Generate a quiz using AI via FastAPI, adapted to the user's learning profile.
+        
+        Request body:
+            {
+                "topic": "Algebra",
+                "subject": "Mathematics",
+                "grade": "Grade 10",
+                "base_difficulty": "medium",
+                "num_questions": 5,
+                "session_id": "optional-uuid"
+            }
+        """
+        topic = request.data.get('topic', '')
+        subject = request.data.get('subject', '')
+        grade = request.data.get('grade', '')
+        base_difficulty = request.data.get('base_difficulty', 'medium')
+        num_questions = int(request.data.get('num_questions', 5))
+        session_id = request.data.get('session_id')
+        lesson_id = request.data.get('lesson_id')
+
+        if not topic:
+            return Response(
+                {"detail": "Topic is required for adaptive quiz generation"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        fastapi_url = getattr(settings, 'FASTAPI_URL', 'http://localhost:8001')
+        try:
+            token = request.META.get('HTTP_AUTHORIZATION', '')
+            resp = requests.post(
+                f"{fastapi_url}/api/lessons/generate_adaptive_quiz",
+                json={
+                    "topic": topic,
+                    "subject": subject,
+                    "grade": grade,
+                    "base_difficulty": base_difficulty,
+                    "num_questions": num_questions,
+                    "session_id": session_id,
+                },
+                headers={"Authorization": token},
+                timeout=120,
+            )
+
+            if resp.status_code != 200:
+                logger.error(f"FastAPI adaptive quiz generation failed: {resp.status_code} - {resp.text}")
+                return Response(
+                    {"detail": f"AI adaptive quiz generation failed: {resp.text}"},
+                    status=status.HTTP_502_BAD_GATEWAY,
+                )
+
+            ai_data = resp.json()
+        except requests.exceptions.ConnectionError:
+            logger.warning("FastAPI not available, failing gracefully")
+            return Response(
+                {"detail": "FastAPI service unavailable."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except Exception as e:
+            logger.error(f"Adaptive quiz generation error: {e}")
+            return Response(
+                {"detail": f"Adaptive quiz generation error: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        # Save to database
+        from lessons.models import Lesson, Subject as LessonSubject
+        lesson = None
+        subject_obj = None
+
+        if lesson_id:
+            try:
+                lesson = Lesson.objects.get(id=lesson_id, user=request.user)
+            except Lesson.DoesNotExist:
+                pass
+
+        if subject:
+            subject_obj = LessonSubject.objects.filter(name__icontains=subject).first()
+
+        quiz = Quiz.objects.create(
+            title=ai_data.get('title', f"{topic} Adaptive Quiz"),
+            description=ai_data.get('description', f"Adaptive AI-generated quiz on {topic}"),
+            user=request.user,
+            lesson=lesson,
+            subject=subject_obj,
+            category=subject or topic,
+            difficulty=base_difficulty,
+            time_limit=ai_data.get('time_limit', 30),
+            is_ai_generated=True,
+        )
+
+        for i, q_data in enumerate(ai_data.get('questions', [])):
+            question = Question.objects.create(
+                quiz=quiz,
+                question_text=q_data.get('question', ''),
+                question_type=Question.QuestionType.MULTIPLE_CHOICE,
+                explanation=q_data.get('explanation', ''),
+                order=i + 1,
+                points=1,
+            )
+            for j, opt in enumerate(q_data.get('options', [])):
+                QuestionOption.objects.create(
+                    question=question,
+                    text=opt if isinstance(opt, str) else opt.get('text', ''),
+                    is_correct=(j == q_data.get('correct', 0)),
+                    order=j,
+                )
+
+        serializer = QuizSerializer(quiz)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
     def _generate_fallback_quiz(self, topic, subject, difficulty, num_questions):
         """Generate a basic placeholder quiz when FastAPI is unavailable."""
         questions = []

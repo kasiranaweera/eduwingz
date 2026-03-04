@@ -75,6 +75,25 @@ const sampleData = {
     { id: 9, name: 'Iris Martinez', overall_score: 86 },
     { id: 10, name: 'Jack Taylor', overall_score: 50 },
   ],
+  engagements: [
+    { id: 101, profile: 1, session_date: '2025-11-20', duration_seconds: 3600, interactions: 45, interaction_depth: 0.8 },
+    { id: 102, profile: 1, session_date: '2025-11-21', duration_seconds: 4200, interactions: 52, interaction_depth: 0.85 },
+    { id: 103, profile: 1, session_date: '2025-11-22', duration_seconds: 1800, interactions: 20, interaction_depth: 0.5 },
+    { id: 104, profile: 1, session_date: '2025-11-23', duration_seconds: 3900, interactions: 40, interaction_depth: 0.75 },
+    { id: 105, profile: 1, session_date: '2025-11-24', duration_seconds: 4500, interactions: 60, interaction_depth: 0.9 },
+    { id: 106, profile: 1, session_date: '2025-11-25', duration_seconds: 3000, interactions: 35, interaction_depth: 0.65 },
+    { id: 107, profile: 1, session_date: '2025-11-26', duration_seconds: 4800, interactions: 70, interaction_depth: 0.95 },
+  ],
+  alerts: [
+    { id: 1, profile: 5, subject: 'Mathematics', topic: 'Algebra', reason: 'Declining quiz scores over the last 3 sessions.', flagged_at: '2025-11-25T10:00:00Z', resolved: false },
+    { id: 2, profile: 8, subject: 'Science', topic: 'Physics', reason: 'Significant drop in engagement duration.', flagged_at: '2025-11-26T08:30:00Z', resolved: false },
+    { id: 3, profile: 10, subject: 'History', topic: 'World War II', reason: 'Failed last two assessments.', flagged_at: '2025-11-26T14:15:00Z', resolved: false },
+  ],
+  decision_support: [
+    { type: 'curriculum_adjustment', title: 'Review needed for History', description: 'Class average is low (71.2%). Consider revising the material or scheduling a review session.', priority: 'Medium' },
+    { type: 'intervention', title: '3 students need attention', description: 'Review the predictive alerts panel to identify students showing early warning signs.', priority: 'High' },
+    { type: 'study_habits', title: 'Encourage spaced repetition', description: 'Data shows engagement drops after 30 minutes. Recommend breaking study sessions into smaller chunks.', priority: 'Low' },
+  ],
 }
 
 export default sampleData

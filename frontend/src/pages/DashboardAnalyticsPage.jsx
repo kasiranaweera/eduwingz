@@ -25,7 +25,10 @@ import {
   Warning as AlertIcon,
   AutoGraph as AutoGraphIcon,
   PeopleAlt as PeopleAltIcon,
-  School as SchoolIcon
+  School as SchoolIcon,
+  Lightbulb as LightbulbIcon,
+  Timeline as TimelineIcon,
+  ErrorOutline as ErrorOutlineIcon
 } from '@mui/icons-material'
 import analyticsApi from '../api/modules/analytics.api'
 import { Line, Bar } from 'react-chartjs-2'
@@ -87,29 +90,16 @@ const DashboardAnalyticsPage = () => {
         const { response } = await analyticsApi.getOverview()
         let data = response || {}
 
-        // Fallback to sample data only if essential sections are entirely missing
-        if (!data.competency_averages || data.competency_averages.length === 0) {
-          data.competency_averages = sampleData.competency_averages
-        }
-        if (!data.quiz_performance || Object.keys(data.quiz_performance).length === 0) {
-          data.quiz_performance = sampleData.quiz_performance
-        }
-        if (!data.students || data.students.length === 0) {
-          data.students = sampleData.students
-        }
-        if (!data.class_snapshots || data.class_snapshots.length === 0) {
-          data.class_snapshots = sampleData.class_snapshots
-        }
-
+        // Remove fallback to sample data
         console.log('Analytics data loaded:', data)
         setOverview(data)
       } catch (e) {
         console.error('Failed to load analytics:', e)
-        setOverview(sampleData)
+        setOverview(null)
         setSnackbar({
           open: true,
-          message: 'Using sample data - could not fetch live analytics',
-          severity: 'warning',
+          message: 'Could not fetch live analytics',
+          severity: 'error',
         })
       } finally {
         setLoading(false)
@@ -335,6 +325,117 @@ const DashboardAnalyticsPage = () => {
     }} />
   }
 
+  const renderEngagementPatterns = () => {
+    const engagements = overview?.engagements;
+    if (!engagements || engagements.length === 0) return <Typography color="text.secondary">No engagement data available</Typography>
+
+    // Sort by date ascending for the chart
+    const sorted = [...engagements].sort((a, b) => new Date(a.session_date) - new Date(b.session_date))
+
+    // Convert duration to minutes
+    const data = {
+      labels: sorted.map(e => new Date(e.session_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+      datasets: [
+        {
+          label: 'Duration (mins)',
+          data: sorted.map(e => Math.round((e.duration_seconds || 0) / 60)),
+          backgroundColor: alpha(theme.palette.info.main, 0.7),
+          borderRadius: 4,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Interactions',
+          data: sorted.map(e => e.interactions || 0),
+          type: 'line',
+          borderColor: theme.palette.warning.main,
+          backgroundColor: theme.palette.warning.main,
+          borderWidth: 2,
+          pointRadius: 4,
+          tension: 0.3,
+          yAxisID: 'y1'
+        }
+      ]
+    }
+
+    return <Bar data={data} options={{
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: { grid: { display: false } },
+        y: {
+          type: 'linear', display: true, position: 'left',
+          title: { display: true, text: 'Minutes' },
+          grid: { color: alpha(theme.palette.text.primary, 0.05) }
+        },
+        y1: {
+          type: 'linear', display: true, position: 'right',
+          title: { display: true, text: 'Interactions' },
+          grid: { drawOnChartArea: false }
+        }
+      },
+      plugins: { legend: { position: 'top' } }
+    }} />
+  }
+
+  const renderPredictiveAlerts = () => {
+    const alerts = overview?.alerts;
+    if (!alerts || alerts.length === 0) return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', opacity: 0.6 }}>
+        <ErrorOutlineIcon sx={{ fontSize: 48, mb: 1, color: 'success.main' }} />
+        <Typography>No active alerts. All good!</Typography>
+      </Box>
+    )
+
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto', pr: 1, height: '100%' }}>
+        {alerts.map((alert, i) => {
+          const student = overview?.students?.find(s => s.id === alert.profile)
+          const name = student ? student.name : `Student #${alert.profile}`
+          return (
+            <Paper key={i} elevation={0} sx={{ p: 2, borderRadius: 3, borderLeft: `4px solid ${theme.palette.error.main}`, bgcolor: alpha(theme.palette.background.paper, 0.5) }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="subtitle2" fontWeight="bold">{name}</Typography>
+                <Chip size="small" label={alert.subject} color="error" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
+              </Box>
+              <Typography variant="body2" color="text.secondary">{alert.reason}</Typography>
+              <Typography variant="caption" color="text.disabled" sx={{ mt: 1, display: 'block' }}>
+                Flagged: {new Date(alert.flagged_at).toLocaleDateString()}
+              </Typography>
+            </Paper>
+          )
+        })}
+      </Box>
+    )
+  }
+
+  const renderDecisionSupport = () => {
+    const recommendations = overview?.decision_support;
+    if (!recommendations || recommendations.length === 0) return (
+      <Typography color="text.secondary">No recommendations available at this time.</Typography>
+    )
+
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto', pr: 1, height: '100%' }}>
+        {recommendations.map((rec, i) => {
+          const isHigh = rec.priority === 'High'
+          const iconColor = isHigh ? 'error.main' : 'warning.main'
+          return (
+            <Paper key={i} elevation={0} sx={{ p: 2, borderRadius: 3, border: `1px solid ${alpha(theme.palette.divider, 0.1)}`, bgcolor: alpha(theme.palette.background.paper, 0.4), display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+              <Box sx={{ p: 1, borderRadius: 2, bgcolor: alpha(theme.palette[isHigh ? 'error' : 'warning'].main, 0.1) }}>
+                <LightbulbIcon sx={{ color: iconColor }} />
+              </Box>
+              <Box>
+                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>{rec.title}</Typography>
+                <Typography variant="body2" color="text.secondary">{rec.description}</Typography>
+              </Box>
+            </Paper>
+          )
+        })}
+      </Box>
+    )
+  }
+
   return (
     <Box sx={{ width: '100%', minHeight: '100vh', pb: 8, px: { xs: 2, sm: 4 }, pt: 3, position: 'relative' }}>
 
@@ -497,11 +598,39 @@ const DashboardAnalyticsPage = () => {
               </Paper>
             </Grid>
 
-            <Grid item xs={12}>
-              <Paper sx={{ ...glassCardSx, height: '380px', display: 'flex', flexDirection: 'column' }} elevation={0}>
-                <Typography variant="h6" fontWeight="700" mb={3}>Class Overall Trajectory</Typography>
+            {/* New Analytics Capabilities */}
+            <Grid item xs={12} lg={6}>
+              <Paper sx={{ ...glassCardSx, height: '420px', display: 'flex', flexDirection: 'column' }} elevation={0}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                  <Typography variant="h6" fontWeight="700">Engagement & Activity Patterns</Typography>
+                  <TimelineIcon color="info" />
+                </Box>
                 <Box sx={{ flexGrow: 1, position: 'relative' }}>
-                  {overview ? renderClassDistribution() : <CircularProgress />}
+                  {overview ? renderEngagementPatterns() : <CircularProgress />}
+                </Box>
+              </Paper>
+            </Grid>
+
+            <Grid item xs={12} lg={6}>
+              <Paper sx={{ ...glassCardSx, height: '420px', display: 'flex', flexDirection: 'column' }} elevation={0}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                  <Typography variant="h6" fontWeight="700" color="error.main">Predictive Alerts</Typography>
+                  <AlertIcon color="error" />
+                </Box>
+                <Box sx={{ flexGrow: 1, position: 'relative', overflow: 'hidden' }}>
+                  {overview ? renderPredictiveAlerts() : <CircularProgress />}
+                </Box>
+              </Paper>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Paper sx={{ ...glassCardSx, height: '400px', display: 'flex', flexDirection: 'column' }} elevation={0}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                  <Typography variant="h6" fontWeight="700" color="warning.main">Decision Support System</Typography>
+                  <LightbulbIcon color="warning" />
+                </Box>
+                <Box sx={{ flexGrow: 1, position: 'relative', overflow: 'hidden' }}>
+                  {overview ? renderDecisionSupport() : <CircularProgress />}
                 </Box>
               </Paper>
             </Grid>

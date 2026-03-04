@@ -216,12 +216,56 @@ class AnalyticsOverviewAPIView(APIView):
                     'topic': t.topic
                 })
 
+        # Get engagements
+        engagements = EngagementMetric.objects.all().order_by('-session_date')[:50]
+        engagements_data = EngagementMetricSerializer(engagements, many=True).data
+        
+        # Get predictive alerts
+        alerts = InterventionFlag.objects.filter(resolved=False).order_by('-flagged_at')[:20]
+        alerts_data = InterventionFlagSerializer(alerts, many=True).data
+
+        competency_averages = list(avg_by_subject)
+        lowest_competencies = sorted(competency_averages, key=lambda x: x['avg_level'])[:3]
+        
+        # Build decision support recommendations
+        recommendations = []
+        if lowest_competencies:
+            for comp in lowest_competencies:
+                if comp['avg_level'] < 70:
+                    subj = comp['subject']
+                    recommendations.append({
+                        'type': 'curriculum_adjustment',
+                        'title': f'Review needed for {subj}',
+                        'description': f'Class average is low ({round(comp["avg_level"], 1)}%). Consider revising the material or scheduling a review session.',
+                        'priority': 'High' if comp['avg_level'] < 50 else 'Medium'
+                    })
+        
+        if len(alerts) > 0:
+            recommendations.append({
+                'type': 'intervention',
+                'title': f'{len(alerts)} students need attention',
+                'description': 'Review the predictive alerts panel to identify students showing early warning signs.',
+                'priority': 'High'
+            })
+        
+        # Add a generic study habit tip based on engagements
+        if len(engagements) > 0:
+            recommendations.append({
+                'type': 'study_habits',
+                'title': 'Encourage spaced repetition',
+                'description': 'Data shows engagement drops after 30 minutes. Recommend breaking study sessions into smaller chunks.',
+                'priority': 'Low'
+            })
+
         return Response({
             'class_snapshots': class_data,
             'system_metrics': sys_metrics,
-            'competency_averages': list(avg_by_subject),
+            'competency_averages': competency_averages,
             'students': students,
-            'quiz_performance': quiz_performance
+            'quiz_performance': quiz_performance,
+            'engagements': engagements_data,
+            'alerts': alerts_data,
+            'decision_support': recommendations
         })
 
     def post(self, request, user_id):

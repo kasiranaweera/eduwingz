@@ -58,8 +58,8 @@ print("✅ Global services will be lazily initialized on first request (startup 
 
 async def ensure_services_initialized():
     """Lazy initialize services on first use to avoid startup timeout"""
-    global rag_service, agent_service, lesson_generator_service, tts_engine, stt_engine, _services_initialized, _initialization_error
-    global RAGService, ReasoningAgent, LessonGeneratorService, MAIN_SERVICES_AVAILABLE
+    global rag_service, agent_service, lesson_generator_service, tts_engine, stt_engine, adaptive_content_service, adaptive_assessment_service, _services_initialized, _initialization_error
+    global RAGService, ReasoningAgent, LessonGeneratorService, AdaptiveContentService, AdaptiveAssessmentService, MAIN_SERVICES_AVAILABLE
     
     # Import services only when first needed
     if not MAIN_SERVICES_AVAILABLE:
@@ -68,9 +68,15 @@ async def ensure_services_initialized():
             from services.rag_service import RAGService as RAGServiceClass
             from services.agent_service import ReasoningAgent as ReasoningAgentClass
             from services.lesson_generator_service import LessonGeneratorService as LessonGeneratorServiceClass
+            from services.adaptive_content_service import AdaptiveContentService as AdaptiveContentServiceClass
+            from services.adaptive_assessment_service import AdaptiveAssessmentService as AdaptiveAssessmentServiceClass
+            
             RAGService = RAGServiceClass
             ReasoningAgent = ReasoningAgentClass
             LessonGeneratorService = LessonGeneratorServiceClass
+            AdaptiveContentService = AdaptiveContentServiceClass
+            AdaptiveAssessmentService = AdaptiveAssessmentServiceClass
+            
             MAIN_SERVICES_AVAILABLE = True
             print("✅ Main services imported successfully on first request")
         except Exception as e:
@@ -105,6 +111,16 @@ async def ensure_services_initialized():
             print("  • Initializing lesson generator service...")
             lesson_generator_service = LessonGeneratorService(llm_client=rag_service.llm, rag_service=rag_service)
             print("  ✅ Lesson generator service initialized")
+            
+            # Initialize adaptive content service
+            print("  • Initializing adaptive content service...")
+            adaptive_content_service = AdaptiveContentService(llm_client=rag_service.llm, rag_service=rag_service)
+            print("  ✅ Adaptive content service initialized")
+            
+            # Initialize adaptive assessment service
+            print("  • Initializing adaptive assessment service...")
+            adaptive_assessment_service = AdaptiveAssessmentService(llm_client=rag_service.llm, rag_service=rag_service)
+            print("  ✅ Adaptive assessment service initialized")
             
             # TTS engine
             try:
@@ -578,8 +594,43 @@ class GenerateQuizRequest(BaseModel):
     num_questions: int = 5
     question_type: str = "multiple_choice"
 
+class GenerateAdaptiveQuizRequest(BaseModel):
+    topic: str
+    subject: str = ""
+    grade: str = ""
+    base_difficulty: str = "medium"
+    num_questions: int = 5
+    session_id: Optional[str] = None
+    
+@app.post("/api/lessons/generate_adaptive_quiz")
+async def generate_adaptive_quiz(request: GenerateAdaptiveQuizRequest, user_id: int = Depends(verify_token)):
+    """Generate adaptive quiz questions using the LLM & user's learning profile."""
+    try:
+        await ensure_services_initialized()
+        
+        learning_profile = None
+        if request.session_id:
+            learning_profile = rag_service.get_or_create_learning_profile(request.session_id)
+            print(f"   👤 Using learning profile for session: {request.session_id}")
+            
+        quiz_data = await adaptive_assessment_service.generate_adaptive_quiz(
+            topic=request.topic,
+            subject=request.subject,
+            grade=request.grade,
+            base_difficulty=request.base_difficulty,
+            num_questions=request.num_questions,
+            learning_profile=learning_profile
+        )
+        return quiz_data
+        
+    except Exception as e:
+        print(f"❌ [API] Error generating adaptive quiz: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Adaptive quiz generation error: {str(e)}")
+
+# Keep existing generate_quiz for backwards compatibility
 @app.post("/generate-quiz")
-async def generate_quiz(request: GenerateQuizRequest):
+async def generate_legacy_quiz(request: GenerateQuizRequest):
     """Generate quiz questions using the LLM."""
     try:
         await ensure_services_initialized()
