@@ -199,24 +199,24 @@ const ChatHistoryPage = () => {
           <Typography variant="h5" gutterBottom>
             Chat History
           </Typography>
-        
 
-        {/* Search Bar */}
-        <TextField
-          placeholder="Search chats by title..."
-          size="small"
-          fullWidth
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{ mb: 2, maxWidth: 400 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            ),
-          }}
-        /></Box>
+
+          {/* Search Bar */}
+          <TextField
+            placeholder="Search chats by title..."
+            size="small"
+            fullWidth
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{ mb: 2, maxWidth: 400 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+          /></Box>
 
         <Box
           sx={{

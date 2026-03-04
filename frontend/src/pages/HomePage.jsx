@@ -838,20 +838,20 @@ const HomePage = () => {
                 - TESTIMONIALS -
               </Typography> */}
             </Box>
-            <Box sx={{ m: { sm: 5 , xs:10} }}>
+            <Box sx={{ m: { sm: 5, xs: 10 } }}>
 
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: "repeat(12, 1fr)",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "100%",
-                mt: 10,
-                gap: 3,
-              }}
-            >
-              {/* <Stack
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(12, 1fr)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "100%",
+                  mt: 10,
+                  gap: 3,
+                }}
+              >
+                {/* <Stack
                 direction="row"
                 spacing={3}
                 mt={5}
@@ -865,14 +865,14 @@ const HomePage = () => {
                 />
                 )}
               </Stack> */}
-              {contentData.studentTestimonials.map((item, index) => (
-                <FeedbackCard
-                  name={item.username}
-                  comment={item.testimonial}
-                  stars={item.rating}
-                />
-              ))}
-            </Box></Box>
+                {contentData.studentTestimonials.map((item, index) => (
+                  <FeedbackCard
+                    name={item.username}
+                    comment={item.testimonial}
+                    stars={item.rating}
+                  />
+                ))}
+              </Box></Box>
           </Container>
           <Box
             sx={{
