@@ -6,6 +6,26 @@ import django.db.models.deletion
 import uuid
 
 
+def reconcile_lessons_tables(apps, schema_editor):
+    """
+    Ensure core tables exist before creating TopicDiscussion.
+    This handles cases where migrations were marked as applied but tables are missing in the DB.
+    """
+    from django.db import connection
+    tables = connection.introspection.table_names()
+    
+    # Check for Lesson table
+    if 'lessons_lesson' not in tables:
+        print("Creating missing table: lessons_lesson")
+        Lesson = apps.get_model('lessons', 'Lesson')
+        schema_editor.create_model(Lesson)
+        
+    # Check for Topic table
+    if 'lessons_topic' not in tables:
+        print("Creating missing table: lessons_topic")
+        Topic = apps.get_model('lessons', 'Topic')
+        schema_editor.create_model(Topic)
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -14,6 +34,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(reconcile_lessons_tables, reverse_code=migrations.RunPython.noop),
         migrations.CreateModel(
             name='TopicDiscussion',
             fields=[

@@ -498,21 +498,6 @@ const ChatPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  /* ---------------------------------------------------------- */
-  /* 4. LOADING MESSAGE ROTATION                               */
-  /* ---------------------------------------------------------- */
-  useEffect(() => {
-    if (!isLoading) {
-      setLoadingMessageIndex(0);
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [isLoading, loadingMessages.length]);
 
   /* ---------------------------------------------------------- */
   /* 5. MESSAGE ANIMATION TRACKING                             */
