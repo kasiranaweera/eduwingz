@@ -141,7 +141,7 @@ const AuthModal = () => {
             sx={{
               padding: 3,
               border: 1,
-              width: "25vw",
+              width: { xs: "90vw", md: "25vw" },
               height: "auto",
               justifyItems: "center",
               borderRadius: 5,
