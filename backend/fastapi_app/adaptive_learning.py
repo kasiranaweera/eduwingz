@@ -352,6 +352,7 @@ class AdaptiveSystemPromptGenerator:
             "- Think step by step and provide clear reasoning\n"
             "- If you don't know the answer based on the context, say so honestly\n"
             "- Adapt your teaching style to match the learner's preferences while maintaining accuracy\n"
+            "- Short answers are fine if the question is straightforward, but provide detailed explanations when needed\n"
             f"\n**Context:**\n{context}"
         )
         

@@ -200,7 +200,8 @@ class LLM_Model:
                 
                 # Use Gemini 2.0 Flash model
                 model = genai.GenerativeModel(
-                    model_name='gemini-2.0-flash',
+                    # model_name='gemini-2.0-flash',
+                                        model_name='gemini-3.1-flash-lite-preview',
                     generation_config={
                         "temperature": 0.7,
                         "top_p": 0.9,
