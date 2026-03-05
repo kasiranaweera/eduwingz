@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 from dotenv import load_dotenv
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -14,6 +14,7 @@ from adaptive_learning import ILSLearningProfile, AdaptiveSystemPromptGenerator,
 from .agent_service import ReasoningAgent
 import json
 import traceback
+import httpx
 
 
 class RAGService:
@@ -409,6 +410,37 @@ class RAGService:
             }
         return None
 
+    async def sync_learning_profile_from_django(self, session_id: str, user_id: str):
+        """
+        Sync learning profile data from Django backend
+        """
+        try:
+            profile = self.get_or_create_learning_profile(session_id)
+            if profile.questionnaire_completed and profile.total_interactions > 0:
+                # Already synced or has interaction data, don't overwrite unless needed
+                return
+            
+            print(f"🔄 [RAG Service] Syncing learning profile for user {user_id} from Django...")
+            
+            django_url = f"{settings.DJANGO_BACKEND_URL}/api/accounts/profile-data/?user_id={user_id}"
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.get(django_url, timeout=10.0)
+                if response.status_code == 200:
+                    data = response.json()
+                    # Expecting data to have ILS dimensions in -11 to 11 scale
+                    # e.g., {"active_reflective": 1, "sensing_intuitive": -3, ...}
+                    ils_data = data.get('ils_data', {})
+                    if ils_data:
+                        profile.set_dimensions_from_django(ils_data)
+                        print(f"✅ [RAG Service] Synced learning profile for user {user_id}")
+                    else:
+                        print(f"⚠️ [RAG Service] No ILS data found in Django profile for user {user_id}")
+                else:
+                    print(f"⚠️ [RAG Service] Failed to sync from Django ({response.status_code}): {response.text}")
+        except Exception as e:
+            print(f"❌ [RAG Service] Error syncing from Django: {e}")
+
     def reset_learning_profile(self, session_id: str):
         """Reset learning profile for a session"""
         if session_id in self.learning_profiles:
@@ -488,7 +520,8 @@ class RAGService:
                 session_id=session_id,
                 context=rag_context,
                 enable_tools=enable_tools,
-                max_iterations=max_iterations
+                max_iterations=max_iterations,
+                learning_profile=learning_profile
             )
             
             if agent_result.get("status") == "error":

@@ -392,6 +392,9 @@ async def process_message(message: MessageCreate, user_id: int = Depends(verify_
         # Namespace session_id by user_id for isolation
         namespaced_session_id = f"{user_id}_{message.session_id}"
         
+        # Sync learning profile from Django if needed
+        await rag_service.sync_learning_profile_from_django(namespaced_session_id, str(user_id))
+        
         # First, try to get RAG results
         print(f"🔍 [CHAT/PROCESS] Starting RAG search...")
         rag_response = await rag_service.chat(
@@ -411,12 +414,14 @@ async def process_message(message: MessageCreate, user_id: int = Depends(verify_
             
             # Use agent to search for better information
             # Max iterations set to 3 for balanced reasoning
+            learning_profile = rag_service.get_or_create_learning_profile(namespaced_session_id)
             agent_response = await agent_service.reason_and_act(
                 message=message.content,
                 session_id=namespaced_session_id,
                 context=rag_response.get("answer", ""),
                 enable_tools=True,
-                max_iterations=3
+                max_iterations=3,
+                learning_profile=learning_profile
             )
             
             # Extract tools used from reasoning chain
@@ -523,12 +528,21 @@ async def generate_lesson(request: GenerateLessonRequest):
         print(f"   Subject: {request.subject}")
         print(f"   Topic: {request.topic}")
         
+        # Get learning profile if session_id is available
+        learning_profile = None
+        if request.session_id:
+            # We don't have user_id here directly, but we can try to guess it from the session_id
+            # if it's namespaced, or just use the interaction data already in the profile.
+            # For lesson generation, we'll use the profile if it exists.
+            learning_profile = rag_service.get_or_create_learning_profile(request.session_id)
+
         # Call lesson generator service
         result = lesson_generator_service.generate_topics(
             grade=request.grade,
             subject=request.subject,
             topic=request.topic,
-            attachments=request.attachments
+            attachments=request.attachments,
+            learning_profile=learning_profile
         )
         
         if result['success']:

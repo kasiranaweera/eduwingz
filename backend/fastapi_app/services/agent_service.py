@@ -146,8 +146,8 @@ class ReasoningAgent:
             "action_params": action_params
         }
     
-    def _build_system_prompt(self, session_id: str) -> str:
-        """Build the system prompt with tool information"""
+    def _build_system_prompt(self, session_id: str, learning_profile=None) -> str:
+        """Build the system prompt with tool information and adaptive learning"""
         memory = self.get_memory(session_id)
         tools_info = self.tools_manager.get_tool_list()
         
@@ -197,84 +197,69 @@ class ReasoningAgent:
             f"- {name}: {tools_descriptions.get(name, 'Tool for ' + name)}"
             for name in enabled_tools if name in conditional_tools
         ])
-        
-        system_prompt = f"""You are an intelligent reasoning agent designed to solve complex tasks by breaking them down into steps and using available tools.
+
+        # Generate adaptive base prompt
+        adaptive_instructions = ""
+        if learning_profile:
+            try:
+                from adaptive_learning import AdaptiveSystemPromptGenerator
+                prompt_gen = AdaptiveSystemPromptGenerator()
+                # We pass empty context here as context will be added by the agent loop later
+                adaptive_instructions = prompt_gen.generate_prompt(learning_profile, "")
+                # Clean up if it contains "CONTEXT:" as the agent adds its own context
+                if "### CONTEXT:" in adaptive_instructions:
+                    adaptive_instructions = adaptive_instructions.split("### CONTEXT:")[0]
+            except Exception as e:
+                print(f"⚠️ [Agent] Could not generate adaptive prompt: {e}")
+
+        if not adaptive_instructions:
+            adaptive_instructions = "You are an intelligent reasoning agent designed to solve complex tasks."
+
+        system_prompt = f"""{adaptive_instructions}
+
+Breaking tasks into steps and using available tools.
 
 ## 🎯 PRIMARY TOOL (Best Accuracy - Use First)
 {primary_tools_list if primary_tools_list else "SearchApi is not configured"}
 
 ## 🔍 DEFAULT TOOLS (Always Available)
-Always available for search, browsing, and research (if SearchApi not available, use these):
+Always available for search, browsing, and research:
 {default_tools_list}
 
 ## 🔧 CONDITIONAL TOOLS (Use When Needed)
-Use these specialized tools if the question requires them:
 {conditional_tools_list}
 
-## 📋 Tool Selection Strategy
-1. **FIRST CHOICE**: Use SearchApi for best accuracy (if configured)
-2. **FALLBACK Search**: Google Serper, Tavily, DuckDuckGo, Brave Search
-3. **For general knowledge**: Use Wikipedia
-4. **For academic content**: Use Google Scholar, ArXiv
-5. **For video tutorials/content**: Use YouTube
-6. **For detailed web content**: Use Playwright web browsing
-7. **For automation tasks**: Use Robocorp
-8. **For weather data**: Use Weather tool if user asks about weather
-9. **For coding problems**: Use Code Interpreter
-10. **For repository/open-source code**: Use GitHub
-11. **For terminal commands**: Use Shell
-
 ## Your Reasoning Process
-For each user query, you should:
 1. **Analyze** the question type and what information is needed
-2. **Select Tools** - Try SearchApi first, fallback to default tools, conditional tools only if needed
-3. **Execute** tool calls to gather information from multiple sources
+2. **Select Tools** - Try SearchApi first, fallback to default tools
+3. **Execute** tool calls to gather information
 4. **Synthesize** results into a coherent answer
-5. **Validate** information across sources when possible
+5. **Validate** information across sources
 
 ## Response Format
 When you need to use a tool, respond in this exact format:
 
 Thought: <Your reasoning about what to do next>
 Action: <The tool name to use>
-Action Input: <JSON with parameters, e.g., {{"query": "...", "num_results": 5}}>
+Action Input: <JSON with parameters>
 
-When you have enough information to answer, provide a comprehensive response.
+When you have enough information to answer, provide a comprehensive response matching the user's learning style.
 
 ## Memory Context
 {memory.get_context()}
-
-## Guidelines
-- Always try SearchApi and Tavily Search first for best results (if API key configured)
-- If SearchApi not available, use Google Serper and DuckDuckGo Search as fallback
-- Cross-reference information from multiple sources when available
-- If document context is available, enhance it with current information
-- Be clear about the sources of information
-- If you're not sure about something, say so
-- Use multiple search tools for important facts verification
-- Only use conditional tools if the question specifically requires them
-- Be efficient: stop searching once you have enough quality information
-- Max iterations: 3 - Use them wisely to get best results"""
+"""
         
         return system_prompt
     
-    async def think(self, message: str, session_id: str, context: str = "") -> Dict:
+    async def think(self, message: str, session_id: str, context: str = "", learning_profile=None) -> Dict:
         """
         Let the agent think about a message and decide on actions
-        
-        Args:
-            message: The user's message
-            session_id: Session identifier
-            context: Additional context (e.g., from RAG)
-        
-        Returns:
-            Agent's reasoning with suggested actions
         """
         try:
             memory = self.get_memory(session_id)
             memory.add_thought(message)
             
-            system_prompt = self._build_system_prompt(session_id)
+            system_prompt = self._build_system_prompt(session_id, learning_profile)
             
             user_message = f"{message}\n\nAdditional Context:\n{context}" if context else message
             
@@ -334,20 +319,11 @@ When you have enough information to answer, provide a comprehensive response.
         session_id: str,
         context: str = "",
         enable_tools: bool = True,
-        max_iterations: int = None
+        max_iterations: int = None,
+        learning_profile=None
     ) -> Dict:
         """
         Full reasoning and action loop
-        
-        Args:
-            message: User message
-            session_id: Session ID
-            context: Additional context
-            enable_tools: Whether to enable tool usage
-            max_iterations: Maximum reasoning iterations
-        
-        Returns:
-            Final response with reasoning chain
         """
         memory = self.get_memory(session_id)
         reasoning_chain = []
@@ -363,7 +339,7 @@ When you have enough information to answer, provide a comprehensive response.
             print(f"\n📍 [Agent] Iteration {iterations}/{max_iter}")
             
             # Think phase
-            think_result = await self.think(current_message, session_id, context)
+            think_result = await self.think(current_message, session_id, context, learning_profile)
             
             if think_result["status"] == "error":
                 return {

@@ -7,7 +7,7 @@ import os
 import numpy as np
 import faiss
 import pickle
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from config import settings
 
 
@@ -32,34 +32,44 @@ class ILSLearningProfile:
     def set_questionnaire_data(self, questionnaire_responses: Dict):
         """
         Set ILS questionnaire responses and calculate dimensions
-        
-        Args:
-            questionnaire_responses: Dict with keys:
-            - active_reflective: float (0.0 to 1.0)
-            - sensing_intuitive: float (0.0 to 1.0)
-            - visual_verbal: float (0.0 to 1.0)
-            - sequential_global: float (0.0 to 1.0)
         """
         print(f"📝 [ILS Profile] Setting questionnaire data for user {self.user_id}")
         self.questionnaire_data = questionnaire_responses
         self.questionnaire_completed = True
         self.questionnaire_timestamp = datetime.now().isoformat()
         
-        # Set dimensions from questionnaire (weighted 70% for questionnaire, 30% for interactions)
+        # Set dimensions from questionnaire
         if 'active_reflective' in questionnaire_responses:
             self.dimensions['active_reflective'] = questionnaire_responses['active_reflective']
-            print(f"   ✓ Active/Reflective: {self.dimensions['active_reflective']}")
         if 'sensing_intuitive' in questionnaire_responses:
             self.dimensions['sensing_intuitive'] = questionnaire_responses['sensing_intuitive']
-            print(f"   ✓ Sensing/Intuitive: {self.dimensions['sensing_intuitive']}")
         if 'visual_verbal' in questionnaire_responses:
             self.dimensions['visual_verbal'] = questionnaire_responses['visual_verbal']
-            print(f"   ✓ Visual/Verbal: {self.dimensions['visual_verbal']}")
         if 'sequential_global' in questionnaire_responses:
             self.dimensions['sequential_global'] = questionnaire_responses['sequential_global']
-            print(f"   ✓ Sequential/Global: {self.dimensions['sequential_global']}")
         
         print(f"✅ [ILS Profile] Questionnaire data set successfully")
+
+    def set_dimensions_from_django(self, django_styles: Dict):
+        """
+        Set dimensions from Django's -11 to 11 scale
+        -11 -> 0.0, 0 -> 0.5, 11 -> 1.0
+        """
+        print(f"🔄 [ILS Profile] Setting dimensions from Django styles for user {self.user_id}")
+        
+        from_11 = lambda x: (float(x) + 11.0) / 22.0
+        
+        if 'active_reflective' in django_styles:
+            self.dimensions['active_reflective'] = from_11(django_styles['active_reflective'])
+        if 'sensing_intuitive' in django_styles:
+            self.dimensions['sensing_intuitive'] = from_11(django_styles['sensing_intuitive'])
+        if 'visual_verbal' in django_styles:
+            self.dimensions['visual_verbal'] = from_11(django_styles['visual_verbal'])
+        if 'sequential_global' in django_styles:
+            self.dimensions['sequential_global'] = from_11(django_styles['sequential_global'])
+            
+        self.questionnaire_completed = True
+        print(f"✅ [ILS Profile] Dimensions updated from Django: {self.dimensions}")
     
     def analyze_message_patterns(self, message: str, response_time: float = None):
         """Automatically detect learning patterns from user message"""
@@ -182,45 +192,48 @@ class ILSLearningProfile:
         print(f"🎯 [ILS Profile] Getting learning style classification")
         style = {}
         
-        # Classify each dimension (moderate at ±0.1, strong at ±0.3 from 0.5 midpoint)
+        # Classify each dimension (moderate at ±0.05, strong at ±0.25 from 0.5 midpoint)
+        threshold = 0.05
+        strong_threshold = 0.25
+        
         ar = self.dimensions['active_reflective']
-        if abs(ar - 0.5) >= 0.1:
+        if abs(ar - 0.5) >= threshold:
             style['processing'] = 'active' if ar < 0.5 else 'reflective'
-            style['processing_strength'] = 'strong' if abs(ar - 0.5) >= 0.3 else 'moderate'
+            style['processing_strength'] = 'strong' if abs(ar - 0.5) >= strong_threshold else 'moderate'
         else:
             style['processing'] = 'balanced'
             style['processing_strength'] = 'balanced'
         print(f"   📊 Processing: {style['processing']} ({style['processing_strength']}) [value: {ar:.2f}]")
         
         si = self.dimensions['sensing_intuitive']
-        if abs(si - 0.5) >= 0.1:
+        if abs(si - 0.5) >= threshold:
             style['perception'] = 'sensing' if si < 0.5 else 'intuitive'
-            style['perception_strength'] = 'strong' if abs(si - 0.5) >= 0.3 else 'moderate'
+            style['perception_strength'] = 'strong' if abs(si - 0.5) >= strong_threshold else 'moderate'
         else:
             style['perception'] = 'balanced'
             style['perception_strength'] = 'balanced'
         print(f"   📊 Perception: {style['perception']} ({style['perception_strength']}) [value: {si:.2f}]")
         
         vv = self.dimensions['visual_verbal']
-        if abs(vv - 0.5) >= 0.1:
+        if abs(vv - 0.5) >= threshold:
             style['input'] = 'visual' if vv < 0.5 else 'verbal'
-            style['input_strength'] = 'strong' if abs(vv - 0.5) >= 0.3 else 'moderate'
+            style['input_strength'] = 'strong' if abs(vv - 0.5) >= strong_threshold else 'moderate'
         else:
             style['input'] = 'balanced'
             style['input_strength'] = 'balanced'
         print(f"   📊 Input: {style['input']} ({style['input_strength']}) [value: {vv:.2f}]")
         
-        si = self.dimensions['sequential_global']
-        if abs(si - 0.5) >= 0.1:
-            style['understanding'] = 'sequential' if si < 0.5 else 'global'
-            style['understanding_strength'] = 'strong' if abs(si - 0.5) >= 0.3 else 'moderate'
+        sg = self.dimensions['sequential_global']
+        if abs(sg - 0.5) >= threshold:
+            style['understanding'] = 'sequential' if sg < 0.5 else 'global'
+            style['understanding_strength'] = 'strong' if abs(sg - 0.5) >= strong_threshold else 'moderate'
         else:
             style['understanding'] = 'balanced'
             style['understanding_strength'] = 'balanced'
-        print(f"   📊 Understanding: {style['understanding']} ({style['understanding_strength']}) [value: {si:.2f}]")
+        print(f"   📊 Understanding: {style['understanding']} ({style['understanding_strength']}) [value: {sg:.2f}]")
         
         if self.questionnaire_completed:
-            print(f"   📝 Learning style based on: Questionnaire (70%) + Interactions (30%)")
+            print(f"   📝 Learning style based on: Questionnaire/Profile Sync")
         else:
             print(f"   📝 Learning style based on: Interactions only")
         
@@ -262,101 +275,95 @@ class AdaptiveSystemPromptGenerator:
         
         # Check if context has priority markers (PRIMARY CONTEXT)
         has_priority_context = "PRIMARY CONTEXT" in context
-        if has_priority_context:
-            print(f"   ℹ️ Priority context detected - will emphasize PRIMARY CONTEXT")
         
-        base_prompt = "You are an intelligent adaptive learning assistant with strong reasoning abilities. "
+        base_prompt = "You are an intelligent adaptive learning assistant. Your goal is to explain concepts in a way that perfectly matches the user's learning style.\n\n"
         
         # Add priority instruction if context has priority markers
         if has_priority_context:
-            base_prompt += "IMPORTANT: Base your answer primarily on the PRIMARY CONTEXT section (from the uploaded documents). Use the ADDITIONAL CONTEXT only for supplementary information if needed. "
+            base_prompt += "CRITICAL: Base your answer primarily on the 'PRIMARY CONTEXT' section (from the user's uploaded documents). Use 'ADDITIONAL CONTEXT' only if the primary context is insufficient.\n\n"
         
         # Add adaptive instructions based on learning style
         adaptations = []
-        print(f"   🎨 Applying learning style adaptations:")
         
         # Processing style (Active/Reflective)
         if style['processing'] == 'active':
             adaptations.append(
-                "The learner prefers active engagement and hands-on learning. "
-                "Provide practical exercises, actionable steps, and encourage immediate application. "
-                "Keep explanations concise and focus on what they can do right away."
+                "### ACTIVE LEARNER ADAPTATION:\n"
+                "- The user learns by doing. Be concise and action-oriented.\n"
+                "- Provide practical exercises, immediate 'try this' steps, and real-world application.\n"
+                "- Avoid long theoretical introductions; get straight to the 'how-to'."
             )
-            print(f"      ✓ Active processing style")
         elif style['processing'] == 'reflective':
             adaptations.append(
-                "The learner prefers thoughtful reflection before action. "
-                "Provide comprehensive explanations, encourage analysis, and allow time for understanding. "
-                "Include thought-provoking questions and deeper reasoning."
+                "### REFLECTIVE LEARNER ADAPTATION:\n"
+                "- The user prefers to think things through. Be thorough and analytical.\n"
+                "- Provide comprehensive explanations, underlying principles, and time for reflection.\n"
+                "- Include thought-provoking 'Why' questions and encourage deep understanding."
             )
-            print(f"      ✓ Reflective processing style")
         
         # Perception style (Sensing/Intuitive)
         if style['perception'] == 'sensing':
             adaptations.append(
-                "Focus on concrete facts, real-world examples, and practical applications. "
-                "Provide specific, detailed procedures with proven methods. "
-                "Use data, statistics, and tangible examples."
+                "### SENSING LEARNER ADAPTATION:\n"
+                "- Focus on concrete facts, data, and well-established procedures.\n"
+                "- Use clear, specific examples and practical, real-world scenarios.\n"
+                "- Be methodical and stick to proven methods."
             )
-            print(f"      ✓ Sensing perception style")
         elif style['perception'] == 'intuitive':
             adaptations.append(
-                "Focus on concepts, theories, and innovative possibilities. "
-                "Discuss underlying principles, abstract ideas, and future implications. "
-                "Encourage creative thinking and exploration of new approaches."
+                "### INTUITIVE LEARNER ADAPTATION:\n"
+                "- Focus on abstract concepts, theories, and creative possibilities.\n"
+                "- Discuss big-picture implications and underlying mathematical or physical principles.\n"
+                "- Highlight connections between different ideas and encourage innovation."
             )
-            print(f"      ✓ Intuitive perception style")
         
         # Input style (Visual/Verbal)
         if style['input'] == 'visual':
             adaptations.append(
-                "Emphasize visual thinking and spatial relationships. "
-                "Describe visual patterns, suggest creating diagrams or charts. "
-                "Use metaphors with visual imagery and describe how things look or flow."
+                "### VISUAL LEARNER ADAPTATION:\n"
+                "- Use highly descriptive language to paint a mental picture.\n"
+                "- Describe flows, spatial relationships, and visual patterns.\n"
+                "- Suggest or describe diagrams, charts, and visual metaphors (e.g., 'Imagine a pipe flow...')."
             )
-            print(f"      ✓ Visual input style")
         elif style['input'] == 'verbal':
             adaptations.append(
-                "Emphasize clear written and verbal explanations. "
-                "Provide detailed textual descriptions and well-structured written instructions. "
-                "Use precise language and clear definitions."
+                "### VERBAL LEARNER ADAPTATION:\n"
+                "- Emphasize precise written explanations and clear terminology.\n"
+                "- Provide well-structured text with clear headings and bullet points.\n"
+                "- Use spoken-word metaphors and detailed descriptions."
             )
-            print(f"      ✓ Verbal input style")
         
         # Understanding style (Sequential/Global)
         if style['understanding'] == 'sequential':
             adaptations.append(
-                "Present information in a clear, step-by-step sequence. "
-                "Build understanding incrementally with logical progression. "
-                "Number steps and show clear cause-and-effect relationships."
+                "### SEQUENTIAL LEARNER ADAPTATION:\n"
+                "- Explain everything in a strict, logical, step-by-step sequence.\n"
+                "- Number your points (1, 2, 3...) and show a clear progression of difficulty.\n"
+                "- Ensure the cause-and-effect relationship between steps is explicit."
             )
-            print(f"      ✓ Sequential understanding style")
         elif style['understanding'] == 'global':
             adaptations.append(
-                "Start with the big picture and overall context first. "
-                "Show how details connect to the whole system. "
-                "Allow non-linear exploration and highlight relationships between concepts."
+                "### GLOBAL LEARNER ADAPTATION:\n"
+                "- Start with the 'Big Picture' overview before diving into any details.\n"
+                "- Explicitly show how this specific detail fits into the larger system.\n"
+                "- Use a non-linear approach if it helps show relationships between concepts."
             )
-            print(f"      ✓ Global understanding style")
         
         if not adaptations:
-            print(f"      ℹ️ Balanced learning style - no specific adaptations needed")
-        
-        if adaptations:
-            base_prompt += "\n\n**Learning Style Adaptations:**\n" + "\n".join(adaptations)
+            base_prompt += "Provide a balanced, clear, and comprehensive explanation suitable for any learner.\n"
+        else:
+            base_prompt += "ADAPT YOUR RESPONSE USING THESE LEARNING STYLE RULES:\n" + "\n\n".join(adaptations) + "\n"
         
         # Add context instructions
         base_prompt += (
-            "\n\n**Instructions:**\n"
-            "- Use the following context to answer questions accurately\n"
-            "- Think step by step and provide clear reasoning\n"
-            "- If you don't know the answer based on the context, say so honestly\n"
-            "- Adapt your teaching style to match the learner's preferences while maintaining accuracy\n"
-            "- Short answers are fine if the question is straightforward, but provide detailed explanations when needed\n"
-            f"\n**Context:**\n{context}"
+            "\n### INSTRUCTIONS:\n"
+            "1. Use the provided context to answer questions with 100% accuracy.\n"
+            "2. Think step-by-step and show your reasoning clearly.\n"
+            "3. If the context doesn't contain the answer, admit it honestly.\n"
+            "4. NEVER break character: stay as an adaptive educational assistant.\n"
+            f"\n### CONTEXT:\n{context}"
         )
         
-        print(f"✅ [Prompt Generator] Adaptive prompt generated successfully")
         return base_prompt
 
 

@@ -35,7 +35,8 @@ class LessonGeneratorService:
         grade: str,
         subject: str,
         topic: str,
-        attachments: Optional[List[Dict]] = None
+        attachments: Optional[List[Dict]] = None,
+        learning_profile = None
     ) -> Dict:
         """
         Generate lesson topics using Qwen LLM based on PDF content
@@ -68,11 +69,29 @@ class LessonGeneratorService:
                     attachment_context += f"- {attachment.get('name', attachment.get('type'))}\n"
             
             # Create system prompt with explicit instruction to use PDF content
-            system_prompt = """Create educational content as JSON based on the provided textbook material. 
-Response format: {"topics": [{"title": "Title", "content": "Content summary", "order": 1}]}
+            adaptation_instructions = ""
+            if learning_profile:
+                try:
+                    style = learning_profile.get_learning_style()
+                    # Add specific topic generation adaptations
+                    if style.get('processing') == 'active':
+                        adaptation_instructions += "- Include dynamic, action-oriented topic titles and summaries.\n"
+                    elif style.get('processing') == 'reflective':
+                        adaptation_instructions += "- Include analytical and thought-provoking topic titles and summaries.\n"
+                    
+                    if style.get('perception') == 'sensing':
+                        adaptation_instructions += "- Focus topic titles on concrete facts and procedures.\n"
+                    elif style.get('perception') == 'intuitive':
+                        adaptation_instructions += "- Focus topic titles on abstract concepts and principles.\n"
+                except:
+                    pass
+
+            system_prompt = f"""Create educational content as JSON based on the provided textbook material. 
+Response format: {{"topics": [{{"title": "Title", "content": "Content summary", "order": 1}}]}}
 Requirements:
 - Extract topics DIRECTLY from the provided textbook content
 - Ensure each topic is based on actual material from the textbook
+{adaptation_instructions}
 - Do NOT invent topics not in the material
 - Return ONLY valid JSON, no markdown or code blocks"""
 
